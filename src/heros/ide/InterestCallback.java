@@ -11,9 +11,9 @@
 package heros.ide;
 
 
-public interface InterestCallback<Field, Fact, Stmt, Method> {
+public interface InterestCallback<Fact, Stmt, Method, Value> {
 
-	void interest(PerAccessPathMethodAnalyzer<Field, Fact, Stmt, Method> analyzer, Resolver<Field, Fact, Stmt, Method> resolver);
+	void interest(PerAccessPathMethodAnalyzer<Fact, Stmt, Method, Value> analyzer, Resolver<Fact, Stmt, Method, Value> resolver);
 	
-	void canBeResolvedEmpty();
+	void continueBalancedTraversal(EdgeFunction<Value> edgeFunction);
 }

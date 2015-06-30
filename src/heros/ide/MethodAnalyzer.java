@@ -10,12 +10,14 @@
  ******************************************************************************/
 package heros.ide;
 
+import heros.ide.structs.WrappedFactAtStatement;
 
-public interface MethodAnalyzer<Field,Fact,Stmt,Method>  {
 
-	public void addIncomingEdge(CallEdge<Field, Fact, Stmt, Method> incEdge);
+public interface MethodAnalyzer<Fact,Stmt,Method, Value>  {
+
+	public void addIncomingEdge(CallEdge<Fact, Stmt, Method, Value> incEdge);
 	
 	public void addInitialSeed(Stmt startPoint, Fact val);
 	
-	public void addUnbalancedReturnFlow(WrappedFactAtStatement<Field, Fact, Stmt, Method> target, Stmt callSite);
+	public void addUnbalancedReturnFlow(WrappedFactAtStatement<Fact, Stmt, Method, Value> target, Stmt callSite);
 }

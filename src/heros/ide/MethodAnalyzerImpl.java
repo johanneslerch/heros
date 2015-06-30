@@ -10,30 +10,31 @@
  ******************************************************************************/
 package heros.ide;
 
+import heros.ide.structs.WrappedFactAtStatement;
 import heros.utilities.DefaultValueMap;
 
-public class MethodAnalyzerImpl<Field,Fact, Stmt, Method> 
-		implements MethodAnalyzer<Field, Fact, Stmt, Method> {
+public class MethodAnalyzerImpl<Fact, Stmt, Method, Value> 
+		implements MethodAnalyzer<Fact, Stmt, Method, Value> {
 
 	private Method method;
-	private DefaultValueMap<Fact, PerAccessPathMethodAnalyzer<Field, Fact, Stmt, Method>> perSourceAnalyzer = 
-			new DefaultValueMap<Fact, PerAccessPathMethodAnalyzer<Field, Fact, Stmt, Method>>() {
+	private DefaultValueMap<Fact, PerAccessPathMethodAnalyzer<Fact, Stmt, Method, Value>> perSourceAnalyzer = 
+			new DefaultValueMap<Fact, PerAccessPathMethodAnalyzer<Fact, Stmt, Method, Value>>() {
 		@Override
-		protected PerAccessPathMethodAnalyzer<Field, Fact, Stmt, Method> createItem(Fact key) {
-			return new PerAccessPathMethodAnalyzer<Field, Fact, Stmt, Method>(method, key, context);
+		protected PerAccessPathMethodAnalyzer<Fact, Stmt, Method, Value> createItem(Fact key) {
+			return new PerAccessPathMethodAnalyzer<Fact, Stmt, Method, Value>(method, key, context);
 		}
 	};
-	private Context<Field, Fact, Stmt, Method> context;
+	private Context<Fact, Stmt, Method, Value> context;
 
-	MethodAnalyzerImpl(Method method, Context<Field, Fact, Stmt, Method> context) {
+	MethodAnalyzerImpl(Method method, Context<Fact, Stmt, Method, Value> context) {
 		this.method = method;
 		this.context = context;
 	}
 	
 	@Override
-	public void addIncomingEdge(CallEdge<Field, Fact, Stmt, Method> incEdge) {
-		WrappedFact<Field, Fact, Stmt, Method> calleeSourceFact = incEdge.getCalleeSourceFact();
-		PerAccessPathMethodAnalyzer<Field, Fact, Stmt, Method> analyzer = perSourceAnalyzer.getOrCreate(calleeSourceFact.getFact());
+	public void addIncomingEdge(CallEdge<Fact, Stmt, Method, Value> incEdge) {
+		Fact calleeSourceFact = incEdge.getCalleeSourceFact();
+		PerAccessPathMethodAnalyzer<Fact, Stmt, Method, Value> analyzer = perSourceAnalyzer.getOrCreate(calleeSourceFact);
 		analyzer.addIncomingEdge(incEdge);
 	}
 
@@ -43,7 +44,7 @@ public class MethodAnalyzerImpl<Field,Fact, Stmt, Method>
 	}
 	
 	@Override
-	public void addUnbalancedReturnFlow(WrappedFactAtStatement<Field, Fact, Stmt, Method> target, Stmt callSite) {
+	public void addUnbalancedReturnFlow(WrappedFactAtStatement<Fact, Stmt, Method, Value> target, Stmt callSite) {
 		perSourceAnalyzer.getOrCreate(context.zeroValue).scheduleUnbalancedReturnEdgeTo(target);
 	}
 }

@@ -77,6 +77,10 @@ class PerAccessPathMethodAnalyzer<Fact, Stmt, Method, Value> {
 		log("initialized");
 	}
 	
+	public EdgeFunction<Value> getConstraint() {
+		return constraint;
+	}
+	
 	public PerAccessPathMethodAnalyzer<Fact, Stmt, Method, Value> createWithConstraint(EdgeFunction<Value> constraint) {
 		return new PerAccessPathMethodAnalyzer<Fact, Stmt, Method, Value>(method, sourceFact, context, constraint, this);
 	}
@@ -94,7 +98,7 @@ class PerAccessPathMethodAnalyzer<Fact, Stmt, Method, Value> {
 		}
 	}
 	
-	private WrappedFact<Fact, Stmt, Method, Value> wrappedSource() {
+	WrappedFact<Fact, Stmt, Method, Value> wrappedSource() {
 		return new WrappedFact<Fact, Stmt, Method, Value>(sourceFact, callEdgeResolver);
 	}
 
@@ -253,7 +257,51 @@ class PerAccessPathMethodAnalyzer<Fact, Stmt, Method, Value> {
 			for (final Fact targetFact : targetFacts) {
 				EdgeFunction<Value> normalEdgeFunction = context.edgeFunctions.getNormalEdgeFunction(factAtStmt.getStatement(), factAtStmt.getFact(), successor, targetFact);
 				boolean resolveRequired = normalEdgeFunction.mayReturnTop();
-				EdgeFunction<Value> composedFunction = edgeFunction.composeWith(normalEdgeFunction);
+				final EdgeFunction<Value> composedFunction = edgeFunction.composeWith(normalEdgeFunction);
+				resolveRequired &= composedFunction.mayReturnTop();
+				if(composedFunction instanceof AllTop)
+					break;
+				
+				if(resolveRequired) {
+					factAtStmt.getResolver().resolve(composedFunction, new InterestCallback<Fact, Stmt, Method, Value>() {
+						@Override
+						public void interest(PerAccessPathMethodAnalyzer<Fact, Stmt, Method, Value> analyzer,
+								Resolver<Fact, Stmt, Method, Value> resolver) {
+							analyzer.scheduleEdgeTo(successors, new WrappedFact<Fact, Stmt, Method, Value>(targetFact, resolver), composedFunction);
+						}
+						
+						@Override
+						public void continueBalancedTraversal(EdgeFunction<Value> edgeFunction) {
+							callEdgeResolver.resolve(edgeFunction, this);
+						}
+					});
+				}
+				else {
+					scheduleEdgeTo(successors, new WrappedFact<Fact, Stmt, Method, Value>(targetFact, factAtStmt.getResolver()), composedFunction);
+				}
+			}
+			
+		}
+	}
+	
+	public void addIncomingEdge(CallEdge<Fact, Stmt, Method, Value> incEdge) {
+		if(isBootStrapped()) {
+			context.factHandler.merge(sourceFact, incEdge.getCalleeSourceFact());
+		} else 
+			bootstrapAtMethodStartPoints();
+		callEdgeResolver.addIncoming(incEdge);
+	}
+
+	void applySummary(CallEdge<Fact, Stmt, Method, Value> incEdge, WrappedFactAtStatement<Fact, Stmt, Method, Value> exitFact, EdgeFunction<Value> edgeFunctionAtExitStmt) {
+		Collection<Stmt> returnSites = context.icfg.getReturnSitesOfCallAt(incEdge.getCallSite());
+		for(Stmt returnSite : returnSites) {
+			FlowFunction<Fact> flowFunction = context.flowFunctions.getReturnFlowFunction(incEdge.getCallSite(), method, exitFact.getStatement(), returnSite);
+			Set<Fact> targets = flowFunction.computeTargets(exitFact.getFact());
+			for (Fact targetFact : targets) {
+				context.factHandler.restoreCallingContext(targetFact, incEdge.getCallerCallSiteFact().getFact());
+				EdgeFunction<Value> returnEdgeFunction = context.edgeFunctions.getReturnEdgeFunction(incEdge.getCallSite(), method, exitFact.getStatement(), exitFact.getFact(), returnSite, targetFact);
+				boolean resolveRequired = returnEdgeFunction.mayReturnTop();
+				final EdgeFunction<Value> composedFunction = edgeFunctionAtExitStmt.composeWith(returnEdgeFunction);
 				resolveRequired &= composedFunction.mayReturnTop();
 				if(composedFunction instanceof AllTop)
 					break;
@@ -262,65 +310,27 @@ class PerAccessPathMethodAnalyzer<Fact, Stmt, Method, Value> {
 					//TODO
 				}
 				else {
-					scheduleEdgeTo(successors, targetFact, composedFunction);
+					scheduleReturnEdge(incEdge, new WrappedFact<Fact, Stmt, Method, Value>(targetFact, exitFact.getResolver()), composedFunction, returnSite);
 				}
-				
-				if(targetFact.getConstraint() == null)
-				else {
-					targetFact.getFact().getResolver().resolve(targetFact.getConstraint(), new InterestCallback<Field, Fact, Stmt, Method>() {
-						@Override
-						public void interest(PerAccessPathMethodAnalyzer<Field, Fact, Stmt, Method> analyzer,
-								Resolver<Field, Fact, Stmt, Method> resolver) {
-							analyzer.scheduleEdgeTo(successors, new WrappedFact<Field, Fact, Stmt, Method>(targetFact.getFact().getFact(), targetFact.getFact().getAccessPath(), resolver));
-						}
-						
-						@Override
-						public void canBeResolvedEmpty() {
-							callEdgeResolver.resolve(targetFact.getConstraint(), this);
-						}
-					});
-				}
-			}
-			
-		}
-	}
-	
-	public void addIncomingEdge(CallEdge<Field, Fact, Stmt, Method> incEdge) {
-		if(isBootStrapped()) {
-			context.factHandler.merge(sourceFact, incEdge.getCalleeSourceFact().getFact());
-		} else 
-			bootstrapAtMethodStartPoints();
-		callEdgeResolver.addIncoming(incEdge);
-	}
-
-	void applySummary(CallEdge<Field, Fact, Stmt, Method> incEdge, WrappedFactAtStatement<Field, Fact, Stmt, Method> exitFact) {
-		Collection<Stmt> returnSites = context.icfg.getReturnSitesOfCallAt(incEdge.getCallSite());
-		for(Stmt returnSite : returnSites) {
-			FlowFunction<Field, Fact, Stmt, Method> flowFunction = context.flowFunctions.getReturnFlowFunction(incEdge.getCallSite(), method, exitFact.getStatement(), returnSite);
-			Set<ConstrainedFact<Field, Fact, Stmt, Method>> targets = flowFunction.computeTargets(exitFact.getFact(), new AccessPathHandler<Field, Fact, Stmt, Method>(exitFact.getAccessPath(), exitFact.getResolver()));
-			for (ConstrainedFact<Field, Fact, Stmt, Method> targetFact : targets) {
-				context.factHandler.restoreCallingContext(targetFact.getFact().getFact(), incEdge.getCallerCallSiteFact().getFact());
-				//TODO handle constraint
-				scheduleReturnEdge(incEdge, targetFact.getFact(), returnSite);
 			}
 		}
 	}
 
-	public void scheduleUnbalancedReturnEdgeTo(WrappedFactAtStatement<Field, Fact, Stmt, Method> fact) {
-		ReturnSiteResolver<Field,Fact,Stmt,Method> resolver = returnSiteResolvers.getOrCreate(fact.getAsFactAtStatement());
-		resolver.addIncoming(new WrappedFact<Field, Fact, Stmt, Method>(fact.getWrappedFact().getFact(), fact.getWrappedFact().getAccessPath(), 
+	public void scheduleUnbalancedReturnEdgeTo(WrappedFactAtStatement<Fact, Stmt, Method, Value> fact) {
+		ReturnSiteResolver<Fact,Stmt,Method, Value> resolver = returnSiteResolvers.getOrCreate(fact.getAsFactAtStatement());
+		resolver.addIncoming(new WrappedFact<Fact, Stmt, Method, Value>(fact.getWrappedFact().getFact(), fact.getWrappedFact().getAccessPath(), 
 				fact.getWrappedFact().getResolver()), null, Delta.<Field>empty());
 	}
 	
-	private void scheduleReturnEdge(CallEdge<Field, Fact, Stmt, Method> incEdge, WrappedFact<Field, Fact, Stmt, Method> fact, Stmt returnSite) {
+	private void scheduleReturnEdge(CallEdge<Fact, Stmt, Method, Value> incEdge, WrappedFact<Fact, Stmt, Method, Value> fact, EdgeFunction<Value> edgeFunctionAtReturnSite, Stmt returnSite) {
 		Delta<Field> delta = accessPath.getDeltaTo(incEdge.getCalleeSourceFact().getAccessPath());
-		ReturnSiteResolver<Field, Fact, Stmt, Method> returnSiteResolver = incEdge.getCallerAnalyzer().returnSiteResolvers.getOrCreate(
+		ReturnSiteResolver<Fact, Stmt, Method, Value> returnSiteResolver = incEdge.getCallerAnalyzer().returnSiteResolvers.getOrCreate(
 				new FactAtStatement<Fact, Stmt>(fact.getFact(), returnSite));
 		returnSiteResolver.addIncoming(fact, incEdge.getCalleeSourceFact().getResolver(), delta);
 	}
 
-	void applySummaries(CallEdge<Field, Fact, Stmt, Method> incEdge) {
-		for(WrappedFactAtStatement<Field, Fact, Stmt, Method> summary : summaries) {
+	void applySummaries(CallEdge<Fact, Stmt, Method, Value> incEdge) {
+		for(WrappedFactAtStatement<Fact, Stmt, Method, Value> summary : summaries) {
 			applySummary(incEdge, summary);
 		}
 	}

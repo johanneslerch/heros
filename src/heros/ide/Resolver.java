@@ -25,7 +25,7 @@ public abstract class Resolver<Fact, Stmt, Method, Value> {
 		this.analyzer = analyzer;
 	}
 
-	public abstract void resolve(InterestCallback<Fact, Stmt, Method, Value> callback);
+	public abstract void resolve(EdgeFunction<Value> edgeFunction, InterestCallback<Fact, Stmt, Method, Value> callback);
 	
 	public void interest() {
 		if(interest)
@@ -41,13 +41,13 @@ public abstract class Resolver<Fact, Stmt, Method, Value> {
 			interestCallbacks = null;
 	}
 	
-	protected void canBeResolvedEmpty() {
+	protected void continueBalancedTraversal(EdgeFunction<Value> edgeFunction) {
 		if(canBeResolvedEmpty)
 			return;
 		
 		canBeResolvedEmpty = true;
 		for(InterestCallback<Fact, Stmt, Method, Value> callback : Lists.newLinkedList(interestCallbacks)) {
-			callback.canBeResolvedEmpty();
+			callback.continueBalancedTraversal(edgeFunction);
 		}
 		
 		if(interest)
@@ -68,7 +68,7 @@ public abstract class Resolver<Fact, Stmt, Method, Value> {
 		}
 
 		if(canBeResolvedEmpty)
-			callback.canBeResolvedEmpty();
+			callback.continueBalancedTraversal(analyzer.constraint);
 	}
 	
 	protected abstract void log(String message);

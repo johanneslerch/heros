@@ -10,29 +10,34 @@
  ******************************************************************************/
 package heros.ide;
 
-public class CallEdge<Field, Fact, Stmt, Method> {
+import heros.ide.structs.WrappedFact;
+import heros.ide.structs.WrappedFactAtStatement;
 
-	private WrappedFact<Field, Fact, Stmt, Method> calleeSourceFact;
-	private PerAccessPathMethodAnalyzer<Field, Fact, Stmt, Method> callerAnalyzer;
-	private WrappedFactAtStatement<Field, Fact, Stmt, Method> factAtCallSite;
+public class CallEdge<Fact, Stmt, Method, Value> {
+
+	private Fact calleeSourceFact;
+	private PerAccessPathMethodAnalyzer<Fact, Stmt, Method, Value> callerAnalyzer;
+	private WrappedFactAtStatement<Fact, Stmt, Method, Value> factAtCallSite;
+	private EdgeFunction<Value> edgeFunctionAtCallee;
 	
-	public CallEdge(PerAccessPathMethodAnalyzer<Field, Fact, Stmt, Method> callerAnalyzer, 
-			WrappedFactAtStatement<Field, Fact, Stmt, Method> factAtCallSite,
-			WrappedFact<Field, Fact, Stmt, Method> calleeSourceFact) {
+	public CallEdge(PerAccessPathMethodAnalyzer<Fact, Stmt, Method, Value> callerAnalyzer, 
+			WrappedFactAtStatement<Fact, Stmt, Method, Value> factAtCallSite,
+			Fact calleeSourceFact, EdgeFunction<Value> edgeFunctionAtCallee) {
 		this.callerAnalyzer = callerAnalyzer;
 		this.factAtCallSite = factAtCallSite;
 		this.calleeSourceFact = calleeSourceFact;
+		this.edgeFunctionAtCallee = edgeFunctionAtCallee;
 	}
 	
-	public WrappedFact<Field, Fact, Stmt, Method> getCalleeSourceFact() {
+	public Fact getCalleeSourceFact() {
 		return calleeSourceFact;
 	}
 	
-	public WrappedFact<Field, Fact, Stmt, Method> getCallerCallSiteFact() {
+	public WrappedFact<Fact, Stmt, Method, Value> getCallerCallSiteFact() {
 		return factAtCallSite.getWrappedFact();
 	}
 	
-	public WrappedFact<Field, Fact, Stmt, Method> getCallerSourceFact() {
+	public WrappedFact<Fact, Stmt, Method, Value> getCallerSourceFact() {
 		return callerAnalyzer.wrappedSource();
 	}
 	
@@ -40,11 +45,15 @@ public class CallEdge<Field, Fact, Stmt, Method> {
 		return factAtCallSite.getStatement();
 	}
 	
-	public PerAccessPathMethodAnalyzer<Field, Fact, Stmt, Method> getCallerAnalyzer() {
+	public PerAccessPathMethodAnalyzer<Fact, Stmt, Method, Value> getCallerAnalyzer() {
 		return callerAnalyzer;
 	}
 	
-	public void registerInterestCallback(final PerAccessPathMethodAnalyzer<Field, Fact, Stmt, Method> interestedAnalyzer) {
+	public EdgeFunction<Value> getEdgeFunctionAtCallee() {
+		return edgeFunctionAtCallee;
+	}
+	
+	public void registerInterestCallback(final PerAccessPathMethodAnalyzer<Fact, Stmt, Method, Value> interestedAnalyzer) {
 		final Delta<Field> delta = calleeSourceFact.getAccessPath().getDeltaTo(interestedAnalyzer.getAccessPath());
 		
 		if(!factAtCallSite.canDeltaBeApplied(delta))
@@ -83,6 +92,7 @@ public class CallEdge<Field, Fact, Stmt, Method> {
 		int result = 1;
 		result = prime * result + ((calleeSourceFact == null) ? 0 : calleeSourceFact.hashCode());
 		result = prime * result + ((callerAnalyzer == null) ? 0 : callerAnalyzer.hashCode());
+		result = prime * result + ((edgeFunctionAtCallee == null) ? 0 : edgeFunctionAtCallee.hashCode());
 		result = prime * result + ((factAtCallSite == null) ? 0 : factAtCallSite.hashCode());
 		return result;
 	}
@@ -106,6 +116,11 @@ public class CallEdge<Field, Fact, Stmt, Method> {
 				return false;
 		} else if (!callerAnalyzer.equals(other.callerAnalyzer))
 			return false;
+		if (edgeFunctionAtCallee == null) {
+			if (other.edgeFunctionAtCallee != null)
+				return false;
+		} else if (!edgeFunctionAtCallee.equals(other.edgeFunctionAtCallee))
+			return false;
 		if (factAtCallSite == null) {
 			if (other.factAtCallSite != null)
 				return false;
@@ -113,6 +128,7 @@ public class CallEdge<Field, Fact, Stmt, Method> {
 			return false;
 		return true;
 	}
+
 	
 	
 }
