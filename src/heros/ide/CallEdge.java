@@ -11,30 +11,32 @@
 package heros.ide;
 
 import heros.ide.structs.WrappedFact;
-import heros.ide.structs.WrappedFactAtStatement;
 
 public class CallEdge<Fact, Stmt, Method, Value> {
 
-	private Fact calleeSourceFact;
 	private PerAccessPathMethodAnalyzer<Fact, Stmt, Method, Value> callerAnalyzer;
-	private WrappedFactAtStatement<Fact, Stmt, Method, Value> factAtCallSite;
-	private EdgeFunction<Value> edgeFunctionAtCallee;
+	private Fact factIntoCallee;
+	private EdgeFunction<Value> edgeFunctionIntoCallee;
+	private Resolver<Fact, Stmt, Method, Value> resolverIntoCallee;
+	private Stmt callSite;
+	private Fact factAtCallSite;
 	
-	public CallEdge(PerAccessPathMethodAnalyzer<Fact, Stmt, Method, Value> callerAnalyzer, 
-			WrappedFactAtStatement<Fact, Stmt, Method, Value> factAtCallSite,
-			Fact calleeSourceFact, EdgeFunction<Value> edgeFunctionAtCallee) {
-		this.callerAnalyzer = callerAnalyzer;
-		this.factAtCallSite = factAtCallSite;
-		this.calleeSourceFact = calleeSourceFact;
-		this.edgeFunctionAtCallee = edgeFunctionAtCallee;
+	public CallEdge(PerAccessPathMethodAnalyzer<Fact, Stmt, Method, Value> callerAnalyzer, Fact factAtCallSite, Fact factIntoCallee, EdgeFunction<Value> edgeFunctionIntoCallee,
+			Resolver<Fact, Stmt, Method, Value> resolverIntoCallee, Stmt callSite) {
+				this.callerAnalyzer = callerAnalyzer;
+				this.factAtCallSite = factAtCallSite;
+				this.factIntoCallee = factIntoCallee;
+				this.edgeFunctionIntoCallee = edgeFunctionIntoCallee;
+				this.resolverIntoCallee = resolverIntoCallee;
+				this.callSite = callSite;
 	}
-	
+
 	public Fact getCalleeSourceFact() {
-		return calleeSourceFact;
+		return factIntoCallee;
 	}
 	
-	public WrappedFact<Fact, Stmt, Method, Value> getCallerCallSiteFact() {
-		return factAtCallSite.getWrappedFact();
+	public Resolver<Fact, Stmt, Method, Value> getResolverIntoCallee() {
+		return resolverIntoCallee;
 	}
 	
 	public WrappedFact<Fact, Stmt, Method, Value> getCallerSourceFact() {
@@ -42,7 +44,7 @@ public class CallEdge<Fact, Stmt, Method, Value> {
 	}
 	
 	public Stmt getCallSite() {
-		return factAtCallSite.getStatement();
+		return callSite;
 	}
 	
 	public PerAccessPathMethodAnalyzer<Fact, Stmt, Method, Value> getCallerAnalyzer() {
@@ -50,50 +52,44 @@ public class CallEdge<Fact, Stmt, Method, Value> {
 	}
 	
 	public EdgeFunction<Value> getEdgeFunctionAtCallee() {
-		return edgeFunctionAtCallee;
+		return edgeFunctionIntoCallee;
 	}
 	
 	public void registerInterestCallback(final PerAccessPathMethodAnalyzer<Fact, Stmt, Method, Value> interestedAnalyzer) {
-		final Delta<Field> delta = calleeSourceFact.getAccessPath().getDeltaTo(interestedAnalyzer.getAccessPath());
-		
-		if(!factAtCallSite.canDeltaBeApplied(delta))
-			return;
-		
-		factAtCallSite.getWrappedFact().getResolver().resolve(new DeltaConstraint<Field>(delta), new InterestCallback<Field, Fact, Stmt, Method>() {
+		EdgeFunction<Value> composedEdgeFunction = edgeFunctionIntoCallee.composeWith(interestedAnalyzer.getConstraint());
+		resolverIntoCallee.resolve(composedEdgeFunction, new InterestCallback<Fact, Stmt, Method, Value>() {
 			
 			@Override
-			public void interest(PerAccessPathMethodAnalyzer<Field, Fact, Stmt, Method> analyzer, Resolver<Field, Fact, Stmt, Method> resolver) {
-				WrappedFact<Field, Fact, Stmt, Method> calleeSourceFactWithDelta = new WrappedFact<Field, Fact, Stmt, Method>(calleeSourceFact.getFact(), delta.applyTo(calleeSourceFact.getAccessPath()), resolver);
-				if(interestedAnalyzer.getAccessPath().isPrefixOf(calleeSourceFactWithDelta.getAccessPath()) != PrefixTestResult.GUARANTEED_PREFIX)
-					throw new AssertionError();
-				interestedAnalyzer.addIncomingEdge(new CallEdge<Field, Fact, Stmt, Method>(analyzer, 
-						new WrappedFactAtStatement<Field, Fact, Stmt, Method>(factAtCallSite.getStatement(), 
-											new WrappedFact<Field, Fact, Stmt, Method>(factAtCallSite.getWrappedFact().getFact(), 
-													delta.applyTo(factAtCallSite.getWrappedFact().getAccessPath()), 
-													resolver)), 
-						calleeSourceFactWithDelta));
+			public void interest(PerAccessPathMethodAnalyzer<Fact, Stmt, Method, Value> analyzer, Resolver<Fact, Stmt, Method, Value> resolver) {
+				interestedAnalyzer.addIncomingEdge(new CallEdge<Fact, Stmt, Method, Value>(analyzer, factAtCallSite, factIntoCallee, edgeFunctionIntoCallee, resolver, callSite));
 			}
 			
 			@Override
-			public void canBeResolvedEmpty() {
-				callerAnalyzer.getCallEdgeResolver().resolve(new DeltaConstraint<Field>(delta), this);
+			public void continueBalancedTraversal(EdgeFunction<Value> edgeFunction) {
+				callerAnalyzer.getCallEdgeResolver().resolve(edgeFunction, this);
 			}
 		});
+	}
+
+	public Fact getCallerCallSiteFact() {
+		return factAtCallSite;
 	}
 	
 	@Override
 	public String toString() {
-		return "[IncEdge CSite:"+getCallSite()+", Caller-Edge: "+getCallerSourceFact()+"->"+getCallerCallSiteFact()+",  CalleeFact: "+calleeSourceFact+"]";
+		return "[IncEdge CSite:"+getCallSite()+", FactIntoCaller: "+factIntoCallee+" , EdgeFunction: "+edgeFunctionIntoCallee+"]";
 	}
 
 	@Override
 	public int hashCode() {
 		final int prime = 31;
 		int result = 1;
-		result = prime * result + ((calleeSourceFact == null) ? 0 : calleeSourceFact.hashCode());
+		result = prime * result + ((callSite == null) ? 0 : callSite.hashCode());
 		result = prime * result + ((callerAnalyzer == null) ? 0 : callerAnalyzer.hashCode());
-		result = prime * result + ((edgeFunctionAtCallee == null) ? 0 : edgeFunctionAtCallee.hashCode());
+		result = prime * result + ((edgeFunctionIntoCallee == null) ? 0 : edgeFunctionIntoCallee.hashCode());
 		result = prime * result + ((factAtCallSite == null) ? 0 : factAtCallSite.hashCode());
+		result = prime * result + ((factIntoCallee == null) ? 0 : factIntoCallee.hashCode());
+		result = prime * result + ((resolverIntoCallee == null) ? 0 : resolverIntoCallee.hashCode());
 		return result;
 	}
 
@@ -106,29 +102,36 @@ public class CallEdge<Fact, Stmt, Method, Value> {
 		if (getClass() != obj.getClass())
 			return false;
 		CallEdge other = (CallEdge) obj;
-		if (calleeSourceFact == null) {
-			if (other.calleeSourceFact != null)
+		if (callSite == null) {
+			if (other.callSite != null)
 				return false;
-		} else if (!calleeSourceFact.equals(other.calleeSourceFact))
+		} else if (!callSite.equals(other.callSite))
 			return false;
 		if (callerAnalyzer == null) {
 			if (other.callerAnalyzer != null)
 				return false;
 		} else if (!callerAnalyzer.equals(other.callerAnalyzer))
 			return false;
-		if (edgeFunctionAtCallee == null) {
-			if (other.edgeFunctionAtCallee != null)
+		if (edgeFunctionIntoCallee == null) {
+			if (other.edgeFunctionIntoCallee != null)
 				return false;
-		} else if (!edgeFunctionAtCallee.equals(other.edgeFunctionAtCallee))
+		} else if (!edgeFunctionIntoCallee.equals(other.edgeFunctionIntoCallee))
 			return false;
 		if (factAtCallSite == null) {
 			if (other.factAtCallSite != null)
 				return false;
 		} else if (!factAtCallSite.equals(other.factAtCallSite))
 			return false;
+		if (factIntoCallee == null) {
+			if (other.factIntoCallee != null)
+				return false;
+		} else if (!factIntoCallee.equals(other.factIntoCallee))
+			return false;
+		if (resolverIntoCallee == null) {
+			if (other.resolverIntoCallee != null)
+				return false;
+		} else if (!resolverIntoCallee.equals(other.resolverIntoCallee))
+			return false;
 		return true;
 	}
-
-	
-	
 }

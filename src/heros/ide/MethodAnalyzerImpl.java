@@ -10,6 +10,7 @@
  ******************************************************************************/
 package heros.ide;
 
+import heros.ide.structs.FactEdgeResolverStatementTuple;
 import heros.ide.structs.WrappedFactAtStatement;
 import heros.utilities.DefaultValueMap;
 
@@ -44,7 +45,7 @@ public class MethodAnalyzerImpl<Fact, Stmt, Method, Value>
 	}
 	
 	@Override
-	public void addUnbalancedReturnFlow(WrappedFactAtStatement<Fact, Stmt, Method, Value> target, Stmt callSite) {
+	public void addUnbalancedReturnFlow(FactEdgeResolverStatementTuple<Fact, Stmt, Method, Value> target, Stmt callSite) {
 		perSourceAnalyzer.getOrCreate(context.zeroValue).scheduleUnbalancedReturnEdgeTo(target);
 	}
 }

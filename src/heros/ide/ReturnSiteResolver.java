@@ -10,71 +10,67 @@
  ******************************************************************************/
 package heros.ide;
 
-import heros.fieldsens.AccessPath.Delta;
-import heros.fieldsens.AccessPath.PrefixTestResult;
-import heros.fieldsens.structs.DeltaConstraint;
-import heros.fieldsens.structs.ReturnEdge;
-import heros.fieldsens.structs.WrappedFact;
-import heros.fieldsens.structs.WrappedFactAtStatement;
+import heros.fieldsens.FactMergeHandler;
+import heros.ide.structs.FactEdgeFnResolverTuple;
+import heros.ide.structs.FactEdgeResolverStatementTuple;
+import heros.ide.structs.ReturnEdge;
 
-public class ReturnSiteResolver<Field, Fact, Stmt, Method> extends ResolverTemplate<Field, Fact, Stmt, Method, ReturnEdge<Field, Fact, Stmt, Method>> {
+public class ReturnSiteResolver<Fact, Stmt, Method, Value> extends ResolverTemplate<Fact, Stmt, Method, Value, ReturnEdge<Fact, Stmt, Method, Value>> {
 
 	private Stmt returnSite;
-	private AccessPath<Field> resolvedAccPath;
+	private EdgeFunction<Value> resolvedEdgeFunction;
 	private boolean propagated = false;
 	private Fact sourceFact;
 	private FactMergeHandler<Fact> factMergeHandler;
 
-	public ReturnSiteResolver(FactMergeHandler<Fact> factMergeHandler, PerAccessPathMethodAnalyzer<Field, Fact, Stmt, Method> analyzer, Stmt returnSite) {
-		this(factMergeHandler, analyzer, returnSite, null, new AccessPath<Field>(), null);
+	public ReturnSiteResolver(FactMergeHandler<Fact> factMergeHandler, PerAccessPathMethodAnalyzer<Fact, Stmt, Method, Value> analyzer, Stmt returnSite) {
+		this(factMergeHandler, analyzer, returnSite, null, EdgeIdentity.<Value>v(), null);
 		this.factMergeHandler = factMergeHandler;
 		propagated = false;
 	}
 
-	private ReturnSiteResolver(FactMergeHandler<Fact> factMergeHandler, PerAccessPathMethodAnalyzer<Field, Fact, Stmt, Method> analyzer, Stmt returnSite, 
-			Fact sourceFact, AccessPath<Field> resolvedAccPath, ReturnSiteResolver<Field, Fact, Stmt, Method> parent) {
+	private ReturnSiteResolver(FactMergeHandler<Fact> factMergeHandler, PerAccessPathMethodAnalyzer<Fact, Stmt, Method, Value> analyzer, Stmt returnSite, 
+			Fact sourceFact, EdgeFunction<Value> resolvedEdgeFunction, ReturnSiteResolver<Fact, Stmt, Method, Value> parent) {
 		super(analyzer, parent);
 		this.factMergeHandler = factMergeHandler;
 		this.returnSite = returnSite;
 		this.sourceFact = sourceFact;
-		this.resolvedAccPath = resolvedAccPath;
+		this.resolvedEdgeFunction = resolvedEdgeFunction;
 		propagated=true;
 	}
 	
 	@Override
 	public String toString() {
-		return "<"+resolvedAccPath+":"+returnSite+">";
+		return "<"+resolvedEdgeFunction+":"+returnSite+">";
 	}
 	
 	@Override
-	public AccessPath<Field> getResolvedAccessPath() {
-		return resolvedAccPath;
+	protected EdgeFunction<Value> getResolvedFunction() {
+		return resolvedEdgeFunction;
 	}
 	
-	protected AccessPath<Field> getAccessPathOf(ReturnEdge<Field, Fact, Stmt, Method> inc) {
-		return inc.incAccessPath;
+	@Override
+	protected EdgeFunction<Value> getEdgeFunction(ReturnEdge<Fact,Stmt,Method,Value> inc) {
+		return inc.incEdgeFunction;
 	}
 	
-	public void addIncoming(final WrappedFact<Field, Fact, Stmt, Method> fact, 
-			Resolver<Field, Fact, Stmt, Method> resolverAtCaller, 
-			Delta<Field> callDelta) {
-		
-		addIncoming(new ReturnEdge<Field, Fact, Stmt, Method>(fact, resolverAtCaller, callDelta));
+	public void addIncoming(final FactEdgeFnResolverTuple<Fact, Stmt, Method, Value> fact, 
+			Resolver<Fact, Stmt, Method, Value> resolverAtCaller, EdgeFunction<Value> edgeFunctionIntoCallee) {
+		addIncoming(new ReturnEdge<Fact, Stmt, Method, Value>(fact, resolverAtCaller, edgeFunctionIntoCallee));
 	}
 	
-	protected void processIncomingGuaranteedPrefix(ReturnEdge<Field, Fact, Stmt, Method> retEdge) {
+	protected void processIncomingGuaranteedPrefix(ReturnEdge<Fact, Stmt, Method, Value> retEdge) {
 		if(propagated) {
 			factMergeHandler.merge(sourceFact, retEdge.incFact);
 		} 
 		else {
 			propagated=true;
 			sourceFact = retEdge.incFact;
-			analyzer.scheduleEdgeTo(new WrappedFactAtStatement<Field, Fact, Stmt, Method>(returnSite, 
-					new WrappedFact<Field, Fact, Stmt, Method>(retEdge.incFact, new AccessPath<Field>(), this)));
+			analyzer.scheduleEdgeTo(new FactEdgeResolverStatementTuple<Fact, Stmt, Method, Value>(sourceFact, EdgeIdentity.<Value>v(), this, returnSite));
 		}
 	};
 	
-	protected void processIncomingPotentialPrefix(ReturnEdge<Field, Fact, Stmt, Method> retEdge) {
+	protected void processIncomingPotentialPrefix(ReturnEdge<Fact, Stmt, Method, Value> retEdge) {
 		log("Incoming potential prefix:  "+retEdge);
 		resolveViaDelta(retEdge);
 	};
@@ -84,27 +80,31 @@ public class ReturnSiteResolver<Field, Fact, Stmt, Method> extends ResolverTempl
 	}
 
 	@Override
-	protected ResolverTemplate<Field, Fact, Stmt, Method, ReturnEdge<Field, Fact, Stmt, Method>> createNestedResolver(AccessPath<Field> newAccPath) {
-		return new ReturnSiteResolver<Field, Fact, Stmt, Method>(factMergeHandler, analyzer, returnSite, sourceFact, newAccPath, this);
+	protected ResolverTemplate<Fact, Stmt, Method, Value, ReturnEdge<Fact, Stmt, Method, Value>> createNestedResolver(EdgeFunction<Value> edgeFunction) {
+		return new ReturnSiteResolver<Fact, Stmt, Method, Value>(factMergeHandler, analyzer, returnSite, sourceFact, edgeFunction, this);
 	}
 	
 	public Stmt getReturnSite() {
 		return returnSite;
 	}
 	
-	private void resolveViaDelta(final ReturnEdge<Field, Fact, Stmt, Method> retEdge) {
+	private void resolveViaDelta(final ReturnEdge<Fact, Stmt, Method, Value> retEdge) {
 		if(retEdge.incResolver == null || retEdge.incResolver instanceof CallEdgeResolver) {
 			resolveViaDeltaAndPotentiallyDelegateToCallSite(retEdge);
 		} else {
 			//resolve via incoming facts resolver
-			Delta<Field> delta = retEdge.usedAccessPathOfIncResolver.applyTo(retEdge.incAccessPath).getDeltaTo(getResolvedAccessPath());
-			assert delta.accesses.length <= 1;
-			retEdge.incResolver.resolve(new DeltaConstraint<Field>(delta), new InterestCallback<Field, Fact, Stmt, Method>() {
+			EdgeFunction<Value> constraint = retEdge.incEdgeFunction.composeWith(resolvedEdgeFunction);
+			retEdge.incResolver.resolve(constraint, new InterestCallback<Fact, Stmt, Method, Value>() {
 
 				@Override
-				public void interest(PerAccessPathMethodAnalyzer<Field, Fact, Stmt, Method> analyzer, Resolver<Field, Fact, Stmt, Method> resolver) {
+				public void interest(PerAccessPathMethodAnalyzer<Fact, Stmt, Method, Value> analyzer, Resolver<Fact, Stmt, Method, Value> resolver) {
 					incomingEdges.add(retEdge.copyWithIncomingResolver(resolver, retEdge.incAccessPath.getDeltaTo(getResolvedAccessPath())));
 					ReturnSiteResolver.this.interest();
+				}
+				
+				@Override
+				public void continueBalancedTraversal(EdgeFunction<Value> edgeFunction) {
+					resolveViaDeltaAndPotentiallyDelegateToCallSite(retEdge);
 				}
 				
 				@Override

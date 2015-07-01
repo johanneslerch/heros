@@ -10,6 +10,7 @@
  ******************************************************************************/
 package heros.ide.structs;
 
+import heros.ide.EdgeFunction;
 import heros.ide.Resolver;
 
 
@@ -41,6 +42,10 @@ public class WrappedFactAtStatement<Fact, Stmt, Method, Value> {
 	
 	public FactAtStatement<Fact, Stmt> getAsFactAtStatement() {
 		return new FactAtStatement<Fact, Stmt>(fact.getFact(), stmt);
+	}
+	
+	public FactEdgeResolverStatementTuple<Fact, Stmt, Method, Value> withEdgeFunction(EdgeFunction<Value> edgeFunction) {
+		return new FactEdgeResolverStatementTuple<Fact, Stmt, Method, Value>(fact.getFact(), edgeFunction, fact.getResolver(), stmt);
 	}
 	
 	@Override

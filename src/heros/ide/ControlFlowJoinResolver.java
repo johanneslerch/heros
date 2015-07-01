@@ -10,74 +10,73 @@
  ******************************************************************************/
 package heros.ide;
 
-import heros.fieldsens.AccessPath.Delta;
-import heros.fieldsens.structs.DeltaConstraint;
-import heros.fieldsens.structs.WrappedFact;
-import heros.fieldsens.structs.WrappedFactAtStatement;
+import heros.fieldsens.FactMergeHandler;
+import heros.ide.structs.FactEdgeFnResolverTuple;
+import heros.ide.structs.FactEdgeResolverStatementTuple;
 
-public class ControlFlowJoinResolver<Field, Fact, Stmt, Method> extends ResolverTemplate<Field, Fact, Stmt, Method, WrappedFact<Field, Fact, Stmt, Method>> {
+public class ControlFlowJoinResolver<Fact, Stmt, Method, Value> extends ResolverTemplate<Fact, Stmt, Method, Value, FactEdgeFnResolverTuple<Fact, Stmt, Method, Value>> {
 
 	private Stmt joinStmt;
-	private AccessPath<Field> resolvedAccPath;
 	private boolean propagated = false;
 	private Fact sourceFact;
+	private EdgeFunction<Value> resolvedEdgeFunction;
 	private FactMergeHandler<Fact> factMergeHandler;
 
-	public ControlFlowJoinResolver(FactMergeHandler<Fact> factMergeHandler, PerAccessPathMethodAnalyzer<Field, Fact, Stmt, Method> analyzer, Stmt joinStmt) {
-		this(factMergeHandler, analyzer, joinStmt, null, new AccessPath<Field>(), null);
+	public ControlFlowJoinResolver(FactMergeHandler<Fact> factMergeHandler, PerAccessPathMethodAnalyzer<Fact, Stmt, Method, Value> analyzer, Stmt joinStmt) {
+		this(factMergeHandler, analyzer, joinStmt, null, EdgeIdentity.<Value>v(), null);
 		this.factMergeHandler = factMergeHandler;
 		propagated=false;
 	}
 	
-	private ControlFlowJoinResolver(FactMergeHandler<Fact> factMergeHandler, PerAccessPathMethodAnalyzer<Field, Fact, Stmt, Method> analyzer, 
-			Stmt joinStmt, Fact sourceFact, AccessPath<Field> resolvedAccPath, ControlFlowJoinResolver<Field, Fact, Stmt, Method> parent) {
+	private ControlFlowJoinResolver(FactMergeHandler<Fact> factMergeHandler, PerAccessPathMethodAnalyzer<Fact, Stmt, Method, Value> analyzer, 
+			Stmt joinStmt, Fact sourceFact, EdgeFunction<Value> resolvedEdgeFunction, ControlFlowJoinResolver<Fact, Stmt, Method, Value> parent) {
 		super(analyzer, parent);
 		this.factMergeHandler = factMergeHandler;
 		this.joinStmt = joinStmt;
 		this.sourceFact = sourceFact;
-		this.resolvedAccPath = resolvedAccPath;
+		this.resolvedEdgeFunction = resolvedEdgeFunction;
 		propagated=true;
+	}
+
+	@Override
+	protected EdgeFunction<Value> getEdgeFunction(FactEdgeFnResolverTuple<Fact, Stmt, Method, Value> inc) {
+		return inc.getEdgeFunction();
 	}
 	
 	@Override
-	protected AccessPath<Field> getAccessPathOf(WrappedFact<Field, Fact, Stmt, Method> inc) {
-		return inc.getAccessPath();
-	}
-
-	protected void processIncomingGuaranteedPrefix(heros.fieldsens.structs.WrappedFact<Field,Fact,Stmt,Method> fact) {
+	protected void processIncomingGuaranteedPrefix(FactEdgeFnResolverTuple<Fact, Stmt, Method, Value> fact) {
 		if(propagated) {
 			factMergeHandler.merge(sourceFact, fact.getFact());
 		}
 		else {
 			propagated=true;
 			sourceFact = fact.getFact();
-			analyzer.processFlowFromJoinStmt(new WrappedFactAtStatement<Field, Fact, Stmt, Method>(joinStmt, new WrappedFact<Field, Fact, Stmt, Method>(
-					fact.getFact(), new AccessPath<Field>(), this)));
+			analyzer.processFlowFromJoinStmt(new FactEdgeResolverStatementTuple<Fact, Stmt, Method, Value>(
+					fact.getFact(), fact.getEdgeFunction(), this, joinStmt));
 		}
 	};
 	
 	@Override
-	protected void processIncomingPotentialPrefix(WrappedFact<Field, Fact, Stmt, Method> fact) {
+	protected void processIncomingPotentialPrefix(FactEdgeFnResolverTuple<Fact, Stmt, Method, Value> fact) {
 		lock();
-		Delta<Field> delta = fact.getAccessPath().getDeltaTo(resolvedAccPath);
-		fact.getResolver().resolve(new DeltaConstraint<Field>(delta), new InterestCallback<Field, Fact, Stmt, Method>() {
+		fact.getResolver().resolve(fact.getEdgeFunction().composeWith(resolvedEdgeFunction), new InterestCallback<Fact, Stmt, Method, Value>() {
 			@Override
-			public void interest(PerAccessPathMethodAnalyzer<Field, Fact, Stmt, Method> analyzer, 
-					Resolver<Field, Fact, Stmt, Method> resolver) {
+			public void interest(PerAccessPathMethodAnalyzer<Fact, Stmt, Method, Value> analyzer, 
+					Resolver<Fact, Stmt, Method, Value> resolver) {
 				ControlFlowJoinResolver.this.interest();
 			}
 
 			@Override
-			public void canBeResolvedEmpty() {
-				ControlFlowJoinResolver.this.canBeResolvedEmpty();
+			public void continueBalancedTraversal(EdgeFunction<Value> edgeFunction) {
+				ControlFlowJoinResolver.this.continueBalancedTraversal(edgeFunction);
 			}
 		});
 		unlock();
 	}
 	
 	@Override
-	protected ResolverTemplate<Field, Fact, Stmt, Method, WrappedFact<Field, Fact, Stmt, Method>> createNestedResolver(AccessPath<Field> newAccPath) {
-		return new ControlFlowJoinResolver<Field, Fact, Stmt, Method>(factMergeHandler, analyzer, joinStmt, sourceFact, newAccPath, this);
+	protected ResolverTemplate<Fact, Stmt, Method, Value, FactEdgeFnResolverTuple<Fact, Stmt, Method, Value>> createNestedResolver(EdgeFunction<Value> edgeFunction) {
+		return new ControlFlowJoinResolver<Fact, Stmt, Method, Value>(factMergeHandler, analyzer, joinStmt, sourceFact, edgeFunction, this);
 	}
 
 	@Override
@@ -87,12 +86,12 @@ public class ControlFlowJoinResolver<Field, Fact, Stmt, Method> extends Resolver
 
 	@Override
 	public String toString() {
-		return "<"+resolvedAccPath+":"+joinStmt+">";
+		return "<"+resolvedEdgeFunction+":"+joinStmt+">";
 	}
 
 	@Override
-	public AccessPath<Field> getResolvedAccessPath() {
-		return resolvedAccPath;
+	protected EdgeFunction<Value> getResolvedFunction() {
+		return resolvedEdgeFunction;
 	}
 
 	public Stmt getJoinStmt() {

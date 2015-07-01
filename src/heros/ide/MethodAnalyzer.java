@@ -10,6 +10,7 @@
  ******************************************************************************/
 package heros.ide;
 
+import heros.ide.structs.FactEdgeResolverStatementTuple;
 import heros.ide.structs.WrappedFactAtStatement;
 
 
@@ -19,5 +20,5 @@ public interface MethodAnalyzer<Fact,Stmt,Method, Value>  {
 	
 	public void addInitialSeed(Stmt startPoint, Fact val);
 	
-	public void addUnbalancedReturnFlow(WrappedFactAtStatement<Fact, Stmt, Method, Value> target, Stmt callSite);
+	public void addUnbalancedReturnFlow(FactEdgeResolverStatementTuple<Fact, Stmt, Method, Value> factEdgeResolverStatementTuple, Stmt callSite);
 }

@@ -55,7 +55,7 @@ public abstract class ResolverTemplate<Fact, Stmt, Method, Value, Incoming>  ext
 		if(composedFunction.mayReturnTop()) {
 			if(composedFunction instanceof AllTop)
 				return;
-			processIncomingPotentialPrefix(inc);
+			processIncomingPotentialPrefix(inc); //TODO: Improve performance by passing composedFunction here
 		}
 		else {
 			log("Incoming Edge: "+inc+ " with EdgeFunction: "+getEdgeFunction(inc));
