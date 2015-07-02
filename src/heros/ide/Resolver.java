@@ -10,6 +10,8 @@
  ******************************************************************************/
 package heros.ide;
 
+import heros.ide.edgefunc.EdgeFunction;
+
 import java.util.List;
 import java.util.Set;
 

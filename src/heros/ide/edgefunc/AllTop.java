@@ -8,7 +8,7 @@
  * Contributors:
  *     Eric Bodden - initial API and implementation
  ******************************************************************************/
-package heros.ide;
+package heros.ide.edgefunc;
 
 
 
@@ -32,13 +32,20 @@ public class AllTop<V> implements EdgeFunction<V> {
 		return otherFunction;
 	}
 
-	public boolean equalTo(EdgeFunction<V> other) {
+	public boolean equals(Object other) {
 		if(other instanceof AllTop) {
 			@SuppressWarnings("rawtypes")
 			AllTop allTop = (AllTop) other;
+			if(allTop.topElement == null)
+				return topElement == null;
 			return allTop.topElement.equals(topElement);
 		}		
 		return false;
+	}
+	
+	@Override
+	public int hashCode() {
+		return 7320587 + ((topElement == null) ? 0 : topElement.hashCode());
 	}
 
 	public String toString() {

@@ -10,6 +10,9 @@
  ******************************************************************************/
 package heros.ide;
 
+import heros.ide.edgefunc.AllTop;
+import heros.ide.edgefunc.EdgeFunction;
+
 import java.util.Map;
 import java.util.Set;
 

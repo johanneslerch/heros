@@ -8,7 +8,7 @@
  * Contributors:
  *     Eric Bodden - initial API and implementation
  ******************************************************************************/
-package heros.ide;
+package heros.ide.edgefunc;
 
 
 /**
@@ -43,11 +43,9 @@ public interface EdgeFunction<V> {
 	 */
 	EdgeFunction<V> joinWith(EdgeFunction<V> otherFunction);
 	
-	/**
-	 * Returns true is this function represents exactly the same 
-	 * source to target mapping as other.
-	 */
-	public boolean equalTo(EdgeFunction<V> other);
+	public boolean equals(Object obj);
 
+	public int hashCode();
+	
 	public boolean mayReturnTop();
 }

@@ -10,6 +10,8 @@
  ******************************************************************************/
 package heros.ide;
 
+import heros.ide.edgefunc.EdgeFunction;
+
 /**
  * Classes implementing this interface provide a range of edge functions used to
  * compute a V-type value for each of the finitely many D-type values reachable

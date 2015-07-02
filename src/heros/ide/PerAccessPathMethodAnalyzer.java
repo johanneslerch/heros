@@ -11,6 +11,8 @@
 package heros.ide;
 
 import heros.FlowFunction;
+import heros.ide.edgefunc.EdgeFunction;
+import heros.ide.edgefunc.EdgeIdentity;
 import heros.ide.structs.FactAtStatement;
 import heros.ide.structs.FactEdgeResolverStatementTuple;
 import heros.ide.structs.WrappedFact;
@@ -114,7 +116,7 @@ class PerAccessPathMethodAnalyzer<Fact, Stmt, Method, Value> {
 			FactEdgeResolverStatementTuple<Fact, Stmt, Method, Value> prevFact = reachableStatements.get(factAtStmt);
 			context.factHandler.merge(prevFact.getFact(), factAtStmt.getFact());
 			EdgeFunction<Value> joinedFunction = prevFact.getEdgeFunction().joinWith(factAtStmt.getEdgeFunction());
-			if(!joinedFunction.equalTo(prevFact.getEdgeFunction())) {
+			if(!joinedFunction.equals(prevFact.getEdgeFunction())) {
 				log("Updated EdgeFunction at "+prevFact+": "+joinedFunction);
 				FactEdgeResolverStatementTuple<Fact, Stmt, Method, Value> newFact = prevFact.copyWithEdgeFunction(joinedFunction);
 				reachableStatements.put(factAtStmt.getWithoutEdgeFunction(), newFact);

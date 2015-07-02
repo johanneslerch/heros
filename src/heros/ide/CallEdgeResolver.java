@@ -10,6 +10,7 @@
  ******************************************************************************/
 package heros.ide;
 
+import heros.ide.edgefunc.EdgeFunction;
 import heros.ide.structs.FactEdgeResolverStatementTuple;
 import heros.ide.structs.WrappedFactAtStatement;
 

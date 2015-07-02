@@ -10,6 +10,8 @@
  ******************************************************************************/
 package heros.ide;
 
+import heros.ide.edgefunc.EdgeFunction;
+
 
 public class ZeroCallEdgeResolver<Fact, Stmt, Method, Value> extends CallEdgeResolver<Fact, Stmt, Method, Value> {
 

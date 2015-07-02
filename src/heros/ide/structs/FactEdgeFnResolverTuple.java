@@ -11,8 +11,8 @@
 package heros.ide.structs;
 
 
-import heros.ide.EdgeFunction;
 import heros.ide.Resolver;
+import heros.ide.edgefunc.EdgeFunction;
 
 public class FactEdgeFnResolverTuple<Fact, Stmt, Method, Value> {
 

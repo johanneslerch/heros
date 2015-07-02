@@ -8,7 +8,8 @@
  * Contributors:
  *     Eric Bodden - initial API and implementation
  ******************************************************************************/
-package heros.ide;
+package heros.ide.edgefunc;
+
 
 
 /**
@@ -31,7 +32,7 @@ public class EdgeIdentity<V> implements EdgeFunction<V> {
 	}
 
 	public EdgeFunction<V> joinWith(EdgeFunction<V> otherFunction) {
-		if(otherFunction == this || otherFunction.equalTo(this)) return this;
+		if(otherFunction == this || otherFunction.equals(this)) return this;
 		if(otherFunction instanceof AllBottom) {
 			return otherFunction;
 		}
@@ -42,7 +43,12 @@ public class EdgeIdentity<V> implements EdgeFunction<V> {
 		return otherFunction.joinWith(this);
 	}
 	
-	public boolean equalTo(EdgeFunction<V> other) {
+	@Override
+	public int hashCode() {
+		return 25334067;
+	}
+	
+	public boolean equals(Object other) {
 		//singleton
 		return other==this;
 	}

@@ -13,6 +13,8 @@ package heros.ide;
 import java.util.Set;
 
 import heros.FlowFunction;
+import heros.ide.edgefunc.AllTop;
+import heros.ide.edgefunc.EdgeFunction;
 import heros.ide.structs.FactEdgeResolverStatementTuple;
 
 public abstract class PropagationTemplate<Fact, Stmt, Method, Value> {

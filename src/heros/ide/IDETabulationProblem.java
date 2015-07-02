@@ -13,6 +13,7 @@ package heros.ide;
 import heros.IFDSTabulationProblem;
 import heros.InterproceduralCFG;
 import heros.JoinLattice;
+import heros.ide.edgefunc.EdgeFunction;
 
 /**
  * Defines an IDE tabulation problem as presented in the Sagiv, Reps, Horwitz 1996 

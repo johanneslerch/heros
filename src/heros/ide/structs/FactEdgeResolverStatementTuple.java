@@ -10,9 +10,9 @@
  ******************************************************************************/
 package heros.ide.structs;
 
-import heros.ide.EdgeFunction;
-import heros.ide.EdgeIdentity;
 import heros.ide.Resolver;
+import heros.ide.edgefunc.EdgeFunction;
+import heros.ide.edgefunc.EdgeIdentity;
 
 public class FactEdgeResolverStatementTuple<Fact, Stmt, Method, Value> {
 

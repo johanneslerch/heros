@@ -10,6 +10,8 @@
  ******************************************************************************/
 package heros.ide;
 
+import heros.ide.edgefunc.EdgeFunction;
+
 
 public interface InterestCallback<Fact, Stmt, Method, Value> {
 

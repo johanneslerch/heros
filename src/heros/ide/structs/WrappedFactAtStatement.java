@@ -10,8 +10,8 @@
  ******************************************************************************/
 package heros.ide.structs;
 
-import heros.ide.EdgeFunction;
 import heros.ide.Resolver;
+import heros.ide.edgefunc.EdgeFunction;
 
 
 public class WrappedFactAtStatement<Fact, Stmt, Method, Value> {

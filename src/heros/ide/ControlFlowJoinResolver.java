@@ -11,6 +11,8 @@
 package heros.ide;
 
 import heros.fieldsens.FactMergeHandler;
+import heros.ide.edgefunc.EdgeFunction;
+import heros.ide.edgefunc.EdgeIdentity;
 import heros.ide.structs.FactEdgeFnResolverTuple;
 import heros.ide.structs.FactEdgeResolverStatementTuple;
 

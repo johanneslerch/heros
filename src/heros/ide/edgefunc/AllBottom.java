@@ -8,7 +8,8 @@
  * Contributors:
  *     Eric Bodden - initial API and implementation
  ******************************************************************************/
-package heros.ide;
+package heros.ide.edgefunc;
+
 
 
 public class AllBottom<V> implements EdgeFunction<V> {
@@ -30,7 +31,7 @@ public class AllBottom<V> implements EdgeFunction<V> {
 	}
 
 	public EdgeFunction<V> joinWith(EdgeFunction<V> otherFunction) {
-		if(otherFunction == this || otherFunction.equalTo(this)) return this;
+		if(otherFunction == this || otherFunction.equals(this)) return this;
 		if(otherFunction instanceof AllTop) {
 			return this;
 		}
@@ -40,13 +41,20 @@ public class AllBottom<V> implements EdgeFunction<V> {
 		throw new IllegalStateException("unexpected edge function: "+otherFunction);
 	}
 
-	public boolean equalTo(EdgeFunction<V> other) {
+	public boolean equals(Object other) {
 		if(other instanceof AllBottom) {
 			@SuppressWarnings("rawtypes")
 			AllBottom allBottom = (AllBottom) other;
+			if(allBottom.bottomElement == null)
+				return bottomElement == null;
 			return allBottom.bottomElement.equals(bottomElement);
 		}		
 		return false;
+	}
+	
+	@Override
+	public int hashCode() {
+		return 36609 + ((bottomElement == null) ? 0 : bottomElement.hashCode());
 	}
 	
 	public String toString() {
