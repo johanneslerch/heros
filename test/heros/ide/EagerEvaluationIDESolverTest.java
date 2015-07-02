@@ -8,12 +8,12 @@
  * Contributors:
  *     Johannes Lerch - initial API and implementation
  ******************************************************************************/
-package heros.fieldsens;
+package heros.ide;
 
 
 
 import heros.InterproceduralCFG;
-import heros.utilities.FieldSensitiveTestHelper;
+import heros.utilities.EagerEvaluationTestHelper;
 import heros.utilities.Statement;
 import heros.utilities.TestDebugger;
 import heros.utilities.TestFact;
@@ -25,18 +25,18 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TestWatcher;
 
-import static heros.utilities.FieldSensitiveTestHelper.*;
+import static heros.utilities.EagerEvaluationTestHelper.*;
 
-public class FieldSensitiveIFDSSolverTest {
+public class EagerEvaluationIDESolverTest {
 
-	private FieldSensitiveTestHelper helper;
+	private EagerEvaluationTestHelper helper;
 	private TestDebugger<TestFact, Statement, TestMethod, InterproceduralCFG<Statement, TestMethod>> debugger;
 
 	@Before
 	public void before() {
 		System.err.println("-----");
 		debugger = new TestDebugger<TestFact, Statement, TestMethod, InterproceduralCFG<Statement, TestMethod>>();
-		helper = new FieldSensitiveTestHelper(debugger);
+		helper = new EagerEvaluationTestHelper(debugger);
 	}
 	
 	@Rule
@@ -46,7 +46,7 @@ public class FieldSensitiveIFDSSolverTest {
 			System.err.println("---failed: "+description.getMethodName()+" ----");
 		};
 	};
-	
+
 	@Test
 	public void fieldReadAndWrite() {
 		helper.method("bar", 

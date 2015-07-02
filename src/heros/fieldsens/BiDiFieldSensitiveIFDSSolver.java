@@ -31,7 +31,7 @@ public class BiDiFieldSensitiveIFDSSolver<Field, Fact, Stmt, Method, I extends I
 	public BiDiFieldSensitiveIFDSSolver(IFDSTabulationProblem<Stmt, Field, Fact, Method, I> forwardProblem,
 			IFDSTabulationProblem<Stmt, Field, Fact, Method, I> backwardProblem, 
 			FactMergeHandler<Fact> factHandler, 
-			Debugger<Field, Fact, Stmt, Method, I> debugger,
+			Debugger<Fact, Stmt, Method, I> debugger,
 			Scheduler scheduler) {
 		
 		this.scheduler = scheduler;
@@ -46,7 +46,7 @@ public class BiDiFieldSensitiveIFDSSolver<Field, Fact, Stmt, Method, I extends I
 	}
 
 	private FieldSensitiveIFDSSolver<Field, Fact, Stmt, Method, I> createSolver(IFDSTabulationProblem<Stmt, Field, Fact, Method, I> problem, 
-			FactMergeHandler<Fact> factHandler, Debugger<Field, Fact, Stmt, Method, I> debugger, final SynchronizerImpl<Stmt> synchronizer) {
+			FactMergeHandler<Fact> factHandler, Debugger<Fact, Stmt, Method, I> debugger, final SynchronizerImpl<Stmt> synchronizer) {
 		return new FieldSensitiveIFDSSolver<Field, Fact, Stmt, Method, I>(problem, factHandler, debugger, scheduler) {
 			@Override
 			protected MethodAnalyzer<Field, Fact, Stmt, Method> createMethodAnalyzer(Method method) {

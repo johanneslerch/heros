@@ -9,9 +9,12 @@
  *     Johannes Lerch, Johannes Spaeth - initial API and implementation
  ******************************************************************************/
 
-package heros.fieldsens;
+package heros.ide;
 
 import heros.InterproceduralCFG;
+import heros.fieldsens.Debugger;
+import heros.fieldsens.FactMergeHandler;
+import heros.fieldsens.Scheduler;
 import heros.utilities.DefaultValueMap;
 
 import java.util.Map.Entry;
@@ -20,23 +23,23 @@ import java.util.Set;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class FieldSensitiveIFDSSolver<FieldRef, D, N, M, I extends InterproceduralCFG<N, M>> {
+public class EagerEvaluationIDESolver<D, N, M, V, I extends InterproceduralCFG<N, M>> {
 
-	protected static final Logger logger = LoggerFactory.getLogger(FieldSensitiveIFDSSolver.class);
+	protected static final Logger logger = LoggerFactory.getLogger(EagerEvaluationIDESolver.class);
 	
-	private DefaultValueMap<M, MethodAnalyzer<FieldRef, D, N, M>> methodAnalyzers = new DefaultValueMap<M, MethodAnalyzer<FieldRef, D,N, M>>() {
+	private DefaultValueMap<M, MethodAnalyzer<D, N, M, V>> methodAnalyzers = new DefaultValueMap<M, MethodAnalyzer<D,N, M,V>>() {
 		@Override
-		protected MethodAnalyzer<FieldRef, D, N, M> createItem(M key) {
+		protected MethodAnalyzer<D, N, M, V> createItem(M key) {
 			return createMethodAnalyzer(key);
 		}
 	};
 
-	private IFDSTabulationProblem<N, FieldRef, D, M, I> tabulationProblem;
-	protected Context<FieldRef, D, N,M> context;
+	private IDETabulationProblem<N, D, M, V, I> tabulationProblem;
+	protected Context<D, N, M, V> context;
 	private Debugger<D, N, M, I> debugger;
 	private Scheduler scheduler;
 
-	public FieldSensitiveIFDSSolver(IFDSTabulationProblem<N,FieldRef,D,M,I> tabulationProblem, FactMergeHandler<D> factHandler, Debugger<D, N, M, I> debugger, Scheduler scheduler) {
+	public EagerEvaluationIDESolver(IDETabulationProblem<N,D,M,V,I> tabulationProblem, FactMergeHandler<D> factHandler, Debugger<D, N, M, I> debugger, Scheduler scheduler) {
 		this.tabulationProblem = tabulationProblem;
 		this.scheduler = scheduler;
 		this.debugger = debugger == null ? new Debugger.NullDebugger<D, N, M, I>() : debugger;
@@ -45,10 +48,10 @@ public class FieldSensitiveIFDSSolver<FieldRef, D, N, M, I extends Interprocedur
 		submitInitialSeeds();
 	}
 
-	private Context<FieldRef, D, N, M> initContext(IFDSTabulationProblem<N, FieldRef, D, M, I> tabulationProblem, FactMergeHandler<D> factHandler) {
-		 return new Context<FieldRef, D, N, M>(tabulationProblem, scheduler, factHandler) {
+	private Context<D, N, M, V> initContext(IDETabulationProblem<N, D, M, V, I> tabulationProblem, FactMergeHandler<D> factHandler) {
+		 return new Context<D, N, M, V>(tabulationProblem, scheduler, factHandler) {
 			@Override
-			public MethodAnalyzer<FieldRef, D, N, M> getAnalyzer(M method) {
+			public MethodAnalyzer<D, N, M, V> getAnalyzer(M method) {
 				if(method == null)
 					throw new IllegalArgumentException("Method must be not null");
 				return methodAnalyzers.getOrCreate(method);
@@ -56,8 +59,8 @@ public class FieldSensitiveIFDSSolver<FieldRef, D, N, M, I extends Interprocedur
 		};
 	}
 	
-	protected MethodAnalyzer<FieldRef, D, N, M> createMethodAnalyzer(M method) {
-		return new MethodAnalyzerImpl<FieldRef, D, N, M>(method, context);
+	protected MethodAnalyzer<D, N, M, V> createMethodAnalyzer(M method) {
+		return new MethodAnalyzerImpl<D, N, M, V>(method, context);
 	}
 
 	/**
@@ -66,7 +69,7 @@ public class FieldSensitiveIFDSSolver<FieldRef, D, N, M, I extends Interprocedur
 	private void submitInitialSeeds() {
 		for(Entry<N, Set<D>> seed: tabulationProblem.initialSeeds().entrySet()) {
 			N startPoint = seed.getKey();
-			MethodAnalyzer<FieldRef, D,N,M> analyzer = methodAnalyzers.getOrCreate(tabulationProblem.interproceduralCFG().getMethodOf(startPoint));
+			MethodAnalyzer<D,N,M,V> analyzer = methodAnalyzers.getOrCreate(tabulationProblem.interproceduralCFG().getMethodOf(startPoint));
 			for(D val: seed.getValue()) {
 				analyzer.addInitialSeed(startPoint, val);
 				debugger.initialSeed(startPoint);

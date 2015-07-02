@@ -19,7 +19,7 @@ import com.google.common.collect.Sets;
 import heros.InterproceduralCFG;
 import heros.fieldsens.Debugger;
 
-public class TestDebugger<Field, Fact, Stmt, Method, I extends InterproceduralCFG<Stmt, Method>> implements Debugger<Field, Fact, Stmt, Method, I> {
+public class TestDebugger<Fact, Stmt, Method, I extends InterproceduralCFG<Stmt, Method>> implements Debugger<Fact, Stmt, Method, I> {
 
 	private JsonDocument root = new JsonDocument();
 	private I icfg;

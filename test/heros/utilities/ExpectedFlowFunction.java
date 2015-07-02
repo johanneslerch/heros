@@ -12,6 +12,8 @@ package heros.utilities;
 
 import heros.fieldsens.AccessPathHandler;
 import heros.fieldsens.FlowFunction;
+import heros.ide.edgefunc.EdgeFunction;
+import heros.ide.edgefunc.fieldsens.AccessPathBundle;
 
 import com.google.common.base.Joiner;
 
@@ -21,9 +23,14 @@ public abstract class ExpectedFlowFunction<Fact> {
 	public final Fact[] targets;
 	public Edge edge;
 	int times;
+	public final EdgeFunction<AccessPathBundle<String>> edgeFunction;
 
 	public ExpectedFlowFunction(int times, Fact source, Fact... targets) {
+		this(times, null, source, targets);
+	}
+	public ExpectedFlowFunction(int times, EdgeFunction<AccessPathBundle<String>> edgeFunction, Fact source, Fact... targets) {
 		this.times = times;
+		this.edgeFunction = edgeFunction;
 		this.source = source;
 		this.targets = targets;
 	}
@@ -36,4 +43,5 @@ public abstract class ExpectedFlowFunction<Fact> {
 	public abstract String transformerString();
 
 	public abstract FlowFunction.ConstrainedFact<String, TestFact, Statement, TestMethod> apply(TestFact target, AccessPathHandler<String, TestFact, Statement, TestMethod> accPathHandler);
+	
 }
