@@ -67,7 +67,7 @@ public class CallEdge<Fact, Stmt, Method, Value> {
 			
 			@Override
 			public void continueBalancedTraversal(EdgeFunction<Value> edgeFunction) {
-				callerAnalyzer.getCallEdgeResolver().resolve(edgeFunction, this);
+				callerAnalyzer.getCallEdgeResolver().resolve(edgeFunction.composeWith(interestedAnalyzer.getConstraint()), this);
 			}
 		});
 	}

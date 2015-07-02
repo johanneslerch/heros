@@ -42,6 +42,10 @@ public abstract class Resolver<Fact, Stmt, Method, Value> {
 		}
 	}
 	
+	public boolean isResolvedUnbalanced() {
+		return resolvedUnbalanced;
+	}
+	
 	protected void continueBalancedTraversal(EdgeFunction<Value> edgeFunction) {
 		if(balancedFunctions.add(edgeFunction)) {
 			for(InterestCallback<Fact, Stmt, Method, Value> callback : Lists.newLinkedList(interestCallbacks)) {
