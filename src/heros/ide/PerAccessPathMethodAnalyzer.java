@@ -91,7 +91,7 @@ class PerAccessPathMethodAnalyzer<Fact, Stmt, Method, Value> {
 	}
 
 	private void bootstrapAtMethodStartPoints() {
-		callEdgeResolver.interest();
+		callEdgeResolver.resolvedUnbalanced();
 		for(Stmt startPoint : context.icfg.getStartPointsOf(method)) {
 			WrappedFactAtStatement<Fact, Stmt, Method, Value> target = new WrappedFactAtStatement<Fact, Stmt, Method, Value>(startPoint, wrappedSource());
 			if(!reachableStatements.containsKey(target))
@@ -284,27 +284,26 @@ class PerAccessPathMethodAnalyzer<Fact, Stmt, Method, Value> {
 		callEdgeResolver.addIncoming(incEdge);
 	}
 
-	void applySummary(CallEdge<Fact, Stmt, Method, Value> incEdge, FactEdgeResolverStatementTuple<Fact, Stmt, Method, Value> exitFact) {
+	void applySummary(final CallEdge<Fact, Stmt, Method, Value> incEdge, final FactEdgeResolverStatementTuple<Fact, Stmt, Method, Value> exitFact) {
 		Collection<Stmt> returnSites = context.icfg.getReturnSitesOfCallAt(incEdge.getCallSite());
-		for(Stmt returnSite : returnSites) {
-			FlowFunction<Fact> flowFunction = context.flowFunctions.getReturnFlowFunction(incEdge.getCallSite(), method, exitFact.getStatement(), returnSite);
-			Set<Fact> targets = flowFunction.computeTargets(exitFact.getFact());
-			for (Fact targetFact : targets) {
-				context.factHandler.restoreCallingContext(targetFact, incEdge.getCallerCallSiteFact());
-				EdgeFunction<Value> returnEdgeFunction = context.edgeFunctions.getReturnEdgeFunction(incEdge.getCallSite(), method, exitFact.getStatement(), exitFact.getFact(), returnSite, targetFact);
-				boolean resolveRequired = returnEdgeFunction.mayReturnTop();
-				final EdgeFunction<Value> composedFunction = exitFact.getEdgeFunction().composeWith(returnEdgeFunction);
-				resolveRequired &= composedFunction.mayReturnTop();
-				if(composedFunction instanceof AllTop)
-					break;
-				
-				if(resolveRequired) {
-					//TODO
+		for(final Stmt returnSite : returnSites) {
+			new PropagationTemplate<Fact, Stmt, Method, Value>(this) {
+				@Override
+				protected void propagate(PerAccessPathMethodAnalyzer<Fact, Stmt, Method, Value> analyzer,
+						Resolver<Fact, Stmt, Method, Value> resolver, Fact targetFact, EdgeFunction<Value> edgeFunction) {
+					scheduleReturnEdge(incEdge, new FactEdgeResolverStatementTuple<Fact, Stmt, Method, Value>(targetFact, edgeFunction, resolver, returnSite));
 				}
-				else {
-					scheduleReturnEdge(incEdge, new FactEdgeResolverStatementTuple<Fact, Stmt, Method, Value>(targetFact, composedFunction, exitFact.getResolver(), returnSite));
+
+				@Override
+				protected EdgeFunction<Value> getEdgeFunction(Fact targetFact) {
+					return context.edgeFunctions.getReturnEdgeFunction(incEdge.getCallSite(), method, exitFact.getStatement(), exitFact.getFact(), returnSite, targetFact);
 				}
-			}
+
+				@Override
+				protected FlowFunction<Fact> getFlowFunction() {
+					return context.flowFunctions.getReturnFlowFunction(incEdge.getCallSite(), method, exitFact.getStatement(), returnSite);
+				}
+			}.propagate(exitFact);
 		}
 	}
 

@@ -90,7 +90,7 @@ public class ReturnSiteResolver<Fact, Stmt, Method, Value> extends ResolverTempl
 	
 	private void resolveViaDelta(final ReturnEdge<Fact, Stmt, Method, Value> retEdge) {
 		if(retEdge.incResolver == null || retEdge.incResolver instanceof CallEdgeResolver) {
-			resolveViaDeltaAndPotentiallyDelegateToCallSite(retEdge);
+			resolveViaDeltaAndPotentiallyDelegateToCallSite(retEdge, retEdge.incEdgeFunction);
 		} else {
 			//resolve via incoming facts resolver
 			EdgeFunction<Value> constraint = retEdge.incEdgeFunction.composeWith(resolvedEdgeFunction);
@@ -98,47 +98,47 @@ public class ReturnSiteResolver<Fact, Stmt, Method, Value> extends ResolverTempl
 
 				@Override
 				public void interest(PerAccessPathMethodAnalyzer<Fact, Stmt, Method, Value> analyzer, Resolver<Fact, Stmt, Method, Value> resolver) {
-					incomingEdges.add(retEdge.copyWithIncomingResolver(resolver, retEdge.incAccessPath.getDeltaTo(getResolvedAccessPath())));
-					ReturnSiteResolver.this.interest();
+					incomingEdges.add(retEdge.copyWithIncomingResolver(resolver, retEdge.incEdgeFunction));
+					ReturnSiteResolver.this.resolvedUnbalanced();
 				}
 				
 				@Override
 				public void continueBalancedTraversal(EdgeFunction<Value> edgeFunction) {
-					resolveViaDeltaAndPotentiallyDelegateToCallSite(retEdge);
-				}
-				
-				@Override
-				public void canBeResolvedEmpty() {
-					resolveViaDeltaAndPotentiallyDelegateToCallSite(retEdge);
+					resolveViaDeltaAndPotentiallyDelegateToCallSite(retEdge, edgeFunction);
 				}
 			});
 		}			
 	}
 
-	private void resolveViaDeltaAndPotentiallyDelegateToCallSite(final ReturnEdge<Field, Fact, Stmt, Method> retEdge) {
-		final AccessPath<Field> currAccPath = retEdge.callDelta.applyTo(retEdge.usedAccessPathOfIncResolver.applyTo(retEdge.incAccessPath));
-		if(getResolvedAccessPath().isPrefixOf(currAccPath) == PrefixTestResult.GUARANTEED_PREFIX) {
-			incomingEdges.add(retEdge.copyWithIncomingResolver(null, retEdge.usedAccessPathOfIncResolver));
-			interest();
-		} else if(currAccPath.isPrefixOf(getResolvedAccessPath()).atLeast(PrefixTestResult.POTENTIAL_PREFIX)) {
-			resolveViaCallSiteResolver(retEdge, currAccPath);
+	private void resolveViaDeltaAndPotentiallyDelegateToCallSite(final ReturnEdge<Fact, Stmt, Method, Value> retEdge, EdgeFunction<Value> composedFunction) {
+		composedFunction = retEdge.edgeFunctionIntoCallee.composeWith(composedFunction);
+		EdgeFunction<Value> constraint = composedFunction.composeWith(resolvedEdgeFunction);
+		if(constraint.mayReturnTop()) {
+			if(constraint instanceof AllTop)
+				return;
+			resolveViaCallSiteResolver(retEdge, composedFunction);
+		}
+		else {
+			incomingEdges.add(retEdge.copyWithoutIncomingResolver(composedFunction));
+			resolvedUnbalanced();
 		}
 	}
 
-	protected void resolveViaCallSiteResolver(final ReturnEdge<Field, Fact, Stmt, Method> retEdge, AccessPath<Field> currAccPath) {
-		if(retEdge.resolverAtCaller == null || retEdge.resolverAtCaller instanceof CallEdgeResolver) {
-			canBeResolvedEmpty();
+	protected void resolveViaCallSiteResolver(final ReturnEdge<Fact, Stmt, Method, Value> retEdge, final EdgeFunction<Value> composedFunction) {
+		if(retEdge.resolverIntoCallee == null || retEdge.resolverIntoCallee instanceof CallEdgeResolver) {
+			continueBalancedTraversal(composedFunction);
 		} else {
-			retEdge.resolverAtCaller.resolve(new DeltaConstraint<Field>(currAccPath.getDeltaTo(getResolvedAccessPath())), new InterestCallback<Field, Fact, Stmt, Method>() {
+			EdgeFunction<Value> constraint = composedFunction.composeWith(resolvedEdgeFunction);
+			retEdge.resolverIntoCallee.resolve(constraint, new InterestCallback<Fact, Stmt, Method, Value>() {
 				@Override
-				public void interest(PerAccessPathMethodAnalyzer<Field, Fact, Stmt, Method> analyzer, Resolver<Field, Fact, Stmt, Method> resolver) {
-					incomingEdges.add(retEdge.copyWithResolverAtCaller(resolver, retEdge.incAccessPath.getDeltaTo(getResolvedAccessPath())));
-					ReturnSiteResolver.this.interest();
+				public void interest(PerAccessPathMethodAnalyzer<Fact, Stmt, Method, Value> analyzer, Resolver<Fact, Stmt, Method, Value> resolver) {
+					incomingEdges.add(retEdge.copyWithResolverAtCaller(resolver, composedFunction));
+					ReturnSiteResolver.this.resolvedUnbalanced();
 				}
 				
 				@Override
-				public void canBeResolvedEmpty() {
-					ReturnSiteResolver.this.canBeResolvedEmpty();
+				public void continueBalancedTraversal(EdgeFunction<Value> edgeFunction) {
+					ReturnSiteResolver.this.continueBalancedTraversal(edgeFunction);
 				}
 			});
 		}

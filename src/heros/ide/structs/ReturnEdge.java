@@ -11,6 +11,7 @@
 package heros.ide.structs;
 
 import heros.ide.EdgeFunction;
+import heros.ide.EdgeIdentity;
 import heros.ide.Resolver;
 
 
@@ -41,13 +42,19 @@ public class ReturnEdge<Fact, Stmt, Method, Value> {
 	}
 	
 	public ReturnEdge<Fact, Stmt, Method, Value> copyWithIncomingResolver(
-			Resolver<Fact, Stmt, Method, Value> incResolver) {
+			Resolver<Fact, Stmt, Method, Value> incResolver, EdgeFunction<Value> incEdgeFunction) {
 		return new ReturnEdge<Fact, Stmt, Method, Value>(incFact, incEdgeFunction, incResolver, resolverIntoCallee, edgeFunctionIntoCallee);
 	}
 	
+	public ReturnEdge<Fact, Stmt, Method, Value> copyWithoutIncomingResolver(
+			EdgeFunction<Value> edgeFunctionIntoCallee) {
+		return new ReturnEdge<Fact, Stmt, Method, Value>(incFact, EdgeIdentity.<Value>v(), null, resolverIntoCallee, edgeFunctionIntoCallee);
+	}
+	
+	
 	public ReturnEdge<Fact, Stmt, Method, Value> copyWithResolverAtCaller(
-			Resolver<Fact, Stmt, Method, Value> resolverAtCaller) {
-		return new ReturnEdge<Fact, Stmt, Method, Value>(incFact, incEdgeFunction, null, resolverAtCaller, edgeFunctionIntoCallee);
+			Resolver<Fact, Stmt, Method, Value> resolverAtCaller, EdgeFunction<Value> edgeFunctionIntoCallee) {
+		return new ReturnEdge<Fact, Stmt, Method, Value>(incFact, EdgeIdentity.<Value>v(), null, resolverAtCaller, edgeFunctionIntoCallee);
 	}
 	
 	@Override

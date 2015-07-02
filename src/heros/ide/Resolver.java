@@ -11,15 +11,17 @@
 package heros.ide;
 
 import java.util.List;
+import java.util.Set;
 
 import com.google.common.collect.Lists;
+import com.google.common.collect.Sets;
 
 public abstract class Resolver<Fact, Stmt, Method, Value> {
 
-	private boolean interest = false;
+	private boolean resolvedUnbalanced = false;
 	private List<InterestCallback<Fact, Stmt, Method, Value>> interestCallbacks = Lists.newLinkedList();
 	protected PerAccessPathMethodAnalyzer<Fact, Stmt, Method, Value> analyzer;
-	private boolean canBeResolvedEmpty = false;
+	private Set<EdgeFunction<Value>> balancedFunctions = Sets.newHashSet();
 	
 	public Resolver(PerAccessPathMethodAnalyzer<Fact, Stmt, Method, Value> analyzer) {
 		this.analyzer = analyzer;
@@ -27,39 +29,27 @@ public abstract class Resolver<Fact, Stmt, Method, Value> {
 
 	public abstract void resolve(EdgeFunction<Value> edgeFunction, InterestCallback<Fact, Stmt, Method, Value> callback);
 	
-	public void interest() {
-		if(interest)
+	public void resolvedUnbalanced() {
+		if(resolvedUnbalanced)
 			return;
 
 		log("Interest given");
-		interest = true;
+		resolvedUnbalanced = true;
 		for(InterestCallback<Fact, Stmt, Method, Value> callback : Lists.newLinkedList(interestCallbacks)) {
 			callback.interest(analyzer, this);
 		}
-		
-		if(canBeResolvedEmpty)
-			interestCallbacks = null;
 	}
 	
 	protected void continueBalancedTraversal(EdgeFunction<Value> edgeFunction) {
-		if(canBeResolvedEmpty)
-			return;
-		
-		canBeResolvedEmpty = true;
-		for(InterestCallback<Fact, Stmt, Method, Value> callback : Lists.newLinkedList(interestCallbacks)) {
-			callback.continueBalancedTraversal(edgeFunction);
+		if(balancedFunctions.add(edgeFunction)) {
+			for(InterestCallback<Fact, Stmt, Method, Value> callback : Lists.newLinkedList(interestCallbacks)) {
+				callback.continueBalancedTraversal(edgeFunction);
+			}
 		}
-		
-		if(interest)
-			interestCallbacks = null;
-	}
-
-	public boolean isInterestGiven() {
-		return interest;
 	}
 
 	protected void registerCallback(InterestCallback<Fact, Stmt, Method, Value> callback) {
-		if(interest) {
+		if(resolvedUnbalanced) {
 			callback.interest(analyzer, this);
 		}
 		else {
@@ -67,8 +57,11 @@ public abstract class Resolver<Fact, Stmt, Method, Value> {
 			interestCallbacks.add(callback);
 		}
 
-		if(canBeResolvedEmpty)
-			callback.continueBalancedTraversal(analyzer.constraint);
+		if(!balancedFunctions.isEmpty()) {
+			for(EdgeFunction<Value> edgeFunction : balancedFunctions) {
+				callback.continueBalancedTraversal(edgeFunction);
+			}
+		}
 	}
 	
 	protected abstract void log(String message);

@@ -42,8 +42,8 @@ public abstract class PropagationTemplate<Fact, Stmt, Method, Value> {
 					}
 
 					@Override
-					public void continueBalancedTraversal(EdgeFunction<Value> edgeFunction) {
-						analyzer.getCallEdgeResolver().resolve(edgeFunction, this);
+					public void continueBalancedTraversal(EdgeFunction<Value> balancedFunction) {
+						analyzer.getCallEdgeResolver().resolve(balancedFunction.composeWith(composedFunction), this);
 					}
 				});
 			}

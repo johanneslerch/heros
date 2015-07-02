@@ -24,7 +24,7 @@ public class ZeroCallEdgeResolver<Fact, Stmt, Method, Value> extends CallEdgeRes
 	}
 	
 	@Override
-	public void interest() {
+	public void resolvedUnbalanced() {
 	}
 	
 	@Override

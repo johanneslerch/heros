@@ -63,7 +63,7 @@ public class ControlFlowJoinResolver<Fact, Stmt, Method, Value> extends Resolver
 			@Override
 			public void interest(PerAccessPathMethodAnalyzer<Fact, Stmt, Method, Value> analyzer, 
 					Resolver<Fact, Stmt, Method, Value> resolver) {
-				ControlFlowJoinResolver.this.interest();
+				ControlFlowJoinResolver.this.resolvedUnbalanced();
 			}
 
 			@Override

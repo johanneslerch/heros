@@ -62,7 +62,7 @@ public abstract class ResolverTemplate<Fact, Stmt, Method, Value, Incoming>  ext
 			if(!incomingEdges.add(inc))
 				return;
 			
-			interest();
+			resolvedUnbalanced();
 			
 			for(ResolverTemplate<Fact, Stmt, Method, Value, Incoming> nestedResolver : nestedResolvers.values()) {
 				nestedResolver.addIncoming(inc);
