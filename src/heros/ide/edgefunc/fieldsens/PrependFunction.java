@@ -7,13 +7,18 @@ public class PrependFunction<Field> extends ChainableEdgeFunction<Field> {
 	public final Field field;
 
 	public PrependFunction(Factory<Field> factory, Field field) {
-		super(factory, false, null);
+		super(factory, null);
 		this.field = field;
 	}
 
 	private PrependFunction(Factory<Field> factory, Field field, ChainableEdgeFunction<Field> chainedFunction) {
-		super(factory, false, chainedFunction);
+		super(factory, chainedFunction);
 		this.field = field;
+	}
+	
+	@Override
+	protected boolean mayThisReturnTop() {
+		return false;
 	}
 
 	@Override

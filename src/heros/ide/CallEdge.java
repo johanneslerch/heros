@@ -63,7 +63,7 @@ public class CallEdge<Fact, Stmt, Method, Value> {
 			@Override
 			public void interest(PerAccessPathMethodAnalyzer<Fact, Stmt, Method, Value> analyzer, Resolver<Fact, Stmt, Method, Value> resolver, EdgeFunction<Value> edgeFunction) {
 //				interestedAnalyzer.addIncomingEdge(new CallEdge<Fact, Stmt, Method, Value>(analyzer, factAtCallSite, factIntoCallee, edgeFunctionIntoCallee, resolver, callSite));
-				interestedAnalyzer.addIncomingEdge(new CallEdge<Fact, Stmt, Method, Value>(analyzer, factAtCallSite, factIntoCallee, edgeFunction, resolver, callSite));
+				interestedAnalyzer.addIncomingEdge(new CallEdge<Fact, Stmt, Method, Value>(analyzer, factAtCallSite, factIntoCallee, edgeFunction.composeWith(edgeFunctionIntoCallee), resolver, callSite));
 			}
 			
 			@Override

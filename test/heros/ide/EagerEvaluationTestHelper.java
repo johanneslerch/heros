@@ -23,6 +23,7 @@ import heros.ide.edgefunc.EdgeFunction;
 import heros.ide.edgefunc.fieldsens.AccessPathBundle;
 import heros.ide.edgefunc.fieldsens.ChainableEdgeFunction;
 import heros.ide.edgefunc.fieldsens.Factory;
+import heros.ide.edgefunc.fieldsens.ReadFunction;
 import heros.utilities.Edge;
 import heros.utilities.Edge.Call2ReturnEdge;
 import heros.utilities.Edge.CallEdge;
@@ -609,7 +610,7 @@ public class EagerEvaluationTestHelper {
 			
 			@Override
 			public EdgeFunction<AccessPathBundle<String>> initialSeedEdgeFunction(Statement seed, TestFact val) {
-				return new ChainableEdgeFunction<String>(factory, false, null) {
+				return new ChainableEdgeFunction<String>(factory, null) {
 					@Override
 					public EdgeFunction<AccessPathBundle<String>> chain(ChainableEdgeFunction<String> f) {
 						throw new IllegalStateException();
@@ -622,7 +623,14 @@ public class EagerEvaluationTestHelper {
 					
 					@Override
 					protected EdgeFunction<AccessPathBundle<String>> _composeWith(ChainableEdgeFunction<String> chainableFunction) {
+						if(chainableFunction instanceof ReadFunction)
+							return this;
 						return chainableFunction.chain(this);
+					}
+					
+					@Override
+					protected boolean mayThisReturnTop() {
+						return false;
 					}
 					
 					@Override

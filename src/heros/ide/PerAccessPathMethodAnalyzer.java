@@ -92,8 +92,8 @@ class PerAccessPathMethodAnalyzer<Fact, Stmt, Method, Value> {
 		return callEdgeResolver.hasIncomingEdges() || !(constraint instanceof EdgeIdentity);
 	}
 
-	private void bootstrapAtMethodStartPoints() {
-		callEdgeResolver.resolvedUnbalanced(EdgeIdentity.<Value>v());
+	private void bootstrapAtMethodStartPoints(EdgeFunction<Value> edgeFunction) {
+		callEdgeResolver.resolvedUnbalanced(edgeFunction);
 		for(Stmt startPoint : context.icfg.getStartPointsOf(method)) {
 			WrappedFactAtStatement<Fact, Stmt, Method, Value> target = new WrappedFactAtStatement<Fact, Stmt, Method, Value>(startPoint, wrappedSource());
 			if(!reachableStatements.containsKey(target))
@@ -283,7 +283,7 @@ class PerAccessPathMethodAnalyzer<Fact, Stmt, Method, Value> {
 		if(isBootStrapped()) {
 			context.factHandler.merge(sourceFact, incEdge.getCalleeSourceFact());
 		} else 
-			bootstrapAtMethodStartPoints();
+			bootstrapAtMethodStartPoints(incEdge.getEdgeFunctionAtCallee());
 		callEdgeResolver.addIncoming(incEdge);
 	}
 

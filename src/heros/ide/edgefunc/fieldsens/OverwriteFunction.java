@@ -15,15 +15,23 @@ public class OverwriteFunction<Field> extends ChainableEdgeFunction<Field> {
 
 	@SuppressWarnings("unchecked")
 	public OverwriteFunction(Factory<Field> factory, Field field) {
-		super(factory, true, null);
+		super(factory, null);
 		this.fields = Sets.newHashSet(field);
 	}
 
 	OverwriteFunction(Factory<Field> factory, Set<Field> fields, ChainableEdgeFunction<Field> chainedFunction) {
-		super(factory, true, chainedFunction);
+		super(factory, chainedFunction);
 		this.fields = fields;
 	}
 
+	@Override
+	protected boolean mayThisReturnTop() {
+		//if this does not have a preceding function it may return top, e.g., a prepend with the same field may precede in the future
+		//o.w. the succeeding function (e.g., read of overwritten field) may return top, but not this overwrite
+		//this definition is important to propagate overwrite functions at initial seeds
+		return chainedFunction == null;
+	}
+	
 	@Override
 	protected AccessPathBundle<Field> _computeTarget(AccessPathBundle<Field> source) {
 		return source.overwrite(fields);

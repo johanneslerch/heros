@@ -101,8 +101,8 @@ public class ReturnSiteResolver<Fact, Stmt, Method, Value> extends ResolverTempl
 
 				@Override
 				public void interest(PerAccessPathMethodAnalyzer<Fact, Stmt, Method, Value> analyzer, Resolver<Fact, Stmt, Method, Value> resolver, EdgeFunction<Value> edgeFunction) {
-//					incomingEdges.add(retEdge.copyWithIncomingResolver(resolver, retEdge.incEdgeFunction));
-					addIncomingWithoutCheck(retEdge.copyWithIncomingResolver(resolver, edgeFunction));
+					addIncomingWithoutCheck(retEdge.copyWithIncomingResolver(resolver, retEdge.incEdgeFunction));
+//					addIncomingWithoutCheck(retEdge.copyWithIncomingResolver(resolver, edgeFunction));
 					ReturnSiteResolver.this.resolvedUnbalanced(edgeFunction);
 				}
 				

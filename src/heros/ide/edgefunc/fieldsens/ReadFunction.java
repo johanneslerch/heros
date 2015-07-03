@@ -8,15 +8,20 @@ public class ReadFunction<Field> extends ChainableEdgeFunction<Field> {
 	Field field;
 
 	public ReadFunction(Factory<Field> factory, Field field) {
-		super(factory, true, null);
+		super(factory, null);
 		this.field = field;
 	}
 
 	private ReadFunction(Factory<Field> factory, Field field, ChainableEdgeFunction<Field> chainedFunction) {
-		super(factory, true, chainedFunction);
+		super(factory, chainedFunction);
 		this.field = field;
 	}
 
+	@Override
+	protected boolean mayThisReturnTop() {
+		return true;
+	}
+	
 	@Override
 	protected AccessPathBundle<Field> _computeTarget(AccessPathBundle<Field> source) {
 		return source.read(field);

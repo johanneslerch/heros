@@ -66,7 +66,8 @@ public class ControlFlowJoinResolver<Fact, Stmt, Method, Value> extends Resolver
 			public void interest(PerAccessPathMethodAnalyzer<Fact, Stmt, Method, Value> analyzer, 
 					Resolver<Fact, Stmt, Method, Value> resolver, EdgeFunction<Value> edgeFunction) {
 				addIncomingWithoutCheck(new FactEdgeFnResolverTuple<Fact, Stmt, Method, Value>(
-						fact.getFact(), edgeFunction, resolver));
+						fact.getFact(), edgeFunction.composeWith(fact.getEdgeFunction())//TODO effect of this composition not tested!
+						, resolver));
 				ControlFlowJoinResolver.this.resolvedUnbalanced(edgeFunction);
 			}
 

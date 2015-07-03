@@ -871,7 +871,9 @@ public class EagerEvaluationIDESolverTest {
 		
 		helper.method("bar",
 				startPoints("c"),
-				normalStmt("c", flow("2", overwriteField("f"), "2"), flow("2", overwriteField("g"), "2")).succ("d"),
+				normalStmt("c", flow("2", "2")).succ("c1").succ("c2"),
+				normalStmt("c1", flow("2", overwriteField("f"), "2")).succ("d"),
+				normalStmt("c2", flow("2", overwriteField("g"), "2")).succ("d"),
 				exitStmt("d").returns(over("b"), to("e"), flow(2, "2", "3")));
 		
 		helper.method("xyz", 

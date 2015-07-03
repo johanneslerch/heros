@@ -12,12 +12,10 @@ public abstract class ChainableEdgeFunction<Field> implements EdgeFunction<Acces
 
 	protected final ChainableEdgeFunction<Field> chainedFunction;
 	protected final Factory<Field> factory;
-	private boolean thisMayReturnTop;
-	private Boolean mayReturnTop;
+	private Boolean cachedMayReturnTop;
 
-	public ChainableEdgeFunction(Factory<Field> factory, boolean thisMayReturnTop, ChainableEdgeFunction<Field> chainedFunction) {
+	public ChainableEdgeFunction(Factory<Field> factory, ChainableEdgeFunction<Field> chainedFunction) {
 		this.factory = factory;
-		this.thisMayReturnTop = thisMayReturnTop;
 		this.chainedFunction = chainedFunction;
 	}
 
@@ -75,15 +73,20 @@ public abstract class ChainableEdgeFunction<Field> implements EdgeFunction<Acces
 			return new CompositeFunction<Field>(factory, result);
 	}
 	
+	protected abstract boolean mayThisReturnTop();
+	
 	@Override
 	public final boolean mayReturnTop() {
-		if(mayReturnTop != null)
-			return mayReturnTop;
+		if(cachedMayReturnTop != null)
+			return cachedMayReturnTop;
 		
-		if(chainedFunction == null)
-			return thisMayReturnTop;
+		if(chainedFunction == null) {
+			cachedMayReturnTop = mayThisReturnTop();
+			return cachedMayReturnTop;
+		}
 		
-		return thisMayReturnTop && chainedFunction.mayReturnTop();
+		cachedMayReturnTop = mayThisReturnTop() && chainedFunction.mayReturnTop();
+		return cachedMayReturnTop;
 	}
 
 	protected abstract EdgeFunction<AccessPathBundle<Field>> _composeWith(ChainableEdgeFunction<Field> chainableFunction);
