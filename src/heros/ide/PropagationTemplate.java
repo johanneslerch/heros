@@ -15,7 +15,7 @@ import java.util.Set;
 import heros.FlowFunction;
 import heros.ide.edgefunc.AllTop;
 import heros.ide.edgefunc.EdgeFunction;
-import heros.ide.structs.FactEdgeResolverStatementTuple;
+import heros.ide.structs.FactEdgeFnResolverStatementTuple;
 
 public abstract class PropagationTemplate<Fact, Stmt, Method, Value> {
 
@@ -25,7 +25,7 @@ public abstract class PropagationTemplate<Fact, Stmt, Method, Value> {
 		this.analyzer = analyzer;
 	}
 	
-	public void propagate(FactEdgeResolverStatementTuple<Fact, Stmt, Method, Value> factAtStmt) {
+	public void propagate(FactEdgeFnResolverStatementTuple<Fact, Stmt, Method, Value> factAtStmt) {
 		FlowFunction<Fact> flowFunction = getFlowFunction();
 		Set<Fact> targets = flowFunction.computeTargets(factAtStmt.getFact());
 		for (final Fact targetFact : targets) {
@@ -39,7 +39,8 @@ public abstract class PropagationTemplate<Fact, Stmt, Method, Value> {
 			if(resolveRequired) {
 				factAtStmt.getResolver().resolve(composedFunction, new InterestCallback<Fact, Stmt, Method, Value>() {
 					@Override
-					public void interest(PerAccessPathMethodAnalyzer<Fact, Stmt, Method, Value> analyzer, Resolver<Fact, Stmt, Method, Value> resolver) {
+					public void interest(PerAccessPathMethodAnalyzer<Fact, Stmt, Method, Value> analyzer, Resolver<Fact, Stmt, Method, Value> resolver, EdgeFunction<Value> edgeFunction) {
+//						propagate(analyzer, resolver, targetFact, edgeFunction.composeWith(composedFunction));
 						propagate(analyzer, resolver, targetFact, composedFunction);
 					}
 

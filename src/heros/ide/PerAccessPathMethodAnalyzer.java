@@ -14,7 +14,7 @@ import heros.FlowFunction;
 import heros.ide.edgefunc.EdgeFunction;
 import heros.ide.edgefunc.EdgeIdentity;
 import heros.ide.structs.FactAtStatement;
-import heros.ide.structs.FactEdgeResolverStatementTuple;
+import heros.ide.structs.FactEdgeFnResolverStatementTuple;
 import heros.ide.structs.WrappedFact;
 import heros.ide.structs.WrappedFactAtStatement;
 import heros.solver.Pair;
@@ -39,8 +39,8 @@ class PerAccessPathMethodAnalyzer<Fact, Stmt, Method, Value> {
 
 	private static final Logger logger = LoggerFactory.getLogger(PerAccessPathMethodAnalyzer.class);
 	private Fact sourceFact;
-	private Map<WrappedFactAtStatement<Fact, Stmt, Method, Value>, FactEdgeResolverStatementTuple<Fact, Stmt, Method, Value>> reachableStatements = Maps.newHashMap();
-	private List<FactEdgeResolverStatementTuple<Fact, Stmt, Method, Value>> summaries = Lists.newLinkedList();
+	private Map<WrappedFactAtStatement<Fact, Stmt, Method, Value>, FactEdgeFnResolverStatementTuple<Fact, Stmt, Method, Value>> reachableStatements = Maps.newHashMap();
+	private List<FactEdgeFnResolverStatementTuple<Fact, Stmt, Method, Value>> summaries = Lists.newLinkedList();
 	private EdgeFunction<Value> constraint;
 	private Context<Fact, Stmt, Method, Value> context;
 	private Method method;
@@ -93,7 +93,7 @@ class PerAccessPathMethodAnalyzer<Fact, Stmt, Method, Value> {
 	}
 
 	private void bootstrapAtMethodStartPoints() {
-		callEdgeResolver.resolvedUnbalanced();
+		callEdgeResolver.resolvedUnbalanced(EdgeIdentity.<Value>v());
 		for(Stmt startPoint : context.icfg.getStartPointsOf(method)) {
 			WrappedFactAtStatement<Fact, Stmt, Method, Value> target = new WrappedFactAtStatement<Fact, Stmt, Method, Value>(startPoint, wrappedSource());
 			if(!reachableStatements.containsKey(target))
@@ -105,26 +105,27 @@ class PerAccessPathMethodAnalyzer<Fact, Stmt, Method, Value> {
 		return new WrappedFact<Fact, Stmt, Method, Value>(sourceFact, callEdgeResolver);
 	}
 
-	public void addInitialSeed(Stmt stmt) {
-		scheduleEdgeTo(new FactEdgeResolverStatementTuple<Fact, Stmt, Method, Value>(sourceFact, EdgeIdentity.<Value>v(), callEdgeResolver, stmt));
+	public void addInitialSeed(Stmt stmt, EdgeFunction<Value> edgeFunction) {
+		scheduleEdgeTo(new FactEdgeFnResolverStatementTuple<Fact, Stmt, Method, Value>(sourceFact, edgeFunction, callEdgeResolver, stmt));
 	}
 
-	void scheduleEdgeTo(FactEdgeResolverStatementTuple<Fact, Stmt, Method, Value> factAtStmt) {
+	void scheduleEdgeTo(FactEdgeFnResolverStatementTuple<Fact, Stmt, Method, Value> factAtStmt) {
 		assert context.icfg.getMethodOf(factAtStmt.getStatement()).equals(method);
-		if (reachableStatements.containsKey(factAtStmt)) {
+		WrappedFactAtStatement<Fact, Stmt, Method, Value> withoutEdgeFunction = factAtStmt.getWithoutEdgeFunction();
+		if (reachableStatements.containsKey(withoutEdgeFunction)) {
 			log("Merging "+factAtStmt);
-			FactEdgeResolverStatementTuple<Fact, Stmt, Method, Value> prevFact = reachableStatements.get(factAtStmt);
+			FactEdgeFnResolverStatementTuple<Fact, Stmt, Method, Value> prevFact = reachableStatements.get(withoutEdgeFunction);
 			context.factHandler.merge(prevFact.getFact(), factAtStmt.getFact());
 			EdgeFunction<Value> joinedFunction = prevFact.getEdgeFunction().joinWith(factAtStmt.getEdgeFunction());
 			if(!joinedFunction.equals(prevFact.getEdgeFunction())) {
 				log("Updated EdgeFunction at "+prevFact+": "+joinedFunction);
-				FactEdgeResolverStatementTuple<Fact, Stmt, Method, Value> newFact = prevFact.copyWithEdgeFunction(joinedFunction);
-				reachableStatements.put(factAtStmt.getWithoutEdgeFunction(), newFact);
+				FactEdgeFnResolverStatementTuple<Fact, Stmt, Method, Value> newFact = prevFact.copyWithEdgeFunction(joinedFunction);
+				reachableStatements.put(withoutEdgeFunction, newFact);
 				context.scheduler.schedule(new Job(newFact));
 			}
 		} else {
 			log("Edge to "+factAtStmt);
-			reachableStatements.put(factAtStmt.getWithoutEdgeFunction(), factAtStmt);
+			reachableStatements.put(withoutEdgeFunction, factAtStmt);
 			context.scheduler.schedule(new Job(factAtStmt));
 		}
 	}
@@ -138,7 +139,7 @@ class PerAccessPathMethodAnalyzer<Fact, Stmt, Method, Value> {
 		return method+"; "+sourceFact+constraint;
 	}
 
-	void processCall(final FactEdgeResolverStatementTuple<Fact, Stmt, Method, Value> factAtStmt) {
+	void processCall(final FactEdgeFnResolverStatementTuple<Fact, Stmt, Method, Value> factAtStmt) {
 		Collection<Method> calledMethods = context.icfg.getCalleesOfCallAt(factAtStmt.getStatement());
 		for (final Method calledMethod : calledMethods) {
 			new PropagationTemplate<Fact, Stmt, Method, Value>(this) {
@@ -162,7 +163,7 @@ class PerAccessPathMethodAnalyzer<Fact, Stmt, Method, Value> {
 		}
 	}
 
-	void processExit(final FactEdgeResolverStatementTuple<Fact, Stmt, Method, Value> factAtStmt) {
+	void processExit(final FactEdgeFnResolverStatementTuple<Fact, Stmt, Method, Value> factAtStmt) {
 		log("New Summary: "+factAtStmt);
 		if(!summaries.add(factAtStmt))
 			throw new AssertionError();
@@ -179,7 +180,7 @@ class PerAccessPathMethodAnalyzer<Fact, Stmt, Method, Value> {
 						protected void propagate(PerAccessPathMethodAnalyzer<Fact, Stmt, Method, Value> analyzer,
 								Resolver<Fact, Stmt, Method, Value> resolver, Fact targetFact, EdgeFunction<Value> edgeFunction) {
 							context.getAnalyzer(context.icfg.getMethodOf(callSite)).addUnbalancedReturnFlow(
-									new FactEdgeResolverStatementTuple<Fact, Stmt, Method, Value>(targetFact, edgeFunction, resolver, returnSite), callSite);
+									new FactEdgeFnResolverStatementTuple<Fact, Stmt, Method, Value>(targetFact, edgeFunction, resolver, returnSite), callSite);
 						}
 
 						@Override
@@ -204,7 +205,7 @@ class PerAccessPathMethodAnalyzer<Fact, Stmt, Method, Value> {
 		}
 	}
 	
-	private void processCallToReturnEdge(FactEdgeResolverStatementTuple<Fact, Stmt, Method, Value> factAtStmt) {
+	private void processCallToReturnEdge(FactEdgeFnResolverStatementTuple<Fact, Stmt, Method, Value> factAtStmt) {
 		Stmt stmt = factAtStmt.getStatement();
 		int numberOfPredecessors = context.icfg.getPredsOf(stmt).size();		
 		if(numberOfPredecessors > 1 || (context.icfg.isStartPoint(stmt) && numberOfPredecessors > 0)) {
@@ -215,14 +216,14 @@ class PerAccessPathMethodAnalyzer<Fact, Stmt, Method, Value> {
 		}
 	}
 
-	private void processNonJoiningCallToReturnFlow(final FactEdgeResolverStatementTuple<Fact, Stmt, Method, Value> factAtStmt) {
+	private void processNonJoiningCallToReturnFlow(final FactEdgeFnResolverStatementTuple<Fact, Stmt, Method, Value> factAtStmt) {
 		Collection<Stmt> returnSites = context.icfg.getReturnSitesOfCallAt(factAtStmt.getStatement());
 		for(final Stmt returnSite : returnSites) {
 			new PropagationTemplate<Fact, Stmt, Method, Value>(this) {
 				@Override
 				protected void propagate(PerAccessPathMethodAnalyzer<Fact, Stmt, Method, Value> analyzer,
 						Resolver<Fact, Stmt, Method, Value> resolver, Fact targetFact, EdgeFunction<Value> edgeFunction) {
-					analyzer.scheduleEdgeTo(new FactEdgeResolverStatementTuple<Fact, Stmt, Method, Value>(targetFact, edgeFunction, resolver, returnSite));
+					analyzer.scheduleEdgeTo(new FactEdgeFnResolverStatementTuple<Fact, Stmt, Method, Value>(targetFact, edgeFunction, resolver, returnSite));
 				}
 
 				@Override
@@ -238,7 +239,7 @@ class PerAccessPathMethodAnalyzer<Fact, Stmt, Method, Value> {
 		}
 	}
 
-	private void processNormalFlow(FactEdgeResolverStatementTuple<Fact, Stmt, Method, Value> factAtStmt) {
+	private void processNormalFlow(FactEdgeFnResolverStatementTuple<Fact, Stmt, Method, Value> factAtStmt) {
 		Stmt stmt = factAtStmt.getStatement();
 		int numberOfPredecessors = context.icfg.getPredsOf(stmt).size();
 		if((numberOfPredecessors > 1 && !context.icfg.isExitStmt(stmt)) || (context.icfg.isStartPoint(stmt) && numberOfPredecessors > 0)) {
@@ -249,20 +250,20 @@ class PerAccessPathMethodAnalyzer<Fact, Stmt, Method, Value> {
 		}
 	}
 
-	void processFlowFromJoinStmt(FactEdgeResolverStatementTuple<Fact, Stmt, Method, Value> factAtStmt) {
+	void processFlowFromJoinStmt(FactEdgeFnResolverStatementTuple<Fact, Stmt, Method, Value> factAtStmt) {
 		if(context.icfg.isCallStmt(factAtStmt.getStatement()))
 			processNonJoiningCallToReturnFlow(factAtStmt);
 		else
 			processNormalNonJoiningFlow(factAtStmt);
 	}
 
-	private void processNormalNonJoiningFlow(final FactEdgeResolverStatementTuple<Fact, Stmt, Method, Value> factAtStmt) {
+	private void processNormalNonJoiningFlow(final FactEdgeFnResolverStatementTuple<Fact, Stmt, Method, Value> factAtStmt) {
 		final List<Stmt> successors = context.icfg.getSuccsOf(factAtStmt.getStatement());
 		for(final Stmt successor : successors) {
 			new PropagationTemplate<Fact, Stmt, Method, Value>(this) {
 				@Override
 				protected void propagate(PerAccessPathMethodAnalyzer<Fact,Stmt,Method,Value> analyzer, Resolver<Fact,Stmt,Method,Value> resolver, Fact targetFact, EdgeFunction<Value> edgeFunction) {
-					analyzer.scheduleEdgeTo(new FactEdgeResolverStatementTuple<Fact, Stmt, Method, Value>(targetFact, edgeFunction, resolver, successor));
+					analyzer.scheduleEdgeTo(new FactEdgeFnResolverStatementTuple<Fact, Stmt, Method, Value>(targetFact, edgeFunction, resolver, successor));
 				};
 
 				@Override
@@ -286,14 +287,15 @@ class PerAccessPathMethodAnalyzer<Fact, Stmt, Method, Value> {
 		callEdgeResolver.addIncoming(incEdge);
 	}
 
-	void applySummary(final CallEdge<Fact, Stmt, Method, Value> incEdge, final FactEdgeResolverStatementTuple<Fact, Stmt, Method, Value> exitFact) {
+	void applySummary(final CallEdge<Fact, Stmt, Method, Value> incEdge, final FactEdgeFnResolverStatementTuple<Fact, Stmt, Method, Value> exitFact) {
 		Collection<Stmt> returnSites = context.icfg.getReturnSitesOfCallAt(incEdge.getCallSite());
 		for(final Stmt returnSite : returnSites) {
 			new PropagationTemplate<Fact, Stmt, Method, Value>(this) {
 				@Override
 				protected void propagate(PerAccessPathMethodAnalyzer<Fact, Stmt, Method, Value> analyzer,
 						Resolver<Fact, Stmt, Method, Value> resolver, Fact targetFact, EdgeFunction<Value> edgeFunction) {
-					scheduleReturnEdge(incEdge, new FactEdgeResolverStatementTuple<Fact, Stmt, Method, Value>(targetFact, edgeFunction, resolver, returnSite));
+					context.factHandler.restoreCallingContext(targetFact, incEdge.getCallerCallSiteFact());
+					scheduleReturnEdge(incEdge, new FactEdgeFnResolverStatementTuple<Fact, Stmt, Method, Value>(targetFact, edgeFunction, resolver, returnSite));
 				}
 
 				@Override
@@ -309,19 +311,19 @@ class PerAccessPathMethodAnalyzer<Fact, Stmt, Method, Value> {
 		}
 	}
 
-	public void scheduleUnbalancedReturnEdgeTo(FactEdgeResolverStatementTuple<Fact, Stmt, Method, Value> target) {
+	public void scheduleUnbalancedReturnEdgeTo(FactEdgeFnResolverStatementTuple<Fact, Stmt, Method, Value> target) {
 		ReturnSiteResolver<Fact,Stmt,Method, Value> resolver = returnSiteResolvers.getOrCreate(target.getAsFactAtStatement());
 		resolver.addIncoming(target.withoutStatement(), null, EdgeIdentity.<Value>v());
 	}
 	
-	private void scheduleReturnEdge(CallEdge<Fact, Stmt, Method, Value> incEdge, FactEdgeResolverStatementTuple<Fact, Stmt, Method, Value> factAtStmt) {
+	private void scheduleReturnEdge(CallEdge<Fact, Stmt, Method, Value> incEdge, FactEdgeFnResolverStatementTuple<Fact, Stmt, Method, Value> factAtStmt) {
 		ReturnSiteResolver<Fact, Stmt, Method, Value> returnSiteResolver = incEdge.getCallerAnalyzer().returnSiteResolvers.getOrCreate(
 				new FactAtStatement<Fact, Stmt>(factAtStmt.getFact(), factAtStmt.getStatement()));
 		returnSiteResolver.addIncoming(factAtStmt.withoutStatement(), incEdge.getResolverIntoCallee(), incEdge.getEdgeFunctionAtCallee());
 	}
 
 	void applySummaries(CallEdge<Fact, Stmt, Method, Value> incEdge) {
-		for(FactEdgeResolverStatementTuple<Fact, Stmt, Method, Value> summary : summaries) {
+		for(FactEdgeFnResolverStatementTuple<Fact, Stmt, Method, Value> summary : summaries) {
 			applySummary(incEdge, summary);
 		}
 	}
@@ -336,9 +338,9 @@ class PerAccessPathMethodAnalyzer<Fact, Stmt, Method, Value> {
 
 	private class Job implements Runnable {
 
-		private FactEdgeResolverStatementTuple<Fact, Stmt, Method, Value> factTuple;
+		private FactEdgeFnResolverStatementTuple<Fact, Stmt, Method, Value> factTuple;
 
-		public Job(FactEdgeResolverStatementTuple<Fact, Stmt, Method, Value> factTuple) {
+		public Job(FactEdgeFnResolverStatementTuple<Fact, Stmt, Method, Value> factTuple) {
 			this.factTuple = factTuple;
 		}
 

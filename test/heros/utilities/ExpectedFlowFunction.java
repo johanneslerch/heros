@@ -22,7 +22,7 @@ public abstract class ExpectedFlowFunction<Fact> {
 	public final Fact source;
 	public final Fact[] targets;
 	public Edge edge;
-	int times;
+	public int times;
 	public final EdgeFunction<AccessPathBundle<String>> edgeFunction;
 
 	public ExpectedFlowFunction(int times, Fact source, Fact... targets) {

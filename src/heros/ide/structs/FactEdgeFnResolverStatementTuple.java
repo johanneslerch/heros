@@ -14,22 +14,27 @@ import heros.ide.Resolver;
 import heros.ide.edgefunc.EdgeFunction;
 import heros.ide.edgefunc.EdgeIdentity;
 
-public class FactEdgeResolverStatementTuple<Fact, Stmt, Method, Value> {
+public class FactEdgeFnResolverStatementTuple<Fact, Stmt, Method, Value> {
 
 	private final Fact fact;
 	private final EdgeFunction<Value> edgeFunction;
 	private final Resolver<Fact, Stmt, Method, Value> resolver;
 	private final Stmt statement;
 
-	public FactEdgeResolverStatementTuple(Fact fact, EdgeFunction<Value> edgeFunction, Resolver<Fact, Stmt, Method, Value> resolver, Stmt statement) {
+	public FactEdgeFnResolverStatementTuple(Fact fact, EdgeFunction<Value> edgeFunction, Resolver<Fact, Stmt, Method, Value> resolver, Stmt statement) {
 		this.fact = fact;
 		this.edgeFunction = edgeFunction;
 		this.resolver = resolver;
 		this.statement = statement;
 	}
 
-	public FactEdgeResolverStatementTuple<Fact, Stmt, Method, Value> copyWithResolver(Resolver<Fact, Stmt, Method, Value> resolver) {
-		return new FactEdgeResolverStatementTuple<Fact, Stmt, Method, Value>(fact, edgeFunction, resolver, statement);
+	public FactEdgeFnResolverStatementTuple<Fact, Stmt, Method, Value> copyWithResolver(Resolver<Fact, Stmt, Method, Value> resolver) {
+		return new FactEdgeFnResolverStatementTuple<Fact, Stmt, Method, Value>(fact, edgeFunction, resolver, statement);
+	}
+	
+	@Override
+	public String toString() {
+		return "<"+fact+";"+edgeFunction+";"+resolver+";"+statement+">";
 	}
 	
 	@Override
@@ -51,7 +56,7 @@ public class FactEdgeResolverStatementTuple<Fact, Stmt, Method, Value> {
 			return false;
 		if (getClass() != obj.getClass())
 			return false;
-		FactEdgeResolverStatementTuple other = (FactEdgeResolverStatementTuple) obj;
+		FactEdgeFnResolverStatementTuple other = (FactEdgeFnResolverStatementTuple) obj;
 		if (edgeFunction == null) {
 			if (other.edgeFunction != null)
 				return false;
@@ -83,8 +88,8 @@ public class FactEdgeResolverStatementTuple<Fact, Stmt, Method, Value> {
 		return edgeFunction;
 	}
 
-	public FactEdgeResolverStatementTuple<Fact, Stmt, Method, Value> copyWithEdgeFunction(EdgeFunction<Value> edgeFunction) {
-		return new FactEdgeResolverStatementTuple<Fact, Stmt, Method, Value>(fact, edgeFunction, resolver, statement);
+	public FactEdgeFnResolverStatementTuple<Fact, Stmt, Method, Value> copyWithEdgeFunction(EdgeFunction<Value> edgeFunction) {
+		return new FactEdgeFnResolverStatementTuple<Fact, Stmt, Method, Value>(fact, edgeFunction, resolver, statement);
 	}
 
 	public Stmt getStatement() {

@@ -8,10 +8,17 @@
  * Contributors:
  *     Johannes Lerch - initial API and implementation
  ******************************************************************************/
-package heros.utilities;
+package heros.fieldsens;
 
 import static org.junit.Assert.assertTrue;
 import heros.InterproceduralCFG;
+import heros.utilities.Edge;
+import heros.utilities.EdgeBuilder;
+import heros.utilities.ExpectedFlowFunction;
+import heros.utilities.Statement;
+import heros.utilities.TestDebugger;
+import heros.utilities.TestFact;
+import heros.utilities.TestMethod;
 import heros.utilities.Edge.Call2ReturnEdge;
 import heros.utilities.Edge.CallEdge;
 import heros.utilities.Edge.EdgeVisitor;
@@ -73,7 +80,7 @@ public class FieldSensitiveTestHelper {
 		return methodHelper;
 	}
 
-	public static Statement[] startPoints(String... startingPoints) {
+	static Statement[] startPoints(String... startingPoints) {
 		Statement[] result = new Statement[startingPoints.length];
 		for (int i = 0; i < result.length; i++) {
 			result[i] = new Statement(startingPoints[i]);
@@ -81,31 +88,31 @@ public class FieldSensitiveTestHelper {
 		return result;
 	}
 
-	public static EdgeBuilder.NormalStmtBuilder normalStmt(String stmt, ExpectedFlowFunction...flowFunctions) {
+	static EdgeBuilder.NormalStmtBuilder normalStmt(String stmt, ExpectedFlowFunction...flowFunctions) {
 		return new NormalStmtBuilder(new Statement(stmt), flowFunctions);
 	}
 	
-	public static EdgeBuilder.CallSiteBuilder callSite(String callSite) {
+	static EdgeBuilder.CallSiteBuilder callSite(String callSite) {
 		return new EdgeBuilder.CallSiteBuilder(new Statement(callSite));
 	}
 	
-	public static EdgeBuilder.ExitStmtBuilder exitStmt(String exitStmt) {
+	static EdgeBuilder.ExitStmtBuilder exitStmt(String exitStmt) {
 		return new EdgeBuilder.ExitStmtBuilder(new Statement(exitStmt));
 	}
 	
-	public static Statement over(String callSite) {
+	static Statement over(String callSite) {
 		return new Statement(callSite);
 	}
 	
-	public static Statement to(String returnSite) {
+	static Statement to(String returnSite) {
 		return new Statement(returnSite);
 	}
 	
-	public static ExpectedFlowFunction<TestFact> kill(String source) {
+	static ExpectedFlowFunction<TestFact> kill(String source) {
 		return kill(1, source);
 	}
 	
-	public static ExpectedFlowFunction<TestFact> kill(int times, String source) {
+	static ExpectedFlowFunction<TestFact> kill(int times, String source) {
 		return new ExpectedFlowFunction<TestFact>(times, new TestFact(source)) {
 			@Override
 			public ConstrainedFact<String, TestFact, Statement, TestMethod> apply(TestFact target, AccessPathHandler<String, TestFact, Statement, TestMethod> accPathHandler) {
@@ -119,7 +126,7 @@ public class FieldSensitiveTestHelper {
 		};
 	}
 
-	public static AccessPathTransformer readField(final String fieldName) {
+	static AccessPathTransformer readField(final String fieldName) {
 		return new AccessPathTransformer() {
 			@Override
 			public ConstrainedFact<String, TestFact, Statement, TestMethod> apply(TestFact target, AccessPathHandler<String, TestFact, Statement, TestMethod> accPathHandler) {
@@ -133,7 +140,7 @@ public class FieldSensitiveTestHelper {
 		};
 	}
 	
-	public static AccessPathTransformer prependField(final String fieldName) {
+	static AccessPathTransformer prependField(final String fieldName) {
 		return new AccessPathTransformer() {
 			@Override
 			public ConstrainedFact<String, TestFact, Statement, TestMethod> apply(TestFact target, AccessPathHandler<String, TestFact, Statement, TestMethod> accPathHandler) {
@@ -147,7 +154,7 @@ public class FieldSensitiveTestHelper {
 		};
 	}
 	
-	public static AccessPathTransformer overwriteField(final String fieldName) {
+	static AccessPathTransformer overwriteField(final String fieldName) {
 		return new AccessPathTransformer() {
 			@Override
 			public ConstrainedFact<String, TestFact, Statement, TestMethod> apply(TestFact target, AccessPathHandler<String, TestFact, Statement, TestMethod> accPathHandler) {
@@ -161,11 +168,11 @@ public class FieldSensitiveTestHelper {
 		};
 	}
 	
-	public static ExpectedFlowFunction<TestFact> flow(String source, final AccessPathTransformer transformer, String... targets) {
+	static ExpectedFlowFunction<TestFact> flow(String source, final AccessPathTransformer transformer, String... targets) {
 		return flow(1, source, transformer, targets);
 	}
 	
-	public static ExpectedFlowFunction<TestFact> flow(int times, String source, final AccessPathTransformer transformer, String... targets) {
+	static ExpectedFlowFunction<TestFact> flow(int times, String source, final AccessPathTransformer transformer, String... targets) {
 		TestFact[] targetFacts = new TestFact[targets.length];
 		for(int i=0; i<targets.length; i++) {
 			targetFacts[i] = new TestFact(targets[i]);
@@ -189,11 +196,11 @@ public class FieldSensitiveTestHelper {
 		
 	}
 	
-	public static ExpectedFlowFunction<TestFact> flow(String source, String... targets) {
+	static ExpectedFlowFunction<TestFact> flow(String source, String... targets) {
 		return flow(1, source, targets);
 	}
 	
-	public static ExpectedFlowFunction<TestFact> flow(int times, String source, String... targets) {
+	static ExpectedFlowFunction<TestFact> flow(int times, String source, String... targets) {
 		return flow(times, source, new AccessPathTransformer() {
 			@Override
 			public ConstrainedFact<String, TestFact, Statement, TestMethod> apply(TestFact target, AccessPathHandler<String, TestFact, Statement, TestMethod> accPathHandler) {
@@ -208,7 +215,7 @@ public class FieldSensitiveTestHelper {
 		}, targets);
 	}
 	
-	public static int times(int times) {
+	static int times(int times) {
 		return times;
 	}
 
@@ -587,7 +594,7 @@ public class FieldSensitiveTestHelper {
 		};
 	}
 	
-	public static enum TabulationProblemExchange {AsSpecified, ExchangeForwardAndBackward};
+	static enum TabulationProblemExchange {AsSpecified, ExchangeForwardAndBackward};
 	public void runBiDiSolver(FieldSensitiveTestHelper backwardHelper, TabulationProblemExchange direction, final String...initialSeeds) {
 		FactMergeHandler<TestFact> factMergeHandler = new FactMergeHandler<TestFact>() {
 			@Override

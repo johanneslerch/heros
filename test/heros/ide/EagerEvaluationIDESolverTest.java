@@ -13,7 +13,6 @@ package heros.ide;
 
 
 import heros.InterproceduralCFG;
-import heros.utilities.EagerEvaluationTestHelper;
 import heros.utilities.Statement;
 import heros.utilities.TestDebugger;
 import heros.utilities.TestFact;
@@ -25,7 +24,7 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TestWatcher;
 
-import static heros.utilities.EagerEvaluationTestHelper.*;
+import static heros.ide.EagerEvaluationTestHelper.*;
 
 public class EagerEvaluationIDESolverTest {
 
@@ -1173,6 +1172,24 @@ public class EagerEvaluationIDESolverTest {
 				normalStmt("a", flow("0", "1")).succ("b"),
 				callSite("b").calls("bar", kill(2,"1")).retSite("c", flow("1", "1")),
 				normalStmt("c", flow("1", prependField("f"), "1")).succ("b"));
+		
+		helper.runSolver(false, "a");
+	}
+	
+	@Test
+	public void readMultipleAbstractedFields() {
+		helper.method("foo",
+			startPoints("a"),
+			normalStmt("a", flow("0", prependField("f"), "1")).succ("b1").succ("b2"),
+			normalStmt("b1", kill("1")).succ("c"),
+			normalStmt("b2", flow("1", prependField("g"), "1")).succ("c"),
+			normalStmt("c", flow("1", "2")).succ("d"),
+			normalStmt("d", flow("2", "2")).succ("e1").succ("e2"),
+			normalStmt("e1", flow("2", "3")).succ("f"),
+			normalStmt("e2", kill("2")).succ("f"),
+			normalStmt("f", flow("3", readField("g"), "4")).succ("g"),
+			normalStmt("g", flow("4", readField("f"), "5")).succ("h"),
+			normalStmt("h", kill("5")).succ("i"));
 		
 		helper.runSolver(false, "a");
 	}

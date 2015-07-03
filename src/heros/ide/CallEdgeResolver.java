@@ -11,7 +11,7 @@
 package heros.ide;
 
 import heros.ide.edgefunc.EdgeFunction;
-import heros.ide.structs.FactEdgeResolverStatementTuple;
+import heros.ide.structs.FactEdgeFnResolverStatementTuple;
 import heros.ide.structs.WrappedFactAtStatement;
 
 import com.google.common.collect.Lists;
@@ -54,7 +54,7 @@ class CallEdgeResolver<Fact, Stmt, Method, Value> extends ResolverTemplate<Fact,
 		return analyzer.createWithConstraint(edgeFunction).getCallEdgeResolver();
 	}
 	
-	public void applySummaries(FactEdgeResolverStatementTuple<Fact, Stmt, Method, Value> factAtStmt) {
+	public void applySummaries(FactEdgeFnResolverStatementTuple<Fact, Stmt, Method, Value> factAtStmt) {
 		for(CallEdge<Fact, Stmt, Method, Value> incEdge : Lists.newLinkedList(incomingEdges)) {
 			analyzer.applySummary(incEdge, factAtStmt);
 		}

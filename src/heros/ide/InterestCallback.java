@@ -15,7 +15,7 @@ import heros.ide.edgefunc.EdgeFunction;
 
 public interface InterestCallback<Fact, Stmt, Method, Value> {
 
-	void interest(PerAccessPathMethodAnalyzer<Fact, Stmt, Method, Value> analyzer, Resolver<Fact, Stmt, Method, Value> resolver);
+	void interest(PerAccessPathMethodAnalyzer<Fact, Stmt, Method, Value> analyzer, Resolver<Fact, Stmt, Method, Value> resolver, EdgeFunction<Value> edgeFunction);
 	
 	void continueBalancedTraversal(EdgeFunction<Value> edgeFunction);
 }

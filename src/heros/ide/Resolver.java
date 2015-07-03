@@ -20,7 +20,7 @@ import com.google.common.collect.Sets;
 
 public abstract class Resolver<Fact, Stmt, Method, Value> {
 
-	private boolean resolvedUnbalanced = false;
+	private Set<EdgeFunction<Value>> resolvedUnbalanced = Sets.newHashSet();
 	private List<InterestCallback<Fact, Stmt, Method, Value>> interestCallbacks = Lists.newLinkedList();
 	protected PerAccessPathMethodAnalyzer<Fact, Stmt, Method, Value> analyzer;
 	private Set<EdgeFunction<Value>> balancedFunctions = Sets.newHashSet();
@@ -31,19 +31,18 @@ public abstract class Resolver<Fact, Stmt, Method, Value> {
 
 	public abstract void resolve(EdgeFunction<Value> edgeFunction, InterestCallback<Fact, Stmt, Method, Value> callback);
 	
-	public void resolvedUnbalanced() {
-		if(resolvedUnbalanced)
+	public void resolvedUnbalanced(EdgeFunction<Value> edgeFunction) {
+		if(!resolvedUnbalanced.add(edgeFunction))
 			return;
 
-		log("Interest given");
-		resolvedUnbalanced = true;
+		log("Interest given by EdgeFunction: "+edgeFunction);
 		for(InterestCallback<Fact, Stmt, Method, Value> callback : Lists.newLinkedList(interestCallbacks)) {
-			callback.interest(analyzer, this);
+			callback.interest(analyzer, this, edgeFunction);
 		}
 	}
 	
 	public boolean isResolvedUnbalanced() {
-		return resolvedUnbalanced;
+		return !resolvedUnbalanced.isEmpty();
 	}
 	
 	protected void continueBalancedTraversal(EdgeFunction<Value> edgeFunction) {
@@ -55,13 +54,11 @@ public abstract class Resolver<Fact, Stmt, Method, Value> {
 	}
 
 	protected void registerCallback(InterestCallback<Fact, Stmt, Method, Value> callback) {
-		if(resolvedUnbalanced) {
-			callback.interest(analyzer, this);
+		for (EdgeFunction<Value> edgeFunction : resolvedUnbalanced) {
+			callback.interest(analyzer, this, edgeFunction);
 		}
-		else {
-			log("Callback registered");
-			interestCallbacks.add(callback);
-		}
+		log("Callback registered");
+		interestCallbacks.add(callback);
 
 		if(!balancedFunctions.isEmpty()) {
 			for(EdgeFunction<Value> edgeFunction : balancedFunctions) {

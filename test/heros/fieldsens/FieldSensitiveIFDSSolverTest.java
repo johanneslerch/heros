@@ -13,7 +13,6 @@ package heros.fieldsens;
 
 
 import heros.InterproceduralCFG;
-import heros.utilities.FieldSensitiveTestHelper;
 import heros.utilities.Statement;
 import heros.utilities.TestDebugger;
 import heros.utilities.TestFact;
@@ -25,7 +24,7 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TestWatcher;
 
-import static heros.utilities.FieldSensitiveTestHelper.*;
+import static heros.fieldsens.FieldSensitiveTestHelper.*;
 
 public class FieldSensitiveIFDSSolverTest {
 

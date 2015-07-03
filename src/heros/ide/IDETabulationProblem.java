@@ -48,4 +48,6 @@ public interface IDETabulationProblem<N,D,M,V,I extends InterproceduralCFG<N,M>>
 	 * Returns a function mapping everything to top.
 	 */	
 	EdgeFunction<V> allTopFunction(); 
+	
+	EdgeFunction<V> initialSeedEdgeFunction(N seed, D val);
 }

@@ -22,7 +22,7 @@ import heros.ide.edgefunc.EdgeFunction;
 import heros.ide.edgefunc.fieldsens.AccessPathBundle;
 import heros.ide.edgefunc.fieldsens.Factory;
 import heros.ide.structs.FactEdgeFnResolverTuple;
-import heros.ide.structs.FactEdgeResolverStatementTuple;
+import heros.ide.structs.FactEdgeFnResolverStatementTuple;
 import heros.utilities.Statement;
 import heros.utilities.TestFact;
 import heros.utilities.TestMethod;
@@ -57,7 +57,7 @@ public class ControlFlowJoinResolverTest {
 	@Test
 	public void emptyIncomingFact() {
 		sut.addIncoming(new FactEdgeFnResolverTuple<TestFact, Statement, TestMethod, AccessPathBundle<String>>(fact, factory.id(), callEdgeResolver));
-		verify(analyzer).processFlowFromJoinStmt(eq(new FactEdgeResolverStatementTuple<TestFact, Statement, TestMethod, AccessPathBundle<String>>(
+		verify(analyzer).processFlowFromJoinStmt(eq(new FactEdgeFnResolverStatementTuple<TestFact, Statement, TestMethod, AccessPathBundle<String>>(
 				fact, factory.id(), sut, joinStmt)));
 		assertTrue(sut.isResolvedUnbalanced());
 	}
@@ -66,7 +66,7 @@ public class ControlFlowJoinResolverTest {
 	public void resolveViaIncomingFact() {
 		sut.resolve(factory.read("a"), callback);
 		sut.addIncoming(new FactEdgeFnResolverTuple<TestFact, Statement, TestMethod, AccessPathBundle<String>>(fact, factory.prepend("a"), callEdgeResolver));
-		verify(callback).interest(eq(analyzer), argThat(new ResolverArgumentMatcher(factory.read("a"))));
+		verify(callback).interest(eq(analyzer), argThat(new ResolverArgumentMatcher(factory.read("a"))), eq(factory.prepend("a")));
 	}
 
 	@Test
@@ -86,7 +86,7 @@ public class ControlFlowJoinResolverTest {
 			public Object answer(InvocationOnMock invocation) throws Throwable {
 				InterestCallback<TestFact, Statement, TestMethod, AccessPathBundle<String>> argCallback = 
 						(InterestCallback<TestFact, Statement, TestMethod, AccessPathBundle<String>>) invocation.getArguments()[1];
-				argCallback.interest(analyzer, nestedResolver);
+				argCallback.interest(analyzer, nestedResolver, factory.prepend("a"));
 				return null;
 			}
 		}).when(resolver).resolve(eq(factory.read("a")), any(InterestCallback.class));
@@ -94,7 +94,7 @@ public class ControlFlowJoinResolverTest {
 		sut.addIncoming(new FactEdgeFnResolverTuple<TestFact, Statement, TestMethod, AccessPathBundle<String>>(fact, factory.id(), resolver));
 		sut.resolve(factory.read("a"), callback);
 		
-		verify(callback).interest(eq(analyzer), argThat(new ResolverArgumentMatcher(factory.read("a"))));
+		verify(callback).interest(eq(analyzer), argThat(new ResolverArgumentMatcher(factory.read("a"))), eq(factory.prepend("a")));
 	}
 	
 	

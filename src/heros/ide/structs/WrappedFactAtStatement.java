@@ -44,8 +44,8 @@ public class WrappedFactAtStatement<Fact, Stmt, Method, Value> {
 		return new FactAtStatement<Fact, Stmt>(fact.getFact(), stmt);
 	}
 	
-	public FactEdgeResolverStatementTuple<Fact, Stmt, Method, Value> withEdgeFunction(EdgeFunction<Value> edgeFunction) {
-		return new FactEdgeResolverStatementTuple<Fact, Stmt, Method, Value>(fact.getFact(), edgeFunction, fact.getResolver(), stmt);
+	public FactEdgeFnResolverStatementTuple<Fact, Stmt, Method, Value> withEdgeFunction(EdgeFunction<Value> edgeFunction) {
+		return new FactEdgeFnResolverStatementTuple<Fact, Stmt, Method, Value>(fact.getFact(), edgeFunction, fact.getResolver(), stmt);
 	}
 	
 	@Override

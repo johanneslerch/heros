@@ -71,7 +71,7 @@ public class EagerEvaluationIDESolver<D, N, M, V, I extends InterproceduralCFG<N
 			N startPoint = seed.getKey();
 			MethodAnalyzer<D,N,M,V> analyzer = methodAnalyzers.getOrCreate(tabulationProblem.interproceduralCFG().getMethodOf(startPoint));
 			for(D val: seed.getValue()) {
-				analyzer.addInitialSeed(startPoint, val);
+				analyzer.addInitialSeed(startPoint, val, tabulationProblem.initialSeedEdgeFunction(startPoint, val));
 				debugger.initialSeed(startPoint);
 			}
 		}

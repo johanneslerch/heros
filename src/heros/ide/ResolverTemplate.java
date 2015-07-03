@@ -53,26 +53,37 @@ public abstract class ResolverTemplate<Fact, Stmt, Method, Value, Incoming>  ext
 	
 	protected abstract EdgeFunction<Value> getEdgeFunction(Incoming inc);
 	
+	protected void addIncomingWithoutCheck(Incoming inc) {
+		log("Incoming Edge: "+inc+ " with EdgeFunction: "+getEdgeFunction(inc));
+		if(!incomingEdges.add(inc))
+			return;
+		for(ResolverTemplate<Fact, Stmt, Method, Value, Incoming> nestedResolver : nestedResolvers.values()) {
+			nestedResolver.addIncoming(inc);
+		}
+	}
+	
 	public void addIncoming(Incoming inc) {
-		EdgeFunction<Value> composedFunction = getEdgeFunction(inc).composeWith(getResolvedFunction());
-		if(composedFunction.mayReturnTop()) {
-			if(composedFunction instanceof AllTop)
+		if(getResolvedFunction().mayReturnTop()) {
+			EdgeFunction<Value> composedFunction = getEdgeFunction(inc).composeWith(getResolvedFunction());
+			if(composedFunction.mayReturnTop()) {
+				if(composedFunction instanceof AllTop)
+					return;
+				processIncomingPotentialPrefix(inc); //TODO: Improve performance by passing composedFunction here
 				return;
-			processIncomingPotentialPrefix(inc); //TODO: Improve performance by passing composedFunction here
-		}
-		else {
-			log("Incoming Edge: "+inc+ " with EdgeFunction: "+getEdgeFunction(inc));
-			if(!incomingEdges.add(inc))
-				return;
-			
-			resolvedUnbalanced();
-			
-			for(ResolverTemplate<Fact, Stmt, Method, Value, Incoming> nestedResolver : nestedResolvers.values()) {
-				nestedResolver.addIncoming(inc);
 			}
-			
-			processIncomingGuaranteedPrefix(inc);
 		}
+
+		log("Incoming Edge: "+inc+ " with EdgeFunction: "+getEdgeFunction(inc));
+		if(!incomingEdges.add(inc))
+			return;
+		
+		resolvedUnbalanced(getEdgeFunction(inc));
+		
+		for(ResolverTemplate<Fact, Stmt, Method, Value, Incoming> nestedResolver : nestedResolvers.values()) {
+			nestedResolver.addIncoming(inc);
+		}
+		
+		processIncomingGuaranteedPrefix(inc);
 	}
 
 	protected abstract void processIncomingPotentialPrefix(Incoming inc);

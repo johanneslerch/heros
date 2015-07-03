@@ -26,7 +26,7 @@ public class ZeroCallEdgeResolver<Fact, Stmt, Method, Value> extends CallEdgeRes
 	}
 	
 	@Override
-	public void resolvedUnbalanced() {
+	public void resolvedUnbalanced(EdgeFunction<Value> edgeFunction) {
 	}
 	
 	@Override

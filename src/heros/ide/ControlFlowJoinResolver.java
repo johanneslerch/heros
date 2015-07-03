@@ -14,7 +14,7 @@ import heros.fieldsens.FactMergeHandler;
 import heros.ide.edgefunc.EdgeFunction;
 import heros.ide.edgefunc.EdgeIdentity;
 import heros.ide.structs.FactEdgeFnResolverTuple;
-import heros.ide.structs.FactEdgeResolverStatementTuple;
+import heros.ide.structs.FactEdgeFnResolverStatementTuple;
 
 public class ControlFlowJoinResolver<Fact, Stmt, Method, Value> extends ResolverTemplate<Fact, Stmt, Method, Value, FactEdgeFnResolverTuple<Fact, Stmt, Method, Value>> {
 
@@ -53,19 +53,21 @@ public class ControlFlowJoinResolver<Fact, Stmt, Method, Value> extends Resolver
 		else {
 			propagated=true;
 			sourceFact = fact.getFact();
-			analyzer.processFlowFromJoinStmt(new FactEdgeResolverStatementTuple<Fact, Stmt, Method, Value>(
+			analyzer.processFlowFromJoinStmt(new FactEdgeFnResolverStatementTuple<Fact, Stmt, Method, Value>(
 					fact.getFact(), fact.getEdgeFunction(), this, joinStmt));
 		}
 	};
 	
 	@Override
-	protected void processIncomingPotentialPrefix(FactEdgeFnResolverTuple<Fact, Stmt, Method, Value> fact) {
+	protected void processIncomingPotentialPrefix(final FactEdgeFnResolverTuple<Fact, Stmt, Method, Value> fact) {
 		lock();
 		fact.getResolver().resolve(fact.getEdgeFunction().composeWith(resolvedEdgeFunction), new InterestCallback<Fact, Stmt, Method, Value>() {
 			@Override
 			public void interest(PerAccessPathMethodAnalyzer<Fact, Stmt, Method, Value> analyzer, 
-					Resolver<Fact, Stmt, Method, Value> resolver) {
-				ControlFlowJoinResolver.this.resolvedUnbalanced();
+					Resolver<Fact, Stmt, Method, Value> resolver, EdgeFunction<Value> edgeFunction) {
+				addIncomingWithoutCheck(new FactEdgeFnResolverTuple<Fact, Stmt, Method, Value>(
+						fact.getFact(), edgeFunction, resolver));
+				ControlFlowJoinResolver.this.resolvedUnbalanced(edgeFunction);
 			}
 
 			@Override

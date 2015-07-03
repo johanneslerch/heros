@@ -59,7 +59,7 @@ public class ReturnEdge<Fact, Stmt, Method, Value> {
 	
 	@Override
 	public String toString() {
-		return String.format("IncFact: %s%s, IncResolver: %s, ResolverAtCallSite: %s", incFact, incEdgeFunction, incResolver, resolverIntoCallee);
+		return String.format("IncFact: %s%s, IncResolver: %s, ResolverAtCallSite: %s, EdgeIntoCallee: %s", incFact, incEdgeFunction, incResolver, resolverIntoCallee, edgeFunctionIntoCallee);
 	}
 	
 	

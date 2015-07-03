@@ -11,12 +11,11 @@
 package heros.fieldsens;
 
 import heros.InterproceduralCFG;
-import heros.utilities.FieldSensitiveTestHelper;
+import heros.fieldsens.FieldSensitiveTestHelper.TabulationProblemExchange;
 import heros.utilities.Statement;
 import heros.utilities.TestDebugger;
 import heros.utilities.TestFact;
 import heros.utilities.TestMethod;
-import heros.utilities.FieldSensitiveTestHelper.TabulationProblemExchange;
 
 import java.util.Collection;
 import java.util.LinkedList;
@@ -28,7 +27,7 @@ import org.junit.runners.Parameterized.Parameters;
 
 import com.google.common.collect.Lists;
 
-import static heros.utilities.FieldSensitiveTestHelper.*;
+import static heros.fieldsens.FieldSensitiveTestHelper.*;
 
 
 @RunWith(Parameterized.class)

@@ -8,31 +8,34 @@
  * Contributors:
  *     Johannes Lerch - initial API and implementation
  ******************************************************************************/
-package heros.utilities;
+package heros.ide;
 
 import static org.junit.Assert.assertTrue;
 import heros.FlowFunction;
 import heros.FlowFunctions;
 import heros.InterproceduralCFG;
 import heros.JoinLattice;
+import heros.fieldsens.AccessPathHandler;
+import heros.fieldsens.FactMergeHandler;
+import heros.fieldsens.FlowFunction.ConstrainedFact;
+import heros.fieldsens.Scheduler;
+import heros.ide.edgefunc.EdgeFunction;
+import heros.ide.edgefunc.fieldsens.AccessPathBundle;
+import heros.ide.edgefunc.fieldsens.ChainableEdgeFunction;
+import heros.ide.edgefunc.fieldsens.Factory;
+import heros.utilities.Edge;
 import heros.utilities.Edge.Call2ReturnEdge;
 import heros.utilities.Edge.CallEdge;
 import heros.utilities.Edge.EdgeVisitor;
 import heros.utilities.Edge.NormalEdge;
 import heros.utilities.Edge.ReturnEdge;
-import heros.utilities.EdgeBuilder.CallSiteBuilder;
-import heros.utilities.EdgeBuilder.ExitStmtBuilder;
+import heros.utilities.EdgeBuilder;
 import heros.utilities.EdgeBuilder.NormalStmtBuilder;
-import heros.fieldsens.AccessPathHandler;
-import heros.fieldsens.FactMergeHandler;
-import heros.fieldsens.FlowFunction.ConstrainedFact;
-import heros.fieldsens.Scheduler;
-import heros.ide.EagerEvaluationIDESolver;
-import heros.ide.EdgeFunctions;
-import heros.ide.IDETabulationProblem;
-import heros.ide.edgefunc.EdgeFunction;
-import heros.ide.edgefunc.fieldsens.AccessPathBundle;
-import heros.ide.edgefunc.fieldsens.Factory;
+import heros.utilities.ExpectedFlowFunction;
+import heros.utilities.Statement;
+import heros.utilities.TestDebugger;
+import heros.utilities.TestFact;
+import heros.utilities.TestMethod;
 
 import java.util.Collection;
 import java.util.LinkedList;
@@ -92,7 +95,7 @@ public class EagerEvaluationTestHelper {
 		return methodHelper;
 	}
 
-	public static Statement[] startPoints(String... startingPoints) {
+	static Statement[] startPoints(String... startingPoints) {
 		Statement[] result = new Statement[startingPoints.length];
 		for (int i = 0; i < result.length; i++) {
 			result[i] = new Statement(startingPoints[i]);
@@ -100,32 +103,32 @@ public class EagerEvaluationTestHelper {
 		return result;
 	}
 
-	public static EdgeBuilder.NormalStmtBuilder normalStmt(String stmt, ExpectedFlowFunction...flowFunctions) {
+	static EdgeBuilder.NormalStmtBuilder normalStmt(String stmt, ExpectedFlowFunction...flowFunctions) {
 		return new NormalStmtBuilder(new Statement(stmt), flowFunctions);
 	}
 	
-	public static EdgeBuilder.CallSiteBuilder callSite(String callSite) {
+	static EdgeBuilder.CallSiteBuilder callSite(String callSite) {
 		return new EdgeBuilder.CallSiteBuilder(new Statement(callSite));
 	}
 	
-	public static EdgeBuilder.ExitStmtBuilder exitStmt(String exitStmt) {
+	static EdgeBuilder.ExitStmtBuilder exitStmt(String exitStmt) {
 		return new EdgeBuilder.ExitStmtBuilder(new Statement(exitStmt));
 	}
 	
-	public static Statement over(String callSite) {
+	static Statement over(String callSite) {
 		return new Statement(callSite);
 	}
 	
-	public static Statement to(String returnSite) {
+	static Statement to(String returnSite) {
 		return new Statement(returnSite);
 	}
 	
-	public static ExpectedFlowFunction<TestFact> kill(String source) {
+	static ExpectedFlowFunction<TestFact> kill(String source) {
 		return kill(1, source);
 	}
 	
-	public static ExpectedFlowFunction<TestFact> kill(int times, String source) {
-		return new ExpectedFlowFunction<TestFact>(times, new TestFact(source)) {
+	static ExpectedFlowFunction<TestFact> kill(int times, String source) {
+		return new ExpectedFlowFunction<TestFact>(times, factory.id(), new TestFact(source)) {
 			@Override
 			public ConstrainedFact<String, TestFact, Statement, TestMethod> apply(TestFact target, AccessPathHandler<String, TestFact, Statement, TestMethod> accPathHandler) {
 				throw new IllegalStateException();
@@ -138,23 +141,23 @@ public class EagerEvaluationTestHelper {
 		};
 	}
 
-	public static EdgeFunction<AccessPathBundle<String>> readField(final String fieldName) {
+	static EdgeFunction<AccessPathBundle<String>> readField(final String fieldName) {
 		return factory.read(fieldName);
 	}
 	
-	public static EdgeFunction<AccessPathBundle<String>> prependField(final String fieldName) {
+	static EdgeFunction<AccessPathBundle<String>> prependField(final String fieldName) {
 		return factory.prepend(fieldName);
 	}
 	
-	public static EdgeFunction<AccessPathBundle<String>> overwriteField(final String fieldName) {
+	static EdgeFunction<AccessPathBundle<String>> overwriteField(final String fieldName) {
 		return factory.overwrite(fieldName);
 	}
 	
-	public static ExpectedFlowFunction<TestFact> flow(String source, final EdgeFunction<AccessPathBundle<String>> transformer, String... targets) {
+	static ExpectedFlowFunction<TestFact> flow(String source, final EdgeFunction<AccessPathBundle<String>> transformer, String... targets) {
 		return flow(1, source, transformer, targets);
 	}
 	
-	public static ExpectedFlowFunction<TestFact> flow(int times, String source, final EdgeFunction<AccessPathBundle<String>> edgeFunction, String... targets) {
+	static ExpectedFlowFunction<TestFact> flow(int times, String source, final EdgeFunction<AccessPathBundle<String>> edgeFunction, String... targets) {
 		TestFact[] targetFacts = new TestFact[targets.length];
 		for(int i=0; i<targets.length; i++) {
 			targetFacts[i] = new TestFact(targets[i]);
@@ -172,15 +175,15 @@ public class EagerEvaluationTestHelper {
 		};
 	}
 	
-	public static ExpectedFlowFunction<TestFact> flow(String source, String... targets) {
+	static ExpectedFlowFunction<TestFact> flow(String source, String... targets) {
 		return flow(1, source, targets);
 	}
 	
-	public static ExpectedFlowFunction<TestFact> flow(int times, String source, String... targets) {
+	static ExpectedFlowFunction<TestFact> flow(int times, String source, String... targets) {
 		return flow(times, source, factory.id(), targets);
 	}
 	
-	public static int times(int times) {
+	static int times(int times) {
 		return times;
 	}
 
@@ -335,8 +338,7 @@ public class EagerEvaluationTestHelper {
 		public void edges(Collection<Edge> edges) {
 			for(Edge edge : edges) {
 				for(ExpectedFlowFunction<TestFact> ff : edge.flowFunctions) {
-					if(!remainingFlowFunctions.contains(ff))
-						remainingFlowFunctions.add(ff, ff.times);
+					remainingFlowFunctions.add(ff, ff.times);
 				}
 				
 				edge.accept(new EdgeVisitor() {
@@ -438,16 +440,24 @@ public class EagerEvaluationTestHelper {
 				return new FlowFunction<TestFact>() {
 					@Override
 					public Set<TestFact> computeTargets(TestFact source) {
+						Set<TestFact> result = Sets.newHashSet();
+						boolean found = false;
 						for (ExpectedFlowFunction<TestFact> ff : edge.flowFunctions) {
 							if (ff.source.equals(source)) {
 								if (remainingFlowFunctions.remove(ff)) {
-									return Sets.newHashSet(ff.targets);
+									for (TestFact target : ff.targets) {
+										result.add(target);
+									}
+									found = true;
 								} else {
 									throw new AssertionError(String.format("Flow Function '%s' was used multiple times on edge '%s'", ff, edge));
 								}
 							}
 						}
-						throw new AssertionError(String.format("Fact '%s' was not expected at edge '%s'", source, edge));
+						if(found)
+							return result;
+						else
+							throw new AssertionError(String.format("Fact '%s' was not expected at edge '%s'", source, edge));
 					}
 				};
 			}
@@ -595,6 +605,31 @@ public class EagerEvaluationTestHelper {
 					result.put(new Statement(stmt), Sets.newHashSet(new TestFact("0")));
 				}
 				return result;
+			}
+			
+			@Override
+			public EdgeFunction<AccessPathBundle<String>> initialSeedEdgeFunction(Statement seed, TestFact val) {
+				return new ChainableEdgeFunction<String>(factory, false, null) {
+					@Override
+					public EdgeFunction<AccessPathBundle<String>> chain(ChainableEdgeFunction<String> f) {
+						throw new IllegalStateException();
+					}
+					
+					@Override
+					protected AccessPathBundle<String> _computeTarget(AccessPathBundle<String> source) {
+						return joinLattice.bottomElement();
+					}
+					
+					@Override
+					protected EdgeFunction<AccessPathBundle<String>> _composeWith(ChainableEdgeFunction<String> chainableFunction) {
+						return chainableFunction.chain(this);
+					}
+					
+					@Override
+					public String toString() {
+						return "init";
+					}
+				};
 			}
 
 			@Override

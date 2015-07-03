@@ -10,7 +10,8 @@
  ******************************************************************************/
 package heros.ide;
 
-import heros.ide.structs.FactEdgeResolverStatementTuple;
+import heros.ide.edgefunc.EdgeFunction;
+import heros.ide.structs.FactEdgeFnResolverStatementTuple;
 import heros.ide.structs.WrappedFactAtStatement;
 import heros.utilities.DefaultValueMap;
 
@@ -40,12 +41,12 @@ public class MethodAnalyzerImpl<Fact, Stmt, Method, Value>
 	}
 
 	@Override
-	public void addInitialSeed(Stmt startPoint, Fact val) {
-		perSourceAnalyzer.getOrCreate(val).addInitialSeed(startPoint);
+	public void addInitialSeed(Stmt startPoint, Fact val, EdgeFunction<Value> edgeFunction) {
+		perSourceAnalyzer.getOrCreate(val).addInitialSeed(startPoint, edgeFunction);
 	}
 	
 	@Override
-	public void addUnbalancedReturnFlow(FactEdgeResolverStatementTuple<Fact, Stmt, Method, Value> target, Stmt callSite) {
+	public void addUnbalancedReturnFlow(FactEdgeFnResolverStatementTuple<Fact, Stmt, Method, Value> target, Stmt callSite) {
 		perSourceAnalyzer.getOrCreate(context.zeroValue).scheduleUnbalancedReturnEdgeTo(target);
 	}
 }
