@@ -54,14 +54,14 @@ public abstract class Resolver<Fact, Stmt, Method, Value> {
 	}
 
 	protected void registerCallback(InterestCallback<Fact, Stmt, Method, Value> callback) {
-		for (EdgeFunction<Value> edgeFunction : resolvedUnbalanced) {
+		for (EdgeFunction<Value> edgeFunction : Lists.newLinkedList(resolvedUnbalanced)) {
 			callback.interest(analyzer, this, edgeFunction);
 		}
 		log("Callback registered");
 		interestCallbacks.add(callback);
 
 		if(!balancedFunctions.isEmpty()) {
-			for(EdgeFunction<Value> edgeFunction : balancedFunctions) {
+			for(EdgeFunction<Value> edgeFunction : Lists.newLinkedList(balancedFunctions)) {
 				callback.continueBalancedTraversal(edgeFunction);
 			}
 		}
