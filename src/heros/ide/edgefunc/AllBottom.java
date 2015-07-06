@@ -38,7 +38,10 @@ public class AllBottom<V> implements EdgeFunction<V> {
 		if(otherFunction instanceof EdgeIdentity) {
 			return this;
 		}
-		throw new IllegalStateException("unexpected edge function: "+otherFunction);
+		if(otherFunction instanceof AllBottom)
+			return this;
+		//do not know how to join; hence ask other function to decide on this
+		return otherFunction.joinWith(this);
 	}
 
 	public boolean equals(Object other) {
