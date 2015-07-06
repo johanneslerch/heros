@@ -36,6 +36,7 @@ import heros.utilities.ExpectedFlowFunction;
 import heros.utilities.Statement;
 import heros.utilities.TestDebugger;
 import heros.utilities.TestFact;
+import heros.utilities.TestHelper.TabulationProblemExchange;
 import heros.utilities.TestMethod;
 
 import java.util.Collection;
@@ -662,32 +663,31 @@ public class EagerEvaluationTestHelper {
 		};
 	}
 	
-//	public static enum TabulationProblemExchange {AsSpecified, ExchangeForwardAndBackward};
-//	public void runBiDiSolver(EagerEvaluationTestHelper backwardHelper, TabulationProblemExchange direction, final String...initialSeeds) {
-//		FactMergeHandler<TestFact> factMergeHandler = new FactMergeHandler<TestFact>() {
-//			@Override
-//			public void merge(TestFact previousFact, TestFact currentFact) {
-//			}
-//
-//			@Override
-//			public void restoreCallingContext(TestFact factAtReturnSite, TestFact factAtCallSite) {
-//			}
-//			
-//		};
-//		Scheduler scheduler = new Scheduler();
-//		BiDiFieldSensitiveIFDSSolver<String, TestFact, Statement, TestMethod, InterproceduralCFG<Statement, TestMethod>> solver =
-//				direction == TabulationProblemExchange.AsSpecified ? 
-//				new BiDiFieldSensitiveIFDSSolver<String, TestFact, Statement, TestMethod, InterproceduralCFG<Statement, TestMethod>>(
-//						createTabulationProblem(true, initialSeeds), 
-//						backwardHelper.createTabulationProblem(true, initialSeeds),
-//						factMergeHandler, debugger, scheduler) :
-//				new BiDiFieldSensitiveIFDSSolver<String, TestFact, Statement, TestMethod, InterproceduralCFG<Statement, TestMethod>>(
-//						backwardHelper.createTabulationProblem(true, initialSeeds), 
-//						createTabulationProblem(true, initialSeeds),
-//						factMergeHandler, debugger, scheduler);
-//		
-//		scheduler.runAndAwaitCompletion();
-//		assertAllFlowFunctionsUsed();
-//		backwardHelper.assertAllFlowFunctionsUsed();
-//	}
+	public void runBiDiSolver(EagerEvaluationTestHelper backwardHelper, TabulationProblemExchange direction, final String...initialSeeds) {
+		FactMergeHandler<TestFact> factMergeHandler = new FactMergeHandler<TestFact>() {
+			@Override
+			public void merge(TestFact previousFact, TestFact currentFact) {
+			}
+
+			@Override
+			public void restoreCallingContext(TestFact factAtReturnSite, TestFact factAtCallSite) {
+			}
+			
+		};
+		Scheduler scheduler = new Scheduler();
+		BiDiEagerEvaluationIDESolver<TestFact, Statement, TestMethod, AccessPathBundle<String>, InterproceduralCFG<Statement, TestMethod>> solver =
+				direction == TabulationProblemExchange.AsSpecified ? 
+				new BiDiEagerEvaluationIDESolver<TestFact, Statement, TestMethod, AccessPathBundle<String>, InterproceduralCFG<Statement, TestMethod>>(
+						createTabulationProblem(true, initialSeeds), 
+						backwardHelper.createTabulationProblem(true, initialSeeds),
+						factMergeHandler, debugger, scheduler) :
+				new BiDiEagerEvaluationIDESolver<TestFact, Statement, TestMethod, AccessPathBundle<String>, InterproceduralCFG<Statement, TestMethod>>(
+						backwardHelper.createTabulationProblem(true, initialSeeds), 
+						createTabulationProblem(true, initialSeeds),
+						factMergeHandler, debugger, scheduler);
+		
+		scheduler.runAndAwaitCompletion();
+		assertAllFlowFunctionsUsed();
+		backwardHelper.assertAllFlowFunctionsUsed();
+	}
 }
