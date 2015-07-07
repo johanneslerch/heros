@@ -718,7 +718,6 @@ public class FieldSensitiveIFDSSolverTest {
 				normalStmt("f", flow("6", readField("f"), "7")).succ("g"),
 				normalStmt("g", kill("7")).succ("h"));
 		
-		
 		helper.runSolver(true, "a");
 	}
 	

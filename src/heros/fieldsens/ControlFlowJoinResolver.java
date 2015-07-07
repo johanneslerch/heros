@@ -56,25 +56,36 @@ public class ControlFlowJoinResolver<Field, Fact, Stmt, Method> extends Resolver
 		}
 	};
 	
+	
 	@Override
-	protected void processIncomingPotentialPrefix(final WrappedFact<Field, Fact, Stmt, Method> fact) {
-		lock();
-		Delta<Field> delta = fact.getAccessPath().getDeltaTo(resolvedAccPath);
-		fact.getResolver().resolve(new DeltaConstraint<Field>(delta), new InterestCallback<Field, Fact, Stmt, Method>() {
-			@Override
-			public void interest(PerAccessPathMethodAnalyzer<Field, Fact, Stmt, Method> analyzer, 
-					Resolver<Field, Fact, Stmt, Method> resolver) {
-				incomingEdges.add(new WrappedFact<Field, Fact, Stmt, Method>(fact.getFact(), resolvedAccPath, resolver));
-				ControlFlowJoinResolver.this.interest();
-			}
-
-			@Override
-			public void canBeResolvedEmpty() {
-				ControlFlowJoinResolver.this.canBeResolvedEmpty();
-			}
-		});
-		unlock();
+	protected void delegate(WrappedFact<Field, Fact, Stmt, Method> inc, DeltaConstraint<Field> deltaConstraint,
+			InterestCallback<Field, Fact, Stmt, Method> callback) {
+		inc.getResolver().resolve(deltaConstraint, callback);
 	}
+	
+	@Override
+	protected void resolvePotentialIncoming(WrappedFact<Field, Fact, Stmt, Method> inc, DeltaConstraint<Field> delta) {
+		addPotentialIncomingEdge(inc);
+	}
+	
+//	@Override
+//	protected void processIncomingPotentialPrefix(final WrappedFact<Field, Fact, Stmt, Method> fact) {
+//		lock();
+//		Delta<Field> delta = fact.getAccessPath().getDeltaTo(resolvedAccPath);
+//		fact.getResolver().resolve(new DeltaConstraint<Field>(delta), new InterestCallback<Field, Fact, Stmt, Method>() {
+//			@Override
+//			public void interest(Resolver<Field, Fact, Stmt, Method> resolver) {
+//				guaranteedIncomingEdges.add(new WrappedFact<Field, Fact, Stmt, Method>(fact.getFact(), resolvedAccPath, resolver));
+//				ControlFlowJoinResolver.this.interest();
+//			}
+//
+//			@Override
+//			public void canBeResolvedEmpty() {
+//				ControlFlowJoinResolver.this.canBeResolvedEmpty();
+//			}
+//		});
+//		unlock();
+//	}
 	
 	@Override
 	protected ResolverTemplate<Field, Fact, Stmt, Method, WrappedFact<Field, Fact, Stmt, Method>> createNestedResolver(AccessPath<Field> newAccPath) {

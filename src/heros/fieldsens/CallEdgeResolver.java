@@ -10,6 +10,7 @@
  ******************************************************************************/
 package heros.fieldsens;
 
+import heros.fieldsens.structs.DeltaConstraint;
 import heros.fieldsens.structs.WrappedFactAtStatement;
 
 import com.google.common.collect.Lists;
@@ -41,11 +42,24 @@ class CallEdgeResolver<Field, Fact, Stmt, Method> extends ResolverTemplate<Field
 	}
 	
 	@Override
-	protected void processIncomingPotentialPrefix(CallEdge<Field, Fact, Stmt, Method> inc) {
-		lock();
-		inc.registerInterestCallback(analyzer);
-		unlock();
+	protected void delegate(CallEdge<Field, Fact, Stmt, Method> inc, DeltaConstraint<Field> deltaConstraint,
+			InterestCallback<Field, Fact, Stmt, Method> callback) {
+		//drop potential incoming edges (already registered callback for these)
 	}
+	
+	@Override
+	protected void resolvePotentialIncoming(CallEdge<Field, Fact, Stmt, Method> inc, DeltaConstraint<Field> delta) {
+//		lock();
+		inc.registerInterestCallback(analyzer);
+//		unlock();
+	}
+	
+//	@Override
+//	protected void processIncomingPotentialPrefix(CallEdge<Field, Fact, Stmt, Method> inc) {
+//		lock();
+//		inc.registerInterestCallback(analyzer);
+//		unlock();
+//	}
 
 	@Override
 	protected ResolverTemplate<Field, Fact, Stmt, Method, CallEdge<Field, Fact, Stmt, Method>> createNestedResolver(AccessPath<Field> newAccPath) {
@@ -53,7 +67,7 @@ class CallEdgeResolver<Field, Fact, Stmt, Method> extends ResolverTemplate<Field
 	}
 	
 	public void applySummaries(WrappedFactAtStatement<Field, Fact, Stmt, Method> factAtStmt) {
-		for(CallEdge<Field, Fact, Stmt, Method> incEdge : Lists.newLinkedList(incomingEdges)) {
+		for(CallEdge<Field, Fact, Stmt, Method> incEdge : Lists.newLinkedList(guaranteedIncomingEdges)) {
 			analyzer.applySummary(incEdge, factAtStmt);
 		}
 	}
@@ -69,7 +83,7 @@ class CallEdgeResolver<Field, Fact, Stmt, Method> extends ResolverTemplate<Field
 	}
 
 	public boolean hasIncomingEdges() {
-		return !incomingEdges.isEmpty();
+		return !guaranteedIncomingEdges.isEmpty();
 	}
 
 

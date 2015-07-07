@@ -19,7 +19,7 @@ import com.google.common.collect.Lists;
 public abstract class Resolver<Field, Fact, Stmt, Method> {
 
 	private boolean interest = false;
-	private List<InterestCallback<Field, Fact, Stmt, Method>> interestCallbacks = Lists.newLinkedList();
+	protected List<InterestCallback<Field, Fact, Stmt, Method>> interestCallbacks = Lists.newLinkedList();
 	protected PerAccessPathMethodAnalyzer<Field, Fact, Stmt, Method> analyzer;
 	private boolean canBeResolvedEmpty = false;
 	
@@ -64,10 +64,9 @@ public abstract class Resolver<Field, Fact, Stmt, Method> {
 		if(interest) {
 			callback.interest(analyzer, this);
 		}
-		else {
-			log("Callback registered");
-			interestCallbacks.add(callback);
-		}
+		
+		log("Callback registered");
+		interestCallbacks.add(callback);
 
 		if(canBeResolvedEmpty)
 			callback.canBeResolvedEmpty();

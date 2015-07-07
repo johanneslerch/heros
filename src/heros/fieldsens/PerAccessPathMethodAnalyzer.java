@@ -230,8 +230,7 @@ class PerAccessPathMethodAnalyzer<Field, Fact, Stmt, Method> {
 			else {
 				targetFact.getFact().getResolver().resolve(targetFact.getConstraint(), new InterestCallback<Field, Fact, Stmt, Method>() {
 					@Override
-					public void interest(PerAccessPathMethodAnalyzer<Field, Fact, Stmt, Method> analyzer,
-							Resolver<Field, Fact, Stmt, Method> resolver) {
+					public void interest(PerAccessPathMethodAnalyzer<Field, Fact, Stmt, Method> analyzer, Resolver<Field, Fact, Stmt, Method> resolver) {
 						analyzer.scheduleEdgeTo(successors, new WrappedFact<Field, Fact, Stmt, Method>(targetFact.getFact().getFact(), targetFact.getFact().getAccessPath(), resolver));
 					}
 
