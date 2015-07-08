@@ -30,11 +30,14 @@ public abstract class ResolverTemplate<Field, Fact, Stmt, Method, Incoming>  ext
 	private Set<Incoming> potentialIncomingEdges = Sets.newHashSet();
 	private ResolverTemplate<Field, Fact, Stmt, Method, Incoming> parent;
 	private Map<AccessPath<Field>, ResolverTemplate<Field, Fact, Stmt, Method, Incoming>> nestedResolvers = Maps.newHashMap();
+	protected Debugger<Field, Fact, Stmt, Method> debugger;
 
 	public ResolverTemplate(PerAccessPathMethodAnalyzer<Field, Fact, Stmt, Method> analyzer, 
-			ResolverTemplate<Field, Fact, Stmt, Method, Incoming> parent) {
+			ResolverTemplate<Field, Fact, Stmt, Method, Incoming> parent, Debugger<Field, Fact, Stmt, Method> debugger) {
 		super(analyzer);
 		this.parent = parent;
+		this.debugger = debugger;
+		debugger.newResolver(analyzer, this);
 	}
 	
 	protected boolean isLocked(String key) {
@@ -93,17 +96,19 @@ public abstract class ResolverTemplate<Field, Fact, Stmt, Method, Incoming>  ext
 	}
 	
 	@Override
-	protected void registerCallback(InterestCallback<Field, Fact, Stmt, Method> callback) {
+	protected boolean registerCallback(InterestCallback<Field, Fact, Stmt, Method> callback) {
 		if(isLocked("registerCallback"))
-			return;
+			return false;
 		lock("registerCallback");
-		super.registerCallback(callback);
+		if(!super.registerCallback(callback))
+			return false;
 		
 		for(Incoming inc : Lists.newLinkedList(potentialIncomingEdges)) {
 			Delta<Field> delta = getAccessPathOf(inc).getDeltaTo(getResolvedAccessPath());
 			delegate(inc, new DeltaConstraint<Field>(delta), callback);
 		}
 		unlock("registerCallback");
+		return true;
 	}
 	
 	protected abstract void delegate(Incoming inc, DeltaConstraint<Field> deltaConstraint, InterestCallback<Field, Fact, Stmt, Method> callback);

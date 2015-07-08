@@ -60,7 +60,10 @@ public abstract class Resolver<Field, Fact, Stmt, Method> {
 		return interest;
 	}
 
-	protected void registerCallback(InterestCallback<Field, Fact, Stmt, Method> callback) {
+	protected boolean registerCallback(InterestCallback<Field, Fact, Stmt, Method> callback) {
+		if(interestCallbacks.contains(callback))
+			return false;
+		
 		if(interest) {
 			callback.interest(analyzer, this);
 		}
@@ -70,6 +73,8 @@ public abstract class Resolver<Field, Fact, Stmt, Method> {
 
 		if(canBeResolvedEmpty)
 			callback.canBeResolvedEmpty();
+		
+		return true;
 	}
 	
 	protected abstract void log(String message);
