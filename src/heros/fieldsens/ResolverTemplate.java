@@ -17,6 +17,7 @@ import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 
+import heros.fieldsens.AccessPath.Delta;
 import heros.fieldsens.AccessPath.PrefixTestResult;
 import heros.fieldsens.FlowFunction.Constraint;
 
@@ -28,10 +29,13 @@ public abstract class ResolverTemplate<Field, Fact, Stmt, Method, Incoming>  ext
 	private ResolverTemplate<Field, Fact, Stmt, Method, Incoming> parent;
 	private Map<AccessPath<Field>, ResolverTemplate<Field, Fact, Stmt, Method, Incoming>> nestedResolvers = Maps.newHashMap();
 	protected Debugger<Field, Fact, Stmt, Method> debugger;
+	private Map<Set<Field>, ResolverTemplate<Field, Fact, Stmt, Method, Incoming>> fieldExcludingResolvers;
 
 	public ResolverTemplate(PerAccessPathMethodAnalyzer<Field, Fact, Stmt, Method> analyzer, 
-			ResolverTemplate<Field, Fact, Stmt, Method, Incoming> parent, Debugger<Field, Fact, Stmt, Method> debugger) {
+			ResolverTemplate<Field, Fact, Stmt, Method, Incoming> parent, 
+			Debugger<Field, Fact, Stmt, Method> debugger) {
 		super(analyzer);
+		this.fieldExcludingResolvers = Maps.newHashMap();
 		this.parent = parent;
 		this.debugger = debugger;
 		debugger.newResolver(analyzer, this);
@@ -97,12 +101,25 @@ public abstract class ResolverTemplate<Field, Fact, Stmt, Method, Incoming>  ext
 		
 		if(!nestedResolvers.containsKey(newAccPath)) {
 			assert getResolvedAccessPath().getDeltaTo(newAccPath).accesses.length <= 1;
-			ResolverTemplate<Field,Fact,Stmt,Method,Incoming> nestedResolver = createNestedResolver(newAccPath);
-			nestedResolvers.put(newAccPath, nestedResolver);
 			
-			for(Incoming inc : incomingEdges) {
-				nestedResolver.addIncoming(inc);
+			Set<Field> exclusions = newAccPath.getExclusions();
+			if(!exclusions.isEmpty() && fieldExcludingResolvers.containsKey(exclusions)) {
+				ResolverTemplate<Field, Fact, Stmt, Method, Incoming> nestedResolver = fieldExcludingResolvers.get(exclusions);
+				nestedResolvers.put(newAccPath, nestedResolver);
 			}
+			else {
+				ResolverTemplate<Field, Fact, Stmt, Method, Incoming> nestedResolver = createNestedResolver(newAccPath);
+				if(!exclusions.isEmpty()) {
+					nestedResolver.fieldExcludingResolvers = fieldExcludingResolvers;
+					fieldExcludingResolvers.put(exclusions, nestedResolver);
+				}
+				
+				nestedResolvers.put(newAccPath, nestedResolver);
+				for(Incoming inc : incomingEdges) {
+					nestedResolver.addIncoming(inc);
+				}
+			}
+			
 		}
 		return nestedResolvers.get(newAccPath);
 	}

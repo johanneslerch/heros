@@ -10,9 +10,13 @@
  ******************************************************************************/
 package heros.fieldsens;
 
+import java.util.Map;
+import java.util.Set;
+
 import heros.fieldsens.structs.WrappedFactAtStatement;
 
 import com.google.common.collect.Lists;
+import com.google.common.collect.Maps;
 
 
 class CallEdgeResolver<Field, Fact, Stmt, Method> extends ResolverTemplate<Field, Fact, Stmt, Method, CallEdge<Field, Fact, Stmt, Method>>  {
@@ -21,7 +25,8 @@ class CallEdgeResolver<Field, Fact, Stmt, Method> extends ResolverTemplate<Field
 		this(analyzer, debugger, null);
 	}
 	
-	public CallEdgeResolver(PerAccessPathMethodAnalyzer<Field, Fact, Stmt, Method> analyzer, Debugger<Field, Fact, Stmt, Method> debugger, CallEdgeResolver<Field, Fact, Stmt, Method> parent) {
+	public CallEdgeResolver(PerAccessPathMethodAnalyzer<Field, Fact, Stmt, Method> analyzer,
+			Debugger<Field, Fact, Stmt, Method> debugger, CallEdgeResolver<Field, Fact, Stmt, Method> parent) {
 		super(analyzer, parent, debugger);
 	}
 
@@ -48,7 +53,8 @@ class CallEdgeResolver<Field, Fact, Stmt, Method> extends ResolverTemplate<Field
 	}
 
 	@Override
-	protected ResolverTemplate<Field, Fact, Stmt, Method, CallEdge<Field, Fact, Stmt, Method>> createNestedResolver(AccessPath<Field> newAccPath) {
+	protected ResolverTemplate<Field, Fact, Stmt, Method, CallEdge<Field, Fact, Stmt, Method>> createNestedResolver(
+			AccessPath<Field> newAccPath) {
 		return analyzer.createWithAccessPath(newAccPath).getCallEdgeResolver();
 	}
 	
