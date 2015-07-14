@@ -29,15 +29,21 @@ public abstract class ResolverTemplate<Field, Fact, Stmt, Method, Incoming>  ext
 	private ResolverTemplate<Field, Fact, Stmt, Method, Incoming> parent;
 	private Map<AccessPath<Field>, ResolverTemplate<Field, Fact, Stmt, Method, Incoming>> nestedResolvers = Maps.newHashMap();
 	protected Debugger<Field, Fact, Stmt, Method> debugger;
-	private Map<Set<Field>, ResolverTemplate<Field, Fact, Stmt, Method, Incoming>> fieldExcludingResolvers;
+	private Map<AccessPath<Field>, ResolverTemplate<Field, Fact, Stmt, Method, Incoming>> allResolvers;
 
 	public ResolverTemplate(PerAccessPathMethodAnalyzer<Field, Fact, Stmt, Method> analyzer, 
 			ResolverTemplate<Field, Fact, Stmt, Method, Incoming> parent, 
 			Debugger<Field, Fact, Stmt, Method> debugger) {
 		super(analyzer);
-		this.fieldExcludingResolvers = Maps.newHashMap();
 		this.parent = parent;
 		this.debugger = debugger;
+		if(parent == null) {
+			allResolvers = Maps.newHashMap();
+		}
+		else {
+			allResolvers = parent.allResolvers;
+		}
+		
 		debugger.newResolver(analyzer, this);
 	}
 	
@@ -102,22 +108,19 @@ public abstract class ResolverTemplate<Field, Fact, Stmt, Method, Incoming>  ext
 		if(!nestedResolvers.containsKey(newAccPath)) {
 			assert getResolvedAccessPath().getDeltaTo(newAccPath).accesses.length <= 1;
 			
-			Set<Field> exclusions = newAccPath.getExclusions();
-			if(!exclusions.isEmpty() && fieldExcludingResolvers.containsKey(exclusions)) {
-				ResolverTemplate<Field, Fact, Stmt, Method, Incoming> nestedResolver = fieldExcludingResolvers.get(exclusions);
-				nestedResolvers.put(newAccPath, nestedResolver);
+			if(allResolvers.containsKey(newAccPath)) {
+				ResolverTemplate<Field, Fact, Stmt, Method, Incoming> nestedResolver = allResolvers.get(newAccPath);
+//				nestedResolvers.put(newAccPath, nestedResolver); //don't add, otherwise incoming edges will be forwarded twice
+				return nestedResolver;
 			}
 			else {
 				ResolverTemplate<Field, Fact, Stmt, Method, Incoming> nestedResolver = createNestedResolver(newAccPath);
-				if(!exclusions.isEmpty()) {
-					nestedResolver.fieldExcludingResolvers = fieldExcludingResolvers;
-					fieldExcludingResolvers.put(exclusions, nestedResolver);
-				}
-				
+				allResolvers.put(newAccPath, nestedResolver);
 				nestedResolvers.put(newAccPath, nestedResolver);
 				for(Incoming inc : incomingEdges) {
 					nestedResolver.addIncoming(inc);
 				}
+				return nestedResolver;
 			}
 			
 		}
