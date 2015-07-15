@@ -50,7 +50,7 @@ public class ReturnEdge<Field, Fact, Stmt, Method> {
 	}
 	
 	public ReturnEdge<Field, Fact, Stmt, Method> copyWithIncomingResolver(
-			Resolver<Field, Fact, Stmt, Method> incResolver, AccessPath<Field> incAccessPath) {
+			Resolver<Field, Fact, Stmt, Method> incResolver, AccessPath<Field> incAccessPath, Delta<Field> usedAccessPathOfIncResolver) {
 		return new ReturnEdge<Field, Fact, Stmt, Method>(incFact, incAccessPath, incResolver, resolverAtCaller, callDelta, usedAccessPathOfIncResolver);
 	}
 	

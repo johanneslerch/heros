@@ -76,7 +76,7 @@ public abstract class ResolverTemplate<Field, Fact, Stmt, Method, Incoming>  ext
 				return;
 			
 			if(shouldSpecialize(incAccPath)) {
-				System.out.println("specializing "+resolvedAccessPath+" using the incoming access path: "+incAccPath);
+//				System.out.println(this+ ": specializing using the incoming access path: "+incAccPath);
 				Delta<Field> delta = resolvedAccessPath.getDeltaTo(incAccPath).limitToFirstAccess();
 				specialize(delta, getOrCreateNestedResolver(delta.applyTo(resolvedAccessPath)));
 			}
@@ -97,7 +97,7 @@ public abstract class ResolverTemplate<Field, Fact, Stmt, Method, Incoming>  ext
 	protected boolean shouldSpecialize(AccessPath<Field> incAccPath) {
 		return !resolvedAccessPath.getExclusions().isEmpty() &&
 				incAccPath.getExclusions().isEmpty() && 
-				allResolversInExclHierarchy.size() > 30;
+				allResolversInExclHierarchy.size() > 10;
 	}
 
 	protected abstract void processIncomingPotentialPrefix(Incoming inc);

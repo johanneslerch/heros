@@ -213,6 +213,13 @@ public class AccessPath<T> {
 			else
 				return this;
 		}
+
+		public Delta<T> withoutExclusions() {
+			if(exclusions.isEmpty())
+				return this;
+			else
+				return new Delta<T>(accesses, Sets.<T>newHashSet());
+		}
 	}
 	
 	public AccessPath<T> mergeExcludedFieldReferences(AccessPath<T> accPath) {
