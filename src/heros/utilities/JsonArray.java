@@ -10,6 +10,8 @@
  ******************************************************************************/
 package heros.utilities;
 
+import static heros.utilities.JsonDocument.escape;
+
 import java.util.List;
 
 import com.google.common.collect.Lists;
@@ -19,9 +21,13 @@ public class JsonArray {
 	private List<String> items = Lists.newLinkedList();
 	
 	public void add(String item) {
-		items.add(item);
+		items.add(escape(item));
 	}
 
+	public boolean isEmpty() {
+		return items.isEmpty();
+	}
+	
 	public void write(StringBuilder builder, int tabs) {
 		builder.append("[\n");
 		for(String item: items) {

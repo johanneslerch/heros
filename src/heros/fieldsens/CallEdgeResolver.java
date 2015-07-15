@@ -25,6 +25,11 @@ class CallEdgeResolver<Field, Fact, Stmt, Method> extends ResolverTemplate<Field
 			Debugger<Field, Fact, Stmt, Method> debugger, CallEdgeResolver<Field, Fact, Stmt, Method> parent) {
 		super(analyzer, analyzer.getAccessPath(), parent, debugger);
 	}
+	
+	@Override
+	public Fact getSourceFact() {
+		return analyzer.getSourceFact();
+	}
 
 	@Override
 	protected AccessPath<Field> getAccessPathOf(CallEdge<Field, Fact, Stmt, Method> inc) {

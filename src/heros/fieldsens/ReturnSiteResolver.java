@@ -40,6 +40,11 @@ public class ReturnSiteResolver<Field, Fact, Stmt, Method> extends ResolverTempl
 	}
 	
 	@Override
+	public Fact getSourceFact() {
+		return sourceFact;
+	}
+	
+	@Override
 	public String toString() {
 		return "<"+resolvedAccessPath+":"+returnSite+" in "+analyzer.getMethod()+">";
 	}
@@ -118,10 +123,13 @@ public class ReturnSiteResolver<Field, Fact, Stmt, Method> extends ResolverTempl
 				public void specialize(PerAccessPathMethodAnalyzer<Field, Fact, Stmt, Method> analyzer, Delta<Field> delta,
 						Resolver<Field, Fact, Stmt, Method> resolver) {
 					assert !(resolver instanceof ZeroCallEdgeResolver);
+					assert delta.applyTo(retEdge.incAccessPath).equals(delta.applyTo(resolvedAccessPath));
 					
-					incomingEdges.add(retEdge.copyWithIncomingResolver(resolver, delta.applyTo(retEdge.incAccessPath), 
+					AccessPath<Field> newAccPath = delta.applyTo(resolvedAccessPath);
+					incomingEdges.add(retEdge.copyWithIncomingResolver(resolver, newAccPath, 
 							retEdge.usedAccessPathOfIncResolver.withoutExclusions()));
-					ReturnSiteResolver.this.specialize(delta, getOrCreateNestedResolver(delta.applyTo(resolvedAccessPath)));
+					ReturnSiteResolver.this.specialize(delta, getOrCreateNestedResolver(newAccPath));
+					
 				}
 				
 				@Override

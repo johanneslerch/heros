@@ -36,6 +36,11 @@ public class ControlFlowJoinResolver<Field, Fact, Stmt, Method> extends Resolver
 		this.sourceFact = sourceFact;
 		propagated=true;
 	}
+
+	@Override
+	public Fact getSourceFact() {
+		return sourceFact;
+	}
 	
 	@Override
 	protected AccessPath<Field> getAccessPathOf(WrappedFact<Field, Fact, Stmt, Method> inc) {
@@ -87,7 +92,7 @@ public class ControlFlowJoinResolver<Field, Fact, Stmt, Method> extends Resolver
 
 	@Override
 	protected void log(String message) {
-		analyzer.log("Join Stmt "+toString()+": "+message);
+		analyzer.log("Join Stmt ("+sourceFact+")"+toString()+": "+message);
 	}
 
 	@Override

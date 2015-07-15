@@ -96,8 +96,9 @@ public abstract class ResolverTemplate<Field, Fact, Stmt, Method, Incoming>  ext
 
 	protected boolean shouldSpecialize(AccessPath<Field> incAccPath) {
 		return !resolvedAccessPath.getExclusions().isEmpty() &&
-				incAccPath.getExclusions().isEmpty() && 
-				allResolversInExclHierarchy.size() > 10;
+				incAccPath.getExclusions().isEmpty() &&
+				parent != null &&
+				allResolversInExclHierarchy.size() > 5;
 	}
 
 	protected abstract void processIncomingPotentialPrefix(Incoming inc);
@@ -129,7 +130,8 @@ public abstract class ResolverTemplate<Field, Fact, Stmt, Method, Incoming>  ext
 			}
 			else {
 				ResolverTemplate<Field, Fact, Stmt, Method, Incoming> nestedResolver = createNestedResolver(newAccPath);
-				allResolversInExclHierarchy.put(newAccPath, nestedResolver);
+				if(!resolvedAccessPath.getExclusions().isEmpty() || !newAccPath.getExclusions().isEmpty())
+					allResolversInExclHierarchy.put(newAccPath, nestedResolver);
 				nestedResolvers.put(newAccPath, nestedResolver);
 				for(Incoming inc : incomingEdges) {
 					nestedResolver.addIncoming(inc);

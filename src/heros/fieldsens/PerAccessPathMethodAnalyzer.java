@@ -17,6 +17,8 @@ import heros.fieldsens.structs.FactAtStatement;
 import heros.fieldsens.structs.WrappedFact;
 import heros.fieldsens.structs.WrappedFactAtStatement;
 import heros.utilities.DefaultValueMap;
+import heros.utilities.JsonArray;
+import heros.utilities.JsonDocument;
 
 import java.io.FileWriter;
 import java.io.IOException;
@@ -433,4 +435,59 @@ public class PerAccessPathMethodAnalyzer<Field, Fact, Stmt, Method> {
 //			debugNestings(nestedAnalyzer.analyzer, currentDoc);
 //		}
 //	}
+	
+	public void debugAllReachables() {
+		JsonDocument result = new JsonDocument();
+		result.keyValue("method", method.toString());
+		result.keyValue("source", sourceFact.toString());
+		
+		debugReachables(result);
+		
+		try {
+			FileWriter writer = new FileWriter("debug/reachables.json");
+			StringBuilder builder = new StringBuilder();
+			builder.append("var root=");
+			result.write(builder, 0);
+			writer.write(builder.toString());
+			writer.close();
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+	}
+	
+	public void debugReachables(JsonDocument result) {
+		JsonDocument doc = result.doc("accessPaths").doc(accessPath.toString());
+		JsonDocument resDoc = doc.doc("resolver").doc(String.valueOf(System.identityHashCode(callEdgeResolver)));
+		resDoc.keyValue("label", callEdgeResolver.toString());
+		resDoc.keyValue("type", callEdgeResolver.getClass().getSimpleName());
+		
+		for (WrappedFactAtStatement<Field, Fact, Stmt, Method> stmt : reachableStatements.values()) {
+			JsonDocument stmtDoc = doc.doc("statements").doc((stmt.getStatement().toString()));
+			JsonArray succDocs = stmtDoc.array("successors");
+			if (succDocs.isEmpty()) {
+				if (context.icfg.isCallStmt(stmt.getStatement())) {
+					for (Stmt succ : context.icfg.getReturnSitesOfCallAt(stmt.getStatement())) {
+						succDocs.add(succ.toString());
+					}
+				} else {
+					for (Stmt succ : context.icfg.getSuccsOf(stmt.getStatement())) {
+						succDocs.add(succ.toString());
+					}
+				}
+			}
+			
+			String resolverId = String.valueOf(System.identityHashCode(stmt.getResolver()));
+			JsonDocument resolverDoc = stmtDoc.doc("facts").doc(stmt.getFact().toString()).doc(stmt.getAccessPath().toString()).doc("resolvers")
+				.doc(resolverId);
+			resolverDoc.keyValue("label", stmt.getResolver().toString());
+			resolverDoc.keyValue("type", stmt.getResolver().getClass().getSimpleName());
+		}
+		
+		if(parent != null)
+			parent.debugReachables(result);
+	}
+
+	Fact getSourceFact() {
+		return sourceFact;
+	}
 }

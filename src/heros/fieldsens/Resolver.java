@@ -32,6 +32,8 @@ public abstract class Resolver<Field, Fact, Stmt, Method> {
 		this.analyzer = analyzer;
 	}
 
+	public abstract Fact getSourceFact();
+	
 	public abstract void resolve(Constraint<Field> constraint, InterestCallback<Field, Fact, Stmt, Method> callback);
 	
 	protected void specialize(Delta<Field> delta, Resolver<Field, Fact, Stmt, Method> resolver) {
