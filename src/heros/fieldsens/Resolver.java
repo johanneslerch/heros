@@ -73,7 +73,7 @@ public abstract class Resolver<Field, Fact, Stmt, Method> {
 				callback.interest(analyzer, resolver);
 		}
 		if(!specializations.isEmpty()) {
-			for (Pair<Delta<Field>, Resolver<Field, Fact, Stmt, Method>> pair : specializations) {
+			for (Pair<Delta<Field>, Resolver<Field, Fact, Stmt, Method>> pair : Lists.newLinkedList(specializations)) {
 				callback.specialize(analyzer, pair.getO1(), pair.getO2());
 			}
 		}
