@@ -10,10 +10,14 @@
  ******************************************************************************/
 package heros.fieldsens;
 
+import heros.fieldsens.AccessPath.Delta;
+
 
 public interface InterestCallback<Field, Fact, Stmt, Method> {
 
 	void interest(PerAccessPathMethodAnalyzer<Field, Fact, Stmt, Method> analyzer, Resolver<Field, Fact, Stmt, Method> resolver);
+	
+	void specialize(PerAccessPathMethodAnalyzer<Field, Fact, Stmt, Method> analyzer, Delta<Field> delta, Resolver<Field, Fact, Stmt, Method> resolver);
 	
 	void canBeResolvedEmpty();
 }

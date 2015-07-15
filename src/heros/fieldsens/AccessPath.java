@@ -10,6 +10,8 @@
  ******************************************************************************/
 package heros.fieldsens;
 
+import heros.fieldsens.AccessPath.Delta;
+
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashSet;
@@ -203,6 +205,13 @@ public class AccessPath<T> {
 
 		public static <T> Delta<T> empty() {
 			return new Delta<T>((T[]) new Object[0], Sets.<T>newHashSet());
+		}
+
+		public Delta<T> limitToFirstAccess() {
+			if(accesses.length > 1)
+				return new Delta<T>(Arrays.copyOf(accesses, 1), exclusions);
+			else
+				return this;
 		}
 	}
 	

@@ -249,12 +249,20 @@ public class PerAccessPathMethodAnalyzer<Field, Fact, Stmt, Method> {
 					@Override
 					public void interest(PerAccessPathMethodAnalyzer<Field, Fact, Stmt, Method> analyzer,
 							Resolver<Field, Fact, Stmt, Method> resolver) {
-						analyzer.scheduleEdgeTo(successors, new WrappedFact<Field, Fact, Stmt, Method>(targetFact.getFact().getFact(), targetFact.getFact().getAccessPath(), resolver));
+						analyzer.scheduleEdgeTo(successors, new WrappedFact<Field, Fact, Stmt, Method>(
+								targetFact.getFact().getFact(), targetFact.getFact().getAccessPath(), resolver));
 					}
 
 					@Override
 					public void canBeResolvedEmpty() {
 						callEdgeResolver.resolve(targetFact.getConstraint(), this);
+					}
+
+					@Override
+					public void specialize(PerAccessPathMethodAnalyzer<Field, Fact, Stmt, Method> analyzer, Delta<Field> delta,
+							Resolver<Field, Fact, Stmt, Method> resolver) {
+						analyzer.scheduleEdgeTo(successors, new WrappedFact<Field, Fact, Stmt, Method>(
+								targetFact.getFact().getFact(), delta.applyTo(targetFact.getFact().getAccessPath()), resolver));
 					}
 				});
 			}

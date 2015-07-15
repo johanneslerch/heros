@@ -10,6 +10,7 @@
  ******************************************************************************/
 package heros.fieldsens;
 
+import heros.fieldsens.AccessPath.Delta;
 import heros.fieldsens.AccessPath.PrefixTestResult;
 import heros.fieldsens.FlowFunction.Constraint;
 
@@ -68,12 +69,19 @@ public abstract class ResolverTemplate<Field, Fact, Stmt, Method, Incoming>  ext
 	protected abstract AccessPath<Field> getAccessPathOf(Incoming inc);
 	
 	public void addIncoming(Incoming inc) {
-		if(resolvedAccessPath.isPrefixOf(getAccessPathOf(inc)) == PrefixTestResult.GUARANTEED_PREFIX) {
+		AccessPath<Field> incAccPath = getAccessPathOf(inc);
+		if(resolvedAccessPath.isPrefixOf(incAccPath) == PrefixTestResult.GUARANTEED_PREFIX) {
 			log("Incoming Edge: "+inc);
 			if(!incomingEdges.add(inc))
 				return;
 			
-			interest(this);
+			if(shouldSpecialize(incAccPath)) {
+				System.out.println("specializing "+resolvedAccessPath+" using the incoming access path: "+incAccPath);
+				Delta<Field> delta = resolvedAccessPath.getDeltaTo(incAccPath).limitToFirstAccess();
+				specialize(delta, getOrCreateNestedResolver(delta.applyTo(resolvedAccessPath)));
+			}
+			else
+				interest(this);
 			
 			for(ResolverTemplate<Field, Fact, Stmt, Method, Incoming> nestedResolver : Lists.newLinkedList(nestedResolvers.values())) {
 				nestedResolver.addIncoming(inc);
@@ -81,9 +89,15 @@ public abstract class ResolverTemplate<Field, Fact, Stmt, Method, Incoming>  ext
 			
 			processIncomingGuaranteedPrefix(inc);
 		}
-		else if(getAccessPathOf(inc).isPrefixOf(resolvedAccessPath).atLeast(PrefixTestResult.POTENTIAL_PREFIX)) {
+		else if(incAccPath.isPrefixOf(resolvedAccessPath).atLeast(PrefixTestResult.POTENTIAL_PREFIX)) {
 			processIncomingPotentialPrefix(inc);
 		}
+	}
+
+	protected boolean shouldSpecialize(AccessPath<Field> incAccPath) {
+		return !resolvedAccessPath.getExclusions().isEmpty() &&
+				incAccPath.getExclusions().isEmpty() && 
+				allResolversInExclHierarchy.size() > 30;
 	}
 
 	protected abstract void processIncomingPotentialPrefix(Incoming inc);

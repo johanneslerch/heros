@@ -115,6 +115,15 @@ public class ReturnSiteResolver<Field, Fact, Stmt, Method> extends ResolverTempl
 				}
 				
 				@Override
+				public void specialize(PerAccessPathMethodAnalyzer<Field, Fact, Stmt, Method> analyzer, Delta<Field> delta,
+						Resolver<Field, Fact, Stmt, Method> resolver) {
+					assert !(resolver instanceof ZeroCallEdgeResolver);
+					
+					incomingEdges.add(retEdge.copyWithIncomingResolver(resolver, delta.applyTo(retEdge.incAccessPath)));
+					ReturnSiteResolver.this.specialize(delta, getOrCreateNestedResolver(delta.applyTo(resolvedAccessPath)));
+				}
+				
+				@Override
 				public void canBeResolvedEmpty() {
 					resolveViaDeltaAndPotentiallyDelegateToCallSite(retEdge);
 				}
@@ -141,6 +150,12 @@ public class ReturnSiteResolver<Field, Fact, Stmt, Method> extends ResolverTempl
 				public void interest(PerAccessPathMethodAnalyzer<Field, Fact, Stmt, Method> analyzer, Resolver<Field, Fact, Stmt, Method> resolver) {
 //					incomingEdges.add(retEdge.copyWithResolverAtCaller(resolver, retEdge.incAccessPath.getDeltaTo(getResolvedAccessPath())));
 					ReturnSiteResolver.this.interest(resolver);
+				}
+				
+				@Override
+				public void specialize(PerAccessPathMethodAnalyzer<Field, Fact, Stmt, Method> analyzer, Delta<Field> delta,
+						Resolver<Field, Fact, Stmt, Method> resolver) {
+					ReturnSiteResolver.this.specialize(delta, resolver);
 				}
 				
 				@Override

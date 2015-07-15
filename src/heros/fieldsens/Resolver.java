@@ -10,7 +10,9 @@
  ******************************************************************************/
 package heros.fieldsens;
 
+import heros.fieldsens.AccessPath.Delta;
 import heros.fieldsens.FlowFunction.Constraint;
+import heros.solver.Pair;
 
 import java.util.List;
 import java.util.Set;
@@ -21,6 +23,7 @@ import com.google.common.collect.Sets;
 public abstract class Resolver<Field, Fact, Stmt, Method> {
 
 	private Set<Resolver<Field, Fact, Stmt, Method>> interest = Sets.newHashSet();
+	private Set<Pair<Delta<Field>, Resolver<Field, Fact, Stmt, Method>>> specializations = Sets.newHashSet();
 	private List<InterestCallback<Field, Fact, Stmt, Method>> interestCallbacks = Lists.newLinkedList();
 	protected PerAccessPathMethodAnalyzer<Field, Fact, Stmt, Method> analyzer;
 	private boolean canBeResolvedEmpty = false;
@@ -30,6 +33,15 @@ public abstract class Resolver<Field, Fact, Stmt, Method> {
 	}
 
 	public abstract void resolve(Constraint<Field> constraint, InterestCallback<Field, Fact, Stmt, Method> callback);
+	
+	protected void specialize(Delta<Field> delta, Resolver<Field, Fact, Stmt, Method> resolver) {
+		if(!specializations.add(new Pair<Delta<Field>, Resolver<Field,Fact,Stmt,Method>>(delta, resolver)))
+			return;
+		
+		for(InterestCallback<Field, Fact, Stmt, Method> callback : Lists.newLinkedList(interestCallbacks)) {
+			callback.specialize(analyzer, delta, resolver);
+		}
+	}
 	
 	public void interest(Resolver<Field, Fact, Stmt, Method> resolver) {
 		if(!interest.add(resolver))
@@ -60,10 +72,14 @@ public abstract class Resolver<Field, Fact, Stmt, Method> {
 			for(Resolver<Field, Fact, Stmt, Method> resolver : Lists.newLinkedList(interest))
 				callback.interest(analyzer, resolver);
 		}
-		else {
-			log("Callback registered");
-			interestCallbacks.add(callback);
+		if(!specializations.isEmpty()) {
+			for (Pair<Delta<Field>, Resolver<Field, Fact, Stmt, Method>> pair : specializations) {
+				callback.specialize(analyzer, pair.getO1(), pair.getO2());
+			}
 		}
+		
+		log("Callback registered");
+		interestCallbacks.add(callback);		
 
 		if(canBeResolvedEmpty)
 			callback.canBeResolvedEmpty();

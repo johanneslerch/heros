@@ -70,6 +70,12 @@ public class ControlFlowJoinResolver<Field, Fact, Stmt, Method> extends Resolver
 			public void canBeResolvedEmpty() {
 				ControlFlowJoinResolver.this.canBeResolvedEmpty();
 			}
+
+			@Override
+			public void specialize(PerAccessPathMethodAnalyzer<Field, Fact, Stmt, Method> analyzer, Delta<Field> delta,
+					Resolver<Field, Fact, Stmt, Method> resolver) {
+				ControlFlowJoinResolver.this.specialize(delta, resolver);
+			}
 		});
 		unlock();
 	}
