@@ -123,13 +123,12 @@ public class ReturnSiteResolver<Field, Fact, Stmt, Method> extends ResolverTempl
 				public void specialize(PerAccessPathMethodAnalyzer<Field, Fact, Stmt, Method> analyzer, Delta<Field> delta,
 						Resolver<Field, Fact, Stmt, Method> resolver) {
 					assert !(resolver instanceof ZeroCallEdgeResolver);
-					assert delta.applyTo(retEdge.incAccessPath).equals(delta.applyTo(resolvedAccessPath));
+					assert delta.applyTo(retEdge.usedAccessPathOfIncResolver.applyTo(retEdge.incAccessPath)).equals(delta.applyTo(resolvedAccessPath));
 					
 					AccessPath<Field> newAccPath = delta.applyTo(resolvedAccessPath);
-					incomingEdges.add(retEdge.copyWithIncomingResolver(resolver, newAccPath, 
+					incomingEdges.add(retEdge.copyWithIncomingResolver(resolver, delta.applyTo(retEdge.incAccessPath), 
 							retEdge.usedAccessPathOfIncResolver.withoutExclusions()));
 					ReturnSiteResolver.this.specialize(delta, getOrCreateNestedResolver(newAccPath));
-					
 				}
 				
 				@Override
