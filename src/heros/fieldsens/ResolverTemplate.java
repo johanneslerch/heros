@@ -91,7 +91,6 @@ public abstract class ResolverTemplate<Field, Fact, Stmt, Method, Incoming>  ext
 				}
 			}
 			
-			
 			processIncomingGuaranteedPrefix(inc);
 		}
 		else if(incAccPath.isPrefixOf(resolvedAccessPath).atLeast(PrefixTestResult.POTENTIAL_PREFIX)) {
@@ -103,7 +102,7 @@ public abstract class ResolverTemplate<Field, Fact, Stmt, Method, Incoming>  ext
 		return !resolvedAccessPath.getExclusions().isEmpty() &&
 				incAccPath.getExclusions().isEmpty() &&
 				parent != null &&
-				allResolversInExclHierarchy.size() > 0;
+				allResolversInExclHierarchy.size() > 5;
 	}
 
 	protected abstract void processIncomingPotentialPrefix(Incoming inc);
@@ -138,7 +137,7 @@ public abstract class ResolverTemplate<Field, Fact, Stmt, Method, Incoming>  ext
 				if(!resolvedAccessPath.getExclusions().isEmpty() || !newAccPath.getExclusions().isEmpty())
 					allResolversInExclHierarchy.put(newAccPath, nestedResolver);
 				nestedResolvers.put(newAccPath, nestedResolver);
-				for(Incoming inc : incomingEdges) {
+				for(Incoming inc : Lists.newLinkedList(incomingEdges)) {
 					nestedResolver.addIncoming(inc);
 				}
 				return nestedResolver;
