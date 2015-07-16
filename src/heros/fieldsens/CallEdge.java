@@ -92,12 +92,17 @@ public class CallEdge<Field, Fact, Stmt, Method> {
 													delta.applyTo(factAtCallSite.getWrappedFact().getAccessPath()), 
 													resolver)), 
 						calleeSourceFactWithDelta);
-//				interestedAnalyzer.addIncomingEdge(newCallEdge);
-				
-				ResolverTemplate<Field, Fact, Stmt, Method, CallEdge<Field, Fact, Stmt, Method>> nestedResolver = interestedAnalyzer.getCallEdgeResolver().getOrCreateNestedResolver(
-						delta.applyTo(interestedAnalyzer.getAccessPath()));
-				nestedResolver.addIncoming(newCallEdge);
-				interestedAnalyzer.getCallEdgeResolver().specialize(delta, nestedResolver);
+	
+				AccessPath<Field> newAccPath = delta.applyTo(interestedAnalyzer.getAccessPath());
+				if(interestedAnalyzer.getCallEdgeResolver().shouldSpecialize(newAccPath)) {
+					ResolverTemplate<Field, Fact, Stmt, Method, CallEdge<Field, Fact, Stmt, Method>> nestedResolver = interestedAnalyzer.getCallEdgeResolver().getOrCreateNestedResolver(
+							newAccPath);
+					nestedResolver.addIncoming(newCallEdge);
+					interestedAnalyzer.getCallEdgeResolver().specialize(delta, nestedResolver);
+				}
+				else {
+					interestedAnalyzer.addIncomingEdge(newCallEdge);
+				}
 			}
 			
 			@Override
