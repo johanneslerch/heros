@@ -126,9 +126,10 @@ public class ReturnSiteResolver<Field, Fact, Stmt, Method> extends ResolverTempl
 					assert delta.applyTo(retEdge.usedAccessPathOfIncResolver.applyTo(retEdge.incAccessPath)).equals(delta.applyTo(resolvedAccessPath));
 					
 					AccessPath<Field> newAccPath = delta.applyTo(resolvedAccessPath);
-					incomingEdges.add(retEdge.copyWithIncomingResolver(resolver,  
-							delta.appendTo(retEdge.usedAccessPathOfIncResolver)));
-					ReturnSiteResolver.this.specialize(delta, getOrCreateNestedResolver(newAccPath));
+//					incomingEdges.add(retEdge.copyWithIncomingResolver(resolver,  
+//							delta.appendTo(retEdge.usedAccessPathOfIncResolver)));
+					ResolverTemplate<Field, Fact, Stmt, Method, ReturnEdge<Field, Fact, Stmt, Method>> nestedResolver = getOrCreateNestedResolver(newAccPath);
+					ReturnSiteResolver.this.specialize(delta, nestedResolver);
 				}
 				
 				@Override

@@ -78,14 +78,19 @@ public abstract class ResolverTemplate<Field, Fact, Stmt, Method, Incoming>  ext
 			if(shouldSpecialize(incAccPath)) {
 //				System.out.println(this+ ": specializing using the incoming access path: "+incAccPath);
 				Delta<Field> delta = resolvedAccessPath.getDeltaTo(incAccPath).limitToFirstAccess();
+				log("create specialized version: "+delta.applyTo(resolvedAccessPath));
+				for(ResolverTemplate<Field, Fact, Stmt, Method, Incoming> nestedResolver : Lists.newLinkedList(nestedResolvers.values())) {
+					nestedResolver.addIncoming(inc);
+				}
 				specialize(delta, getOrCreateNestedResolver(delta.applyTo(resolvedAccessPath)));
 			}
-			else
+			else {
 				interest(this);
-			
-			for(ResolverTemplate<Field, Fact, Stmt, Method, Incoming> nestedResolver : Lists.newLinkedList(nestedResolvers.values())) {
-				nestedResolver.addIncoming(inc);
+				for(ResolverTemplate<Field, Fact, Stmt, Method, Incoming> nestedResolver : Lists.newLinkedList(nestedResolvers.values())) {
+					nestedResolver.addIncoming(inc);
+				}
 			}
+			
 			
 			processIncomingGuaranteedPrefix(inc);
 		}
@@ -98,7 +103,7 @@ public abstract class ResolverTemplate<Field, Fact, Stmt, Method, Incoming>  ext
 		return !resolvedAccessPath.getExclusions().isEmpty() &&
 				incAccPath.getExclusions().isEmpty() &&
 				parent != null &&
-				allResolversInExclHierarchy.size() > 5;
+				allResolversInExclHierarchy.size() > 0;
 	}
 
 	protected abstract void processIncomingPotentialPrefix(Incoming inc);

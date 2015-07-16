@@ -81,7 +81,7 @@ public class PerAccessPathMethodAnalyzer<Field, Fact, Stmt, Method> {
 		log("initialized");
 	}
 	
-	public PerAccessPathMethodAnalyzer<Field, Fact, Stmt, Method> createWithAccessPath(AccessPath<Field> accPath) {
+	PerAccessPathMethodAnalyzer<Field, Fact, Stmt, Method> createWithAccessPath(AccessPath<Field> accPath) {
 		return new PerAccessPathMethodAnalyzer<Field, Fact, Stmt, Method>(method, sourceFact, context, debugger, accPath, this);
 	}
 	

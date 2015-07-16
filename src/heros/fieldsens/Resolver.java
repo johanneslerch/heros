@@ -40,8 +40,9 @@ public abstract class Resolver<Field, Fact, Stmt, Method> {
 		if(!specializations.add(new Pair<Delta<Field>, Resolver<Field,Fact,Stmt,Method>>(delta, resolver)))
 			return;
 		
+		log("Specializing: with delta "+delta+" and resolver: "+resolver);
 		for(InterestCallback<Field, Fact, Stmt, Method> callback : Lists.newLinkedList(interestCallbacks)) {
-			callback.specialize(analyzer, delta, resolver);
+			callback.specialize(resolver.analyzer, delta, resolver);
 		}
 	}
 	
@@ -76,7 +77,7 @@ public abstract class Resolver<Field, Fact, Stmt, Method> {
 		}
 		if(!specializations.isEmpty()) {
 			for (Pair<Delta<Field>, Resolver<Field, Fact, Stmt, Method>> pair : Lists.newLinkedList(specializations)) {
-				callback.specialize(analyzer, pair.getO1(), pair.getO2());
+				callback.specialize(pair.getO2().analyzer, pair.getO1(), pair.getO2());
 			}
 		}
 		
