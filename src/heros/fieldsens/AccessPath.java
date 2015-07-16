@@ -10,6 +10,7 @@
  ******************************************************************************/
 package heros.fieldsens;
 
+import fj.data.Array;
 import heros.fieldsens.AccessPath.Delta;
 
 import java.util.Arrays;
@@ -165,6 +166,20 @@ public class AccessPath<T> {
 		
 		public AccessPath<T> applyTo(AccessPath<T> accPath) {
 			return accPath.append(accesses).appendExcludedFieldReference(exclusions);
+		}
+		
+		public Delta<T> appendTo(Delta<T> delta) {
+			if(accesses.length > 0) {
+				assert !delta.exclusions.contains(accesses[0]);
+				T[] newAccesses = Arrays.copyOf(delta.accesses, delta.accesses.length + accesses.length);
+				System.arraycopy(accesses, 0, newAccesses, delta.accesses.length, accesses.length);
+				return new Delta<T>(newAccesses, exclusions);
+			}
+			else {
+				Set<T> newExclusions = Sets.newHashSet(exclusions);
+				newExclusions.addAll(delta.exclusions);
+				return new Delta<T>(delta.accesses, newExclusions);
+			}
 		}
 		
 		@Override

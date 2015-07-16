@@ -50,7 +50,7 @@ public class ReturnSiteResolver<Field, Fact, Stmt, Method> extends ResolverTempl
 	}
 	
 	protected AccessPath<Field> getAccessPathOf(ReturnEdge<Field, Fact, Stmt, Method> inc) {
-		return inc.incAccessPath;
+		return inc.usedAccessPathOfIncResolver.applyTo(inc.incAccessPath);
 	}
 	
 	public void addIncoming(final WrappedFact<Field, Fact, Stmt, Method> fact, 
@@ -126,8 +126,8 @@ public class ReturnSiteResolver<Field, Fact, Stmt, Method> extends ResolverTempl
 					assert delta.applyTo(retEdge.usedAccessPathOfIncResolver.applyTo(retEdge.incAccessPath)).equals(delta.applyTo(resolvedAccessPath));
 					
 					AccessPath<Field> newAccPath = delta.applyTo(resolvedAccessPath);
-					incomingEdges.add(retEdge.copyWithIncomingResolver(resolver, delta.applyTo(retEdge.incAccessPath), 
-							retEdge.usedAccessPathOfIncResolver.withoutExclusions()));
+					incomingEdges.add(retEdge.copyWithIncomingResolver(resolver,  
+							delta.appendTo(retEdge.usedAccessPathOfIncResolver)));
 					ReturnSiteResolver.this.specialize(delta, getOrCreateNestedResolver(newAccPath));
 				}
 				
