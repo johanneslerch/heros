@@ -10,9 +10,8 @@
  ******************************************************************************/
 package heros.ide;
 
-import heros.InterproceduralCFG;
+import heros.ide.edgefunc.fieldsens.AccessPathBundle;
 import heros.utilities.Statement;
-import heros.utilities.TestDebugger;
 import heros.utilities.TestFact;
 import heros.utilities.TestHelper.TabulationProblemExchange;
 import heros.utilities.TestMethod;
@@ -36,11 +35,11 @@ public class BiDiEagerEvaluationIDESolverTest {
 	private EagerEvaluationTestHelper forwardHelper;
 	private EagerEvaluationTestHelper backwardHelper;
 	private TabulationProblemExchange exchange;
-	private TestDebugger<TestFact, Statement, TestMethod, InterproceduralCFG<Statement, TestMethod>> debugger;
+	private TestDebugger<TestFact, Statement, TestMethod, AccessPathBundle<String>> debugger;
 	
 	public BiDiEagerEvaluationIDESolverTest(TabulationProblemExchange exchange) {
 		this.exchange = exchange;
-		debugger = new TestDebugger<TestFact, Statement, TestMethod, InterproceduralCFG<Statement, TestMethod>>();
+		debugger = new TestDebugger<TestFact, Statement, TestMethod, AccessPathBundle<String>>();
 		forwardHelper = new EagerEvaluationTestHelper(debugger);
 		backwardHelper = new EagerEvaluationTestHelper(debugger);
 	}

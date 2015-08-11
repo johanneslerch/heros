@@ -13,20 +13,19 @@ package heros.fieldsens;
 import static org.junit.Assert.assertTrue;
 import heros.InterproceduralCFG;
 import heros.utilities.Edge;
-import heros.utilities.EdgeBuilder;
-import heros.utilities.ExpectedFlowFunction;
-import heros.utilities.Statement;
-import heros.utilities.TestDebugger;
-import heros.utilities.TestFact;
-import heros.utilities.TestMethod;
 import heros.utilities.Edge.Call2ReturnEdge;
 import heros.utilities.Edge.CallEdge;
 import heros.utilities.Edge.EdgeVisitor;
 import heros.utilities.Edge.NormalEdge;
 import heros.utilities.Edge.ReturnEdge;
+import heros.utilities.EdgeBuilder;
 import heros.utilities.EdgeBuilder.CallSiteBuilder;
 import heros.utilities.EdgeBuilder.ExitStmtBuilder;
 import heros.utilities.EdgeBuilder.NormalStmtBuilder;
+import heros.utilities.ExpectedFlowFunction;
+import heros.utilities.Statement;
+import heros.utilities.TestFact;
+import heros.utilities.TestMethod;
 import heros.fieldsens.AccessPath;
 import heros.fieldsens.AccessPathHandler;
 import heros.fieldsens.BiDiFieldSensitiveIFDSSolver;
@@ -65,9 +64,9 @@ public class FieldSensitiveTestHelper {
 	private List<ReturnEdge> returnEdges = Lists.newLinkedList();
 	private Map<Statement, TestMethod> stmt2method = Maps.newHashMap();
 	private Multiset<ExpectedFlowFunction> remainingFlowFunctions = HashMultiset.create();
-	private TestDebugger<TestFact, Statement, TestMethod, InterproceduralCFG<Statement, TestMethod>> debugger;
+	private TestDebugger<String, TestFact, Statement, TestMethod> debugger;
 
-	public FieldSensitiveTestHelper(TestDebugger<TestFact, Statement, TestMethod, InterproceduralCFG<Statement, TestMethod>> debugger) {
+	public FieldSensitiveTestHelper(TestDebugger<String, TestFact, Statement, TestMethod> debugger) {
 		this.debugger = debugger;
 	}
 
@@ -80,7 +79,7 @@ public class FieldSensitiveTestHelper {
 		return methodHelper;
 	}
 
-	static Statement[] startPoints(String... startingPoints) {
+	public static Statement[] startPoints(String... startingPoints) {
 		Statement[] result = new Statement[startingPoints.length];
 		for (int i = 0; i < result.length; i++) {
 			result[i] = new Statement(startingPoints[i]);
@@ -88,31 +87,31 @@ public class FieldSensitiveTestHelper {
 		return result;
 	}
 
-	static EdgeBuilder.NormalStmtBuilder normalStmt(String stmt, ExpectedFlowFunction...flowFunctions) {
+	public static EdgeBuilder.NormalStmtBuilder normalStmt(String stmt, ExpectedFlowFunction...flowFunctions) {
 		return new NormalStmtBuilder(new Statement(stmt), flowFunctions);
 	}
 	
-	static EdgeBuilder.CallSiteBuilder callSite(String callSite) {
+	public static EdgeBuilder.CallSiteBuilder callSite(String callSite) {
 		return new EdgeBuilder.CallSiteBuilder(new Statement(callSite));
 	}
 	
-	static EdgeBuilder.ExitStmtBuilder exitStmt(String exitStmt) {
+	public static EdgeBuilder.ExitStmtBuilder exitStmt(String exitStmt) {
 		return new EdgeBuilder.ExitStmtBuilder(new Statement(exitStmt));
 	}
 	
-	static Statement over(String callSite) {
+	public static Statement over(String callSite) {
 		return new Statement(callSite);
 	}
 	
-	static Statement to(String returnSite) {
+	public static Statement to(String returnSite) {
 		return new Statement(returnSite);
 	}
 	
-	static ExpectedFlowFunction<TestFact> kill(String source) {
+	public static ExpectedFlowFunction<TestFact> kill(String source) {
 		return kill(1, source);
 	}
 	
-	static ExpectedFlowFunction<TestFact> kill(int times, String source) {
+	public static ExpectedFlowFunction<TestFact> kill(int times, String source) {
 		return new ExpectedFlowFunction<TestFact>(times, new TestFact(source)) {
 			@Override
 			public ConstrainedFact<String, TestFact, Statement, TestMethod> apply(TestFact target, AccessPathHandler<String, TestFact, Statement, TestMethod> accPathHandler) {
@@ -126,7 +125,7 @@ public class FieldSensitiveTestHelper {
 		};
 	}
 
-	static AccessPathTransformer readField(final String fieldName) {
+	public static AccessPathTransformer readField(final String fieldName) {
 		return new AccessPathTransformer() {
 			@Override
 			public ConstrainedFact<String, TestFact, Statement, TestMethod> apply(TestFact target, AccessPathHandler<String, TestFact, Statement, TestMethod> accPathHandler) {
@@ -140,7 +139,7 @@ public class FieldSensitiveTestHelper {
 		};
 	}
 	
-	static AccessPathTransformer prependField(final String fieldName) {
+	public static AccessPathTransformer prependField(final String fieldName) {
 		return new AccessPathTransformer() {
 			@Override
 			public ConstrainedFact<String, TestFact, Statement, TestMethod> apply(TestFact target, AccessPathHandler<String, TestFact, Statement, TestMethod> accPathHandler) {
@@ -154,7 +153,7 @@ public class FieldSensitiveTestHelper {
 		};
 	}
 	
-	static AccessPathTransformer overwriteField(final String fieldName) {
+	public static AccessPathTransformer overwriteField(final String fieldName) {
 		return new AccessPathTransformer() {
 			@Override
 			public ConstrainedFact<String, TestFact, Statement, TestMethod> apply(TestFact target, AccessPathHandler<String, TestFact, Statement, TestMethod> accPathHandler) {
@@ -168,11 +167,11 @@ public class FieldSensitiveTestHelper {
 		};
 	}
 	
-	static ExpectedFlowFunction<TestFact> flow(String source, final AccessPathTransformer transformer, String... targets) {
+	public static ExpectedFlowFunction<TestFact> flow(String source, final AccessPathTransformer transformer, String... targets) {
 		return flow(1, source, transformer, targets);
 	}
 	
-	static ExpectedFlowFunction<TestFact> flow(int times, String source, final AccessPathTransformer transformer, String... targets) {
+	public static ExpectedFlowFunction<TestFact> flow(int times, String source, final AccessPathTransformer transformer, String... targets) {
 		TestFact[] targetFacts = new TestFact[targets.length];
 		for(int i=0; i<targets.length; i++) {
 			targetFacts[i] = new TestFact(targets[i]);
@@ -196,11 +195,11 @@ public class FieldSensitiveTestHelper {
 		
 	}
 	
-	static ExpectedFlowFunction<TestFact> flow(String source, String... targets) {
+	public static ExpectedFlowFunction<TestFact> flow(String source, String... targets) {
 		return flow(1, source, targets);
 	}
 	
-	static ExpectedFlowFunction<TestFact> flow(int times, String source, String... targets) {
+	public static ExpectedFlowFunction<TestFact> flow(int times, String source, String... targets) {
 		return flow(times, source, new AccessPathTransformer() {
 			@Override
 			public ConstrainedFact<String, TestFact, Statement, TestMethod> apply(TestFact target, AccessPathHandler<String, TestFact, Statement, TestMethod> accPathHandler) {
@@ -215,7 +214,7 @@ public class FieldSensitiveTestHelper {
 		}, targets);
 	}
 	
-	static int times(int times) {
+	public static int times(int times) {
 		return times;
 	}
 
@@ -272,6 +271,10 @@ public class FieldSensitiveTestHelper {
 				for (NormalEdge edge : normalEdges) {
 					if (edge.includeInCfg && edge.succUnit.equals(stmt))
 						result.add(edge.unit);
+				}
+				for(Call2ReturnEdge edge : call2retEdges) {
+					if(edge.includeInCfg && edge.returnSite.equals(stmt))
+						result.add(edge.callSite);
 				}
 				return result;
 			}
@@ -594,7 +597,7 @@ public class FieldSensitiveTestHelper {
 		};
 	}
 	
-	static enum TabulationProblemExchange {AsSpecified, ExchangeForwardAndBackward};
+	public static enum TabulationProblemExchange {AsSpecified, ExchangeForwardAndBackward};
 	public void runBiDiSolver(FieldSensitiveTestHelper backwardHelper, TabulationProblemExchange direction, final String...initialSeeds) {
 		FactMergeHandler<TestFact> factMergeHandler = new FactMergeHandler<TestFact>() {
 			@Override

@@ -34,7 +34,6 @@ import heros.utilities.EdgeBuilder;
 import heros.utilities.EdgeBuilder.NormalStmtBuilder;
 import heros.utilities.ExpectedFlowFunction;
 import heros.utilities.Statement;
-import heros.utilities.TestDebugger;
 import heros.utilities.TestFact;
 import heros.utilities.TestHelper.TabulationProblemExchange;
 import heros.utilities.TestMethod;
@@ -65,7 +64,7 @@ public class EagerEvaluationTestHelper {
 	private List<ReturnEdge> returnEdges = Lists.newLinkedList();
 	private Map<Statement, TestMethod> stmt2method = Maps.newHashMap();
 	private Multiset<ExpectedFlowFunction> remainingFlowFunctions = HashMultiset.create();
-	private TestDebugger<TestFact, Statement, TestMethod, InterproceduralCFG<Statement, TestMethod>> debugger;
+	private TestDebugger<TestFact, Statement, TestMethod, AccessPathBundle<String>> debugger;
 	private static JoinLattice<AccessPathBundle<String>> joinLattice = new JoinLattice<AccessPathBundle<String>>() {
 		@Override
 		public AccessPathBundle<String> topElement() {
@@ -84,7 +83,7 @@ public class EagerEvaluationTestHelper {
 	};
 	private static Factory<String> factory = new Factory<String>(joinLattice);
 	
-	public EagerEvaluationTestHelper(TestDebugger<TestFact, Statement, TestMethod, InterproceduralCFG<Statement, TestMethod>> debugger) {
+	public EagerEvaluationTestHelper(TestDebugger<TestFact, Statement, TestMethod, AccessPathBundle<String>> debugger) {
 		this.debugger = debugger;
 	}
 

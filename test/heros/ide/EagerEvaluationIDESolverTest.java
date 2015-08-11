@@ -12,9 +12,8 @@ package heros.ide;
 
 
 
-import heros.InterproceduralCFG;
+import heros.ide.edgefunc.fieldsens.AccessPathBundle;
 import heros.utilities.Statement;
-import heros.utilities.TestDebugger;
 import heros.utilities.TestFact;
 import heros.utilities.TestMethod;
 
@@ -29,12 +28,12 @@ import static heros.ide.EagerEvaluationTestHelper.*;
 public class EagerEvaluationIDESolverTest {
 
 	private EagerEvaluationTestHelper helper;
-	private TestDebugger<TestFact, Statement, TestMethod, InterproceduralCFG<Statement, TestMethod>> debugger;
+	private TestDebugger<TestFact, Statement, TestMethod, AccessPathBundle<String>> debugger;
 
 	@Before
 	public void before() {
 		System.err.println("-----");
-		debugger = new TestDebugger<TestFact, Statement, TestMethod, InterproceduralCFG<Statement, TestMethod>>();
+		debugger = new TestDebugger<TestFact, Statement, TestMethod, AccessPathBundle<String>>();
 		helper = new EagerEvaluationTestHelper(debugger);
 	}
 	

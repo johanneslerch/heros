@@ -12,7 +12,6 @@ package heros.ide;
 
 
 import heros.InterproceduralCFG;
-import heros.fieldsens.Debugger;
 import heros.fieldsens.FactMergeHandler;
 import heros.fieldsens.Scheduler;
 import heros.ide.SourceStmtAnnotatedMethodAnalyzer.Synchronizer;
@@ -34,7 +33,7 @@ public class BiDiEagerEvaluationIDESolver<Fact, Stmt, Method, Value, I extends I
 	public BiDiEagerEvaluationIDESolver(IDETabulationProblem<Stmt, Fact, Method, Value, I> forwardProblem,
 			IDETabulationProblem<Stmt, Fact, Method, Value, I> backwardProblem, 
 			FactMergeHandler<Fact> factHandler, 
-			Debugger<Fact, Stmt, Method, I> debugger,
+			Debugger<Fact, Stmt, Method, Value> debugger,
 			Scheduler scheduler) {
 		
 		this.scheduler = scheduler;
@@ -49,7 +48,7 @@ public class BiDiEagerEvaluationIDESolver<Fact, Stmt, Method, Value, I extends I
 	}
 
 	private EagerEvaluationIDESolver<Fact, Stmt, Method, Value, I> createSolver(IDETabulationProblem<Stmt, Fact, Method, Value, I> problem, 
-			FactMergeHandler<Fact> factHandler, Debugger<Fact, Stmt, Method, I> debugger, final SynchronizerImpl<Stmt> synchronizer) {
+			FactMergeHandler<Fact> factHandler, Debugger<Fact, Stmt, Method, Value> debugger, final SynchronizerImpl<Stmt> synchronizer) {
 		return new EagerEvaluationIDESolver<Fact, Stmt, Method, Value, I>(problem, factHandler, debugger, scheduler) {
 			@Override
 			protected MethodAnalyzer<Fact, Stmt, Method, Value> createMethodAnalyzer(Method method) {

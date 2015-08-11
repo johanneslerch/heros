@@ -10,10 +10,17 @@
  ******************************************************************************/
 package heros.fieldsens;
 
-import heros.InterproceduralCFG;
+import static heros.fieldsens.FieldSensitiveTestHelper.callSite;
+import static heros.fieldsens.FieldSensitiveTestHelper.exitStmt;
+import static heros.fieldsens.FieldSensitiveTestHelper.flow;
+import static heros.fieldsens.FieldSensitiveTestHelper.kill;
+import static heros.fieldsens.FieldSensitiveTestHelper.normalStmt;
+import static heros.fieldsens.FieldSensitiveTestHelper.over;
+import static heros.fieldsens.FieldSensitiveTestHelper.startPoints;
+import static heros.fieldsens.FieldSensitiveTestHelper.times;
+import static heros.fieldsens.FieldSensitiveTestHelper.to;
 import heros.fieldsens.FieldSensitiveTestHelper.TabulationProblemExchange;
 import heros.utilities.Statement;
-import heros.utilities.TestDebugger;
 import heros.utilities.TestFact;
 import heros.utilities.TestMethod;
 
@@ -27,7 +34,6 @@ import org.junit.runners.Parameterized.Parameters;
 
 import com.google.common.collect.Lists;
 
-import static heros.fieldsens.FieldSensitiveTestHelper.*;
 
 
 @RunWith(Parameterized.class)
@@ -36,11 +42,11 @@ public class BiDiFieldSensitiveIFDSSolverTest {
 	private FieldSensitiveTestHelper forwardHelper;
 	private FieldSensitiveTestHelper backwardHelper;
 	private TabulationProblemExchange exchange;
-	private TestDebugger<TestFact, Statement, TestMethod, InterproceduralCFG<Statement, TestMethod>> debugger;
+	private TestDebugger<String, TestFact, Statement, TestMethod> debugger;
 	
 	public BiDiFieldSensitiveIFDSSolverTest(TabulationProblemExchange exchange) {
 		this.exchange = exchange;
-		debugger = new TestDebugger<TestFact, Statement, TestMethod, InterproceduralCFG<Statement, TestMethod>>();
+		debugger = new TestDebugger<String, TestFact, Statement, TestMethod>();
 		forwardHelper = new FieldSensitiveTestHelper(debugger);
 		backwardHelper = new FieldSensitiveTestHelper(debugger);
 	}

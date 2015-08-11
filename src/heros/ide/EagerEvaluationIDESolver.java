@@ -12,7 +12,6 @@
 package heros.ide;
 
 import heros.InterproceduralCFG;
-import heros.fieldsens.Debugger;
 import heros.fieldsens.FactMergeHandler;
 import heros.fieldsens.Scheduler;
 import heros.utilities.DefaultValueMap;
@@ -36,13 +35,13 @@ public class EagerEvaluationIDESolver<D, N, M, V, I extends InterproceduralCFG<N
 
 	private IDETabulationProblem<N, D, M, V, I> tabulationProblem;
 	protected Context<D, N, M, V> context;
-	private Debugger<D, N, M, I> debugger;
+	private Debugger<D, N, M, V> debugger;
 	private Scheduler scheduler;
 
-	public EagerEvaluationIDESolver(IDETabulationProblem<N,D,M,V,I> tabulationProblem, FactMergeHandler<D> factHandler, Debugger<D, N, M, I> debugger, Scheduler scheduler) {
+	public EagerEvaluationIDESolver(IDETabulationProblem<N,D,M,V,I> tabulationProblem, FactMergeHandler<D> factHandler, Debugger<D, N, M, V> debugger, Scheduler scheduler) {
 		this.tabulationProblem = tabulationProblem;
 		this.scheduler = scheduler;
-		this.debugger = debugger == null ? new Debugger.NullDebugger<D, N, M, I>() : debugger;
+		this.debugger = debugger == null ? new Debugger.NullDebugger<D, N, M, V>() : debugger;
 		this.debugger.setICFG(tabulationProblem.interproceduralCFG());
 		context = initContext(tabulationProblem, factHandler);
 		submitInitialSeeds();
