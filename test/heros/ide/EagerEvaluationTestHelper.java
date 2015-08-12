@@ -614,34 +614,7 @@ public class EagerEvaluationTestHelper {
 			
 			@Override
 			public EdgeFunction<AccessPathBundle<String>> initialSeedEdgeFunction(Statement seed, TestFact val) {
-				return new ChainableEdgeFunction<String>(factory, null) {
-					@Override
-					public EdgeFunction<AccessPathBundle<String>> chain(ChainableEdgeFunction<String> f) {
-						throw new IllegalStateException();
-					}
-					
-					@Override
-					protected AccessPathBundle<String> _computeTarget(AccessPathBundle<String> source) {
-						return joinLattice.bottomElement();
-					}
-					
-					@Override
-					protected EdgeFunction<AccessPathBundle<String>> _composeWith(ChainableEdgeFunction<String> chainableFunction) {
-						if(chainableFunction instanceof ReadFunction)
-							return this;
-						return chainableFunction.chain(this);
-					}
-					
-					@Override
-					protected boolean mayThisReturnTop() {
-						return false;
-					}
-					
-					@Override
-					public String toString() {
-						return "init";
-					}
-				};
+				return factory.initialSeed();
 			}
 
 			@Override

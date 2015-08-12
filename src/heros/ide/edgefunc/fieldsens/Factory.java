@@ -13,16 +13,23 @@ package heros.ide.edgefunc.fieldsens;
 import heros.JoinLattice;
 import heros.ide.edgefunc.AllBottom;
 import heros.ide.edgefunc.AllTop;
+import heros.ide.edgefunc.EdgeFunction;
 import heros.ide.edgefunc.EdgeIdentity;
 
 public class Factory<Field> {
 
 	private AllTop<AccessPathBundle<Field>> allTop;
 	private AllBottom<AccessPathBundle<Field>> allBottom;
+	private JoinLattice<AccessPathBundle<Field>> lattice;
 
 	public Factory(JoinLattice<AccessPathBundle<Field>> lattice) {
+		this.lattice = lattice;
 		this.allTop = new AllTop<AccessPathBundle<Field>>(lattice.topElement());
 		this.allBottom = new AllBottom<AccessPathBundle<Field>>(lattice.bottomElement());
+	}
+	
+	public JoinLattice<AccessPathBundle<Field>> getLattice() {
+		return lattice;
 	}
 	
 	public AllTop<AccessPathBundle<Field>> allTop() {
@@ -47,5 +54,9 @@ public class Factory<Field> {
 	
 	public OverwriteFunction<Field> overwrite(Field field) {
 		return new OverwriteFunction<Field>(this, field);
+	}
+
+	public EdgeFunction<AccessPathBundle<Field>> initialSeed() {
+		return new InitialSeedFunction<Field>(this);
 	}
 }
