@@ -16,6 +16,7 @@ import heros.ide.edgefunc.EdgeFunction;
 import java.util.Map;
 import java.util.Set;
 
+import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 
@@ -64,7 +65,7 @@ public abstract class ResolverTemplate<Fact, Stmt, Method, Value, Incoming>  ext
 		log("Incoming Edge: "+inc+ " with EdgeFunction: "+getEdgeFunction(inc));
 		if(!incomingEdges.add(inc))
 			return;
-		for(ResolverTemplate<Fact, Stmt, Method, Value, Incoming> nestedResolver : nestedResolvers.values()) {
+		for(ResolverTemplate<Fact, Stmt, Method, Value, Incoming> nestedResolver : Lists.newLinkedList(nestedResolvers.values())) {
 			nestedResolver.addIncoming(inc);
 		}
 	}
