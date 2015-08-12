@@ -94,7 +94,7 @@ public class ControlFlowJoinResolverTest {
 		sut.addIncoming(new FactEdgeFnResolverTuple<TestFact, Statement, TestMethod, AccessPathBundle<String>>(fact, factory.id(), resolver));
 		sut.resolve(factory.read("a"), callback);
 		
-		verify(callback).interest(eq(analyzer), argThat(new ResolverArgumentMatcher(factory.read("a"))), eq(factory.prepend("a")));
+		verify(callback).interest(eq(analyzer), eq(nestedResolver), eq(factory.prepend("a")));
 	}
 	
 	

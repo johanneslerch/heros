@@ -68,7 +68,7 @@ public class ControlFlowJoinResolver<Fact, Stmt, Method, Value> extends Resolver
 				addIncomingWithoutCheck(new FactEdgeFnResolverTuple<Fact, Stmt, Method, Value>(
 						fact.getFact(), edgeFunction.composeWith(fact.getEdgeFunction())//TODO effect of this composition not tested!
 						, resolver));
-				ControlFlowJoinResolver.this.resolvedUnbalanced(edgeFunction);
+				ControlFlowJoinResolver.this.resolvedUnbalanced(edgeFunction, resolver);
 			}
 
 			@Override

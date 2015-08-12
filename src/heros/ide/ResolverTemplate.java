@@ -26,11 +26,18 @@ public abstract class ResolverTemplate<Fact, Stmt, Method, Value, Incoming>  ext
 	protected Set<Incoming> incomingEdges = Sets.newHashSet();
 	private ResolverTemplate<Fact, Stmt, Method, Value, Incoming> parent;
 	private Map<EdgeFunction<Value>, ResolverTemplate<Fact, Stmt, Method, Value, Incoming>> nestedResolvers = Maps.newHashMap();
+	private Map<EdgeFunction<Value>, ResolverTemplate<Fact, Stmt, Method, Value, Incoming>> allResolvers;
 
 	public ResolverTemplate(PerAccessPathMethodAnalyzer<Fact, Stmt, Method, Value> analyzer, 
 			ResolverTemplate<Fact, Stmt, Method, Value, Incoming> parent) {
 		super(analyzer);
-		this.parent = parent;
+		if(parent == null) {
+			this.allResolvers = Maps.newHashMap();
+		}
+		else {
+			this.parent = parent;
+			this.allResolvers = parent.allResolvers;
+		}
 	}
 	
 	protected boolean isLocked() {
@@ -77,7 +84,7 @@ public abstract class ResolverTemplate<Fact, Stmt, Method, Value, Incoming>  ext
 		if(!incomingEdges.add(inc))
 			return;
 		
-		resolvedUnbalanced(getEdgeFunction(inc));
+		resolvedUnbalanced(getEdgeFunction(inc), this);
 		
 		for(ResolverTemplate<Fact, Stmt, Method, Value, Incoming> nestedResolver : nestedResolvers.values()) {
 			nestedResolver.addIncoming(inc);
@@ -102,16 +109,22 @@ public abstract class ResolverTemplate<Fact, Stmt, Method, Value, Incoming>  ext
 	protected ResolverTemplate<Fact, Stmt, Method, Value, Incoming> getOrCreateNestedResolver(EdgeFunction<Value> constraint) {
 		if(getResolvedFunction().equals(constraint))
 			return this;
-		
-		if(!nestedResolvers.containsKey(constraint)) {
-			ResolverTemplate<Fact,Stmt,Method,Value,Incoming> nestedResolver = createNestedResolver(constraint);
-			nestedResolvers.put(constraint, nestedResolver);
-			
-			for(Incoming inc : incomingEdges) {
-				nestedResolver.addIncoming(inc);
-			}
+	
+		if(allResolvers.containsKey(constraint)) {
+			return allResolvers.get(constraint);
 		}
-		return nestedResolvers.get(constraint);
+		else {
+			if(!nestedResolvers.containsKey(constraint)) {
+				ResolverTemplate<Fact,Stmt,Method,Value,Incoming> nestedResolver = createNestedResolver(constraint);
+				nestedResolvers.put(constraint, nestedResolver);
+				allResolvers.put(constraint, nestedResolver);
+				
+				for(Incoming inc : incomingEdges) {
+					nestedResolver.addIncoming(inc);
+				}
+			}
+			return nestedResolvers.get(constraint);
+		}
 	}
 	
 	protected abstract ResolverTemplate<Fact, Stmt, Method, Value, Incoming> createNestedResolver(EdgeFunction<Value> constraint);

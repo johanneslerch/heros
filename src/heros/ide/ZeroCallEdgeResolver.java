@@ -20,13 +20,17 @@ public class ZeroCallEdgeResolver<Fact, Stmt, Method, Value> extends CallEdgeRes
 		super(analyzer);
 	}
 
+	ZeroCallEdgeResolver<Fact, Stmt, Method, Value> copyWithAnalyzer(PerAccessPathMethodAnalyzer<Fact, Stmt, Method, Value> analyzer) {
+		return new ZeroCallEdgeResolver<Fact, Stmt, Method, Value>(analyzer);
+	}
+	
 	@Override
 	public void resolve(EdgeFunction<Value> constraint, InterestCallback<Fact, Stmt, Method, Value> callback) {
 		//nothing to do. Should already be resolved via initial seed edge function or cannot be resolved anyways.
 	}
 	
 	@Override
-	public void resolvedUnbalanced(EdgeFunction<Value> edgeFunction) {
+	public void resolvedUnbalanced(EdgeFunction<Value> edgeFunction, Resolver<Fact, Stmt, Method, Value> resolver) {
 	}
 	
 	@Override

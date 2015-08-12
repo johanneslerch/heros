@@ -93,7 +93,7 @@ class PerAccessPathMethodAnalyzer<Fact, Stmt, Method, Value> {
 	}
 
 	private void bootstrapAtMethodStartPoints(EdgeFunction<Value> edgeFunction) {
-		callEdgeResolver.resolvedUnbalanced(edgeFunction);
+		callEdgeResolver.resolvedUnbalanced(edgeFunction, callEdgeResolver);
 		for(Stmt startPoint : context.icfg.getStartPointsOf(method)) {
 			WrappedFactAtStatement<Fact, Stmt, Method, Value> target = new WrappedFactAtStatement<Fact, Stmt, Method, Value>(startPoint, wrappedSource());
 			if(!reachableStatements.containsKey(target))
@@ -206,9 +206,7 @@ class PerAccessPathMethodAnalyzer<Fact, Stmt, Method, Value> {
 	}
 	
 	private void processCallToReturnEdge(FactEdgeFnResolverStatementTuple<Fact, Stmt, Method, Value> factAtStmt) {
-		Stmt stmt = factAtStmt.getStatement();
-		int numberOfPredecessors = context.icfg.getPredsOf(stmt).size();		
-		if(numberOfPredecessors > 1 || (context.icfg.isStartPoint(stmt) && numberOfPredecessors > 0)) {
+		if(isLoopStart(factAtStmt.getStatement())) {
 			ctrFlowJoinResolvers.getOrCreate(factAtStmt.getAsFactAtStatement()).addIncoming(factAtStmt.withoutStatement());
 		}
 		else {
@@ -240,14 +238,30 @@ class PerAccessPathMethodAnalyzer<Fact, Stmt, Method, Value> {
 	}
 
 	private void processNormalFlow(FactEdgeFnResolverStatementTuple<Fact, Stmt, Method, Value> factAtStmt) {
-		Stmt stmt = factAtStmt.getStatement();
-		int numberOfPredecessors = context.icfg.getPredsOf(stmt).size();
-		if((numberOfPredecessors > 1 && !context.icfg.isExitStmt(stmt)) || (context.icfg.isStartPoint(stmt) && numberOfPredecessors > 0)) {
+		if(isLoopStart(factAtStmt.getStatement())) {
 			ctrFlowJoinResolvers.getOrCreate(factAtStmt.getAsFactAtStatement()).addIncoming(factAtStmt.withoutStatement());
 		}
 		else {
 			processNormalNonJoiningFlow(factAtStmt);
 		}
+	}
+	
+	private boolean isLoopStart(Stmt stmt) {
+		int numberOfPredecessors = context.icfg.getPredsOf(stmt).size();
+		if((numberOfPredecessors > 1 && !context.icfg.isExitStmt(stmt)) || (context.icfg.isStartPoint(stmt) && numberOfPredecessors > 0)) {
+			Set<Stmt> visited = Sets.newHashSet();
+			List<Stmt> worklist = Lists.newLinkedList();
+			worklist.addAll(context.icfg.getPredsOf(stmt));
+			while(!worklist.isEmpty()) {
+				Stmt current = worklist.remove(0);
+				if(current.equals(stmt))
+					return true;
+				if(!visited.add(current))
+					continue;
+				worklist.addAll(context.icfg.getPredsOf(current));
+			}
+		}
+		return false;
 	}
 
 	void processFlowFromJoinStmt(FactEdgeFnResolverStatementTuple<Fact, Stmt, Method, Value> factAtStmt) {

@@ -11,6 +11,7 @@
 package heros.ide;
 
 import heros.ide.edgefunc.EdgeFunction;
+import heros.solver.Pair;
 
 import java.util.List;
 import java.util.Set;
@@ -20,7 +21,7 @@ import com.google.common.collect.Sets;
 
 public abstract class Resolver<Fact, Stmt, Method, Value> {
 
-	private Set<EdgeFunction<Value>> resolvedUnbalanced = Sets.newHashSet();
+	private Set<Pair<EdgeFunction<Value>, Resolver<Fact, Stmt, Method, Value>>> resolvedUnbalanced = Sets.newHashSet();
 	private List<InterestCallback<Fact, Stmt, Method, Value>> interestCallbacks = Lists.newLinkedList();
 	protected PerAccessPathMethodAnalyzer<Fact, Stmt, Method, Value> analyzer;
 	private Set<EdgeFunction<Value>> balancedFunctions = Sets.newHashSet();
@@ -31,13 +32,13 @@ public abstract class Resolver<Fact, Stmt, Method, Value> {
 
 	public abstract void resolve(EdgeFunction<Value> edgeFunction, InterestCallback<Fact, Stmt, Method, Value> callback);
 	
-	public void resolvedUnbalanced(EdgeFunction<Value> edgeFunction) {
-		if(!resolvedUnbalanced.add(edgeFunction))
+	public void resolvedUnbalanced(EdgeFunction<Value> edgeFunction, Resolver<Fact, Stmt, Method, Value> resolver) {
+		if(!resolvedUnbalanced.add(new Pair<EdgeFunction<Value>, Resolver<Fact, Stmt, Method, Value>>(edgeFunction, resolver)))
 			return;
 
 		log("Interest given by EdgeFunction: "+edgeFunction);
 		for(InterestCallback<Fact, Stmt, Method, Value> callback : Lists.newLinkedList(interestCallbacks)) {
-			callback.interest(analyzer, this, edgeFunction);
+			callback.interest(analyzer, resolver, edgeFunction);
 		}
 	}
 	
@@ -54,8 +55,8 @@ public abstract class Resolver<Fact, Stmt, Method, Value> {
 	}
 
 	protected void registerCallback(InterestCallback<Fact, Stmt, Method, Value> callback) {
-		for (EdgeFunction<Value> edgeFunction : Lists.newLinkedList(resolvedUnbalanced)) {
-			callback.interest(analyzer, this, edgeFunction);
+		for (Pair<EdgeFunction<Value>, Resolver<Fact, Stmt, Method, Value>> pair : Lists.newLinkedList(resolvedUnbalanced)) {
+			callback.interest(analyzer, pair.getO2(), pair.getO1());
 		}
 		log("Callback registered");
 		interestCallbacks.add(callback);

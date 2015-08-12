@@ -218,18 +218,18 @@ public class ReturnSiteResolverTest {
 		doAnswer(new Answer() {
 			@Override
 			public Object answer(InvocationOnMock invocation) throws Throwable {
-				ReturnSiteResolver<TestFact, Statement, TestMethod, AccessPathBundle<String>> resolver = (ReturnSiteResolver) invocation.getArguments()[1];
-				resolver.resolve(factory.read("a").composeWith(factory.read("b")), secondCallback);
+				Resolver<TestFact, Statement, TestMethod, AccessPathBundle<String>> resolver = (Resolver) invocation.getArguments()[1];
+				resolver.resolve(factory.read("b"), secondCallback);
 				return null;
 			}
 			
-		}).when(callback).interest(eq(analyzer), argThat(new ReturnSiteResolverArgumentMatcher(factory.read("a"))), eq(factory.prepend("a")));
+		}).when(callback).interest(eq(analyzer), eq(nestedResolver), eq(factory.prepend("a")));
 		
 		sut.addIncoming(new FactEdgeFnResolverTuple<TestFact, Statement, TestMethod, AccessPathBundle<String>>(fact, factory.id(), callEdgeResolver), 
 				resolver, factory.id());
 		sut.resolve(factory.read("a"), callback);
 		
-		verify(secondCallback).interest(eq(analyzer), argThat(new ReturnSiteResolverArgumentMatcher(factory.read("a").composeWith(factory.read("b")))),
+		verify(secondCallback).interest(eq(analyzer), eq(nestedResolver),
 				eq(factory.prepend("a").composeWith(factory.prepend("b"))));
 	}
 	
@@ -262,6 +262,20 @@ public class ReturnSiteResolverTest {
 		sut.resolve(factory.read("a"), callback);
 		
 		verify(resolver).resolve(eq(factory.read("a")), any(InterestCallback.class));
+	}
+	
+	@Test
+	public void incomingZeroCallEdgeResolver() {
+		Resolver<TestFact, Statement, TestMethod, AccessPathBundle<String>> resolver = mock(Resolver.class);
+		ZeroCallEdgeResolver<TestFact, Statement, TestMethod, AccessPathBundle<String>> zeroResolver = mock(ZeroCallEdgeResolver.class); 
+		sut.addIncoming(new FactEdgeFnResolverTuple<TestFact, Statement, TestMethod, AccessPathBundle<String>>(
+				fact, factory.id(), zeroResolver), resolver, factory.id());
+				
+		sut.resolve(factory.read("a"), callback);
+		
+		verify(resolver, never()).resolve(any(EdgeFunction.class), any(InterestCallback.class));
+		verify(callback, never()).interest(any(PerAccessPathMethodAnalyzer.class), any(Resolver.class), any(EdgeFunction.class));
+		verify(callback, never()).continueBalancedTraversal(any(EdgeFunction.class));
 	}
 	
 	private class ReturnSiteResolverArgumentMatcher extends
