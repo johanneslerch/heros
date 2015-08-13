@@ -14,28 +14,77 @@ import heros.ide.edgefunc.EdgeFunction;
 import heros.solver.Pair;
 
 import java.util.List;
+import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Set;
 
+import com.google.common.collect.HashMultimap;
 import com.google.common.collect.Lists;
+import com.google.common.collect.Maps;
+import com.google.common.collect.Multimap;
 import com.google.common.collect.Sets;
 
 public abstract class Resolver<Fact, Stmt, Method, Value> {
 
-	private Set<Pair<EdgeFunction<Value>, Resolver<Fact, Stmt, Method, Value>>> resolvedUnbalanced = Sets.newHashSet();
+	private boolean recursionLock = false;
+	private Resolver<Fact, Stmt, Method, Value> parent;
+	private Multimap<EdgeFunction<Value>, Resolver<Fact, Stmt, Method, Value>> resolvedUnbalanced = HashMultimap.create();
 	private List<InterestCallback<Fact, Stmt, Method, Value>> interestCallbacks = Lists.newLinkedList();
 	protected PerAccessPathMethodAnalyzer<Fact, Stmt, Method, Value> analyzer;
 	private Set<EdgeFunction<Value>> balancedFunctions = Sets.newHashSet();
 	
-	public Resolver(PerAccessPathMethodAnalyzer<Fact, Stmt, Method, Value> analyzer) {
+	public Resolver(PerAccessPathMethodAnalyzer<Fact, Stmt, Method, Value> analyzer, Resolver<Fact, Stmt, Method, Value> parent) {
 		this.analyzer = analyzer;
+		this.parent = parent;
 	}
 
 	public abstract void resolve(EdgeFunction<Value> edgeFunction, InterestCallback<Fact, Stmt, Method, Value> callback);
+
+	protected boolean isLocked() {
+		if(recursionLock)
+			return true;
+		if(parent == null)
+			return false;
+		return parent.isLocked();
+	}
+
+	protected void lock() {
+		recursionLock = true;
+	}
+	
+	protected void unlock() {
+		recursionLock = false;
+	}
+	
+	private Resolver<Fact, Stmt, Method, Value> getParentRoot() {
+		if(parent == null)
+			return this;
+		else
+			return parent.getParentRoot();
+	}
+	
+	private boolean isParentOf(Resolver<Fact, Stmt, Method, Value> resolver) {
+		if(getClass() != resolver.getClass())
+			return false;
+		if(resolver.parent == this)
+			return true;
+		else if(resolver.parent != null)
+			return isParentOf(resolver.parent);
+		else
+			return false;
+	}
 	
 	public void resolvedUnbalanced(EdgeFunction<Value> edgeFunction, Resolver<Fact, Stmt, Method, Value> resolver) {
-		if(!resolvedUnbalanced.add(new Pair<EdgeFunction<Value>, Resolver<Fact, Stmt, Method, Value>>(edgeFunction, resolver)))
-			return;
-
+		if(resolvedUnbalanced.containsKey(edgeFunction)) {
+			for(Resolver<Fact, Stmt, Method, Value> candidate : resolvedUnbalanced.get(edgeFunction)) {
+				if(candidate == this && getParentRoot().isParentOf(resolver))
+					return;
+				if(candidate == resolver || candidate.isParentOf(resolver))
+					return;
+			}
+		}
+		resolvedUnbalanced.put(edgeFunction, resolver);
+		
 		log("Interest given by EdgeFunction: "+edgeFunction);
 		for(InterestCallback<Fact, Stmt, Method, Value> callback : Lists.newLinkedList(interestCallbacks)) {
 			callback.interest(analyzer, resolver, edgeFunction);
@@ -55,8 +104,8 @@ public abstract class Resolver<Fact, Stmt, Method, Value> {
 	}
 
 	protected void registerCallback(InterestCallback<Fact, Stmt, Method, Value> callback) {
-		for (Pair<EdgeFunction<Value>, Resolver<Fact, Stmt, Method, Value>> pair : Lists.newLinkedList(resolvedUnbalanced)) {
-			callback.interest(analyzer, pair.getO2(), pair.getO1());
+		for(Entry<EdgeFunction<Value>, Resolver<Fact, Stmt, Method, Value>> resolved : Lists.newLinkedList(resolvedUnbalanced.entries())) {
+			callback.interest(analyzer, resolved.getValue(), resolved.getKey());
 		}
 		log("Callback registered");
 		interestCallbacks.add(callback);

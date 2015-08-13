@@ -23,38 +23,19 @@ import com.google.common.collect.Sets;
 
 public abstract class ResolverTemplate<Fact, Stmt, Method, Value, Incoming>  extends Resolver<Fact, Stmt, Method, Value> {
 
-	private boolean recursionLock = false;
-	protected Set<Incoming> incomingEdges = Sets.newHashSet();
-	private ResolverTemplate<Fact, Stmt, Method, Value, Incoming> parent;
+	protected Set<Incoming> incomingEdges = Sets.newLinkedHashSet();
 	private Map<EdgeFunction<Value>, ResolverTemplate<Fact, Stmt, Method, Value, Incoming>> nestedResolvers = Maps.newHashMap();
 	private Map<EdgeFunction<Value>, ResolverTemplate<Fact, Stmt, Method, Value, Incoming>> allResolvers;
 
 	public ResolverTemplate(PerAccessPathMethodAnalyzer<Fact, Stmt, Method, Value> analyzer, 
 			ResolverTemplate<Fact, Stmt, Method, Value, Incoming> parent) {
-		super(analyzer);
+		super(analyzer, parent);
 		if(parent == null) {
 			this.allResolvers = Maps.newHashMap();
 		}
 		else {
-			this.parent = parent;
 			this.allResolvers = parent.allResolvers;
 		}
-	}
-	
-	protected boolean isLocked() {
-		if(recursionLock)
-			return true;
-		if(parent == null)
-			return false;
-		return parent.isLocked();
-	}
-
-	protected void lock() {
-		recursionLock = true;
-	}
-	
-	protected void unlock() {
-		recursionLock = false;
 	}
 	
 	protected abstract EdgeFunction<Value> getResolvedFunction();
@@ -81,7 +62,7 @@ public abstract class ResolverTemplate<Fact, Stmt, Method, Value, Incoming>  ext
 			}
 		}
 
-		log("Incoming Edge: "+inc+ " with EdgeFunction: "+getEdgeFunction(inc));
+		log("Incoming Edge: "+inc+ " with EdgeFunction: "+getEdgeFunction(inc));		
 		if(!incomingEdges.add(inc))
 			return;
 		
@@ -100,8 +81,8 @@ public abstract class ResolverTemplate<Fact, Stmt, Method, Value, Incoming>  ext
 	
 	@Override
 	public void resolve(EdgeFunction<Value> constraint, InterestCallback<Fact, Stmt, Method, Value> callback) {
-		log("Resolve: "+constraint);
 		if(!isLocked()) {
+			log("Resolve: "+constraint);
 			ResolverTemplate<Fact,Stmt,Method, Value,Incoming> nestedResolver = getOrCreateNestedResolver(constraint);
 			nestedResolver.registerCallback(callback);
 		}

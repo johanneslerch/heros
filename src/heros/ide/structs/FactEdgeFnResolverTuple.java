@@ -37,6 +37,11 @@ public class FactEdgeFnResolverTuple<Fact, Stmt, Method, Value> {
 	public Resolver<Fact, Stmt, Method, Value> getResolver() {
 		return resolver;
 	}
+	
+	@Override
+	public String toString() {
+		return "[Fact: "+fact+", EdgeFn: "+edgeFunction+", Resolver: "+resolver+"]";
+	}
 
 	@Override
 	public int hashCode() {

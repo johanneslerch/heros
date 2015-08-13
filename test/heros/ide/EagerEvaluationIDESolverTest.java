@@ -1129,7 +1129,7 @@ public class EagerEvaluationIDESolverTest {
 				normalStmt("b", flow("1", "1")).succ("c1").succ("c2"),
 				normalStmt("c1", flow("1", readField("f"), "1")).succ("b").succ("d"),
 				normalStmt("c2", flow("1", readField("g"), "1")).succ("b").succ("d"),
-				normalStmt("d", kill("1")).succ("e"));
+				normalStmt("d", kill(2, "1")).succ("e"));
 		
 		helper.runSolver(false, "a");
 	}

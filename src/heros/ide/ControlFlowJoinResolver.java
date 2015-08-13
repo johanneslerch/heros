@@ -54,7 +54,7 @@ public class ControlFlowJoinResolver<Fact, Stmt, Method, Value> extends Resolver
 			propagated=true;
 			sourceFact = fact.getFact();
 			analyzer.processFlowFromJoinStmt(new FactEdgeFnResolverStatementTuple<Fact, Stmt, Method, Value>(
-					fact.getFact(), fact.getEdgeFunction(), this, joinStmt));
+					fact.getFact(), EdgeIdentity.v(), this, joinStmt));
 		}
 	};
 	

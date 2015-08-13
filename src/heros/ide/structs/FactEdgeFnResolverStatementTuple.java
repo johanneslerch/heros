@@ -34,7 +34,7 @@ public class FactEdgeFnResolverStatementTuple<Fact, Stmt, Method, Value> {
 	
 	@Override
 	public String toString() {
-		return "<"+fact+";"+edgeFunction+";"+resolver+";"+statement+">";
+		return "["+fact+";"+edgeFunction+";"+resolver+";"+statement+"]";
 	}
 	
 	@Override
