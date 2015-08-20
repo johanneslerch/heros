@@ -12,6 +12,7 @@ package heros.ide;
 
 import heros.ide.edgefunc.AllTop;
 import heros.ide.edgefunc.EdgeFunction;
+import heros.ide.edgefunc.fieldsens.ChainableEdgeFunction;
 
 import java.util.Map;
 import java.util.Set;
@@ -91,6 +92,10 @@ public abstract class ResolverTemplate<Fact, Stmt, Method, Value, Incoming>  ext
 	protected ResolverTemplate<Fact, Stmt, Method, Value, Incoming> getOrCreateNestedResolver(EdgeFunction<Value> constraint) {
 		if(getResolvedFunction().equals(constraint))
 			return this;
+		
+		if(getResolvedFunction() instanceof ChainableEdgeFunction && constraint instanceof ChainableEdgeFunction) {
+			assert ((ChainableEdgeFunction) getResolvedFunction()).depth()+1 >= ((ChainableEdgeFunction) constraint).depth();
+		}
 	
 		if(allResolvers.containsKey(constraint)) {
 			return allResolvers.get(constraint);

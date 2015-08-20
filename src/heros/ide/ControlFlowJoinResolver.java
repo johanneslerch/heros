@@ -73,7 +73,7 @@ public class ControlFlowJoinResolver<Fact, Stmt, Method, Value> extends Resolver
 
 			@Override
 			public void continueBalancedTraversal(EdgeFunction<Value> edgeFunction) {
-				ControlFlowJoinResolver.this.continueBalancedTraversal(edgeFunction);
+				ControlFlowJoinResolver.this.continueBalancedTraversal(edgeFunction.composeWith(fact.getEdgeFunction()));
 			}
 		});
 		unlock();

@@ -13,6 +13,7 @@ package heros.ide;
 import heros.FlowFunction;
 import heros.ide.edgefunc.EdgeFunction;
 import heros.ide.edgefunc.EdgeIdentity;
+import heros.ide.edgefunc.fieldsens.ChainableEdgeFunction;
 import heros.ide.structs.FactAtStatement;
 import heros.ide.structs.FactEdgeFnResolverStatementTuple;
 import heros.ide.structs.WrappedFact;
@@ -85,6 +86,9 @@ class PerAccessPathMethodAnalyzer<Fact, Stmt, Method, Value> {
 	}
 	
 	public PerAccessPathMethodAnalyzer<Fact, Stmt, Method, Value> createWithConstraint(EdgeFunction<Value> constraint) {
+		if(this.constraint instanceof ChainableEdgeFunction && constraint instanceof ChainableEdgeFunction) {
+			assert ((ChainableEdgeFunction) this.constraint).depth()+1 >= ((ChainableEdgeFunction) constraint).depth();
+		}
 		return new PerAccessPathMethodAnalyzer<Fact, Stmt, Method, Value>(method, sourceFact, context, constraint, this);
 	}
 	

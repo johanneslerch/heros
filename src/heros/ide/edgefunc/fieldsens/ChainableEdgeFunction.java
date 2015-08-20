@@ -134,4 +134,11 @@ public abstract class ChainableEdgeFunction<Field> implements EdgeFunction<Acces
 		else
 			return "";
 	}
+
+	public int depth() {
+		if(chainedFunction == null)
+			return 1;
+		else
+			return 1 + chainedFunction.depth();
+	}
 }

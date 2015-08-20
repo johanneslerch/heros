@@ -121,6 +121,7 @@ public class ReturnSiteResolver<Fact, Stmt, Method, Value> extends ResolverTempl
 				
 				@Override
 				public void continueBalancedTraversal(EdgeFunction<Value> edgeFunction) {
+					//TODO should it be edgeFunction.composeWith(retEdge.incEdgeFunction) ???
 					resolveViaDeltaAndPotentiallyDelegateToCallSite(retEdge, edgeFunction);
 				}
 			});
@@ -156,7 +157,7 @@ public class ReturnSiteResolver<Fact, Stmt, Method, Value> extends ResolverTempl
 				
 				@Override
 				public void continueBalancedTraversal(EdgeFunction<Value> edgeFunction) {
-					ReturnSiteResolver.this.continueBalancedTraversal(edgeFunction);
+					ReturnSiteResolver.this.continueBalancedTraversal(edgeFunction.composeWith(composedFunction));
 				}
 			});
 		}
