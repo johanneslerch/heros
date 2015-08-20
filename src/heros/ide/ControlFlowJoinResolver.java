@@ -58,25 +58,39 @@ public class ControlFlowJoinResolver<Fact, Stmt, Method, Value> extends Resolver
 		}
 	};
 	
+	private boolean isNullOrCallEdgeResolver(Resolver<Fact, Stmt, Method, Value> resolver) {
+		if(resolver == null)
+			return true;
+		if(resolver instanceof CallEdgeResolver) {
+			return !(resolver instanceof ZeroCallEdgeResolver);
+		}
+		return false;
+	}
+	
 	@Override
 	protected void processIncomingPotentialPrefix(final FactEdgeFnResolverTuple<Fact, Stmt, Method, Value> fact) {
-		lock();
-		fact.getResolver().resolve(fact.getEdgeFunction().composeWith(resolvedEdgeFunction), new InterestCallback<Fact, Stmt, Method, Value>() {
-			@Override
-			public void interest(PerAccessPathMethodAnalyzer<Fact, Stmt, Method, Value> analyzer, 
-					Resolver<Fact, Stmt, Method, Value> resolver, EdgeFunction<Value> edgeFunction) {
-				addIncomingWithoutCheck(new FactEdgeFnResolverTuple<Fact, Stmt, Method, Value>(
-						fact.getFact(), edgeFunction.composeWith(fact.getEdgeFunction())//TODO effect of this composition not tested!
-						, resolver));
-				ControlFlowJoinResolver.this.resolvedUnbalanced(edgeFunction, resolver);
-			}
-
-			@Override
-			public void continueBalancedTraversal(EdgeFunction<Value> edgeFunction) {
-				ControlFlowJoinResolver.this.continueBalancedTraversal(edgeFunction.composeWith(fact.getEdgeFunction()));
-			}
-		});
-		unlock();
+		if(isNullOrCallEdgeResolver(fact.getResolver())) {
+			continueBalancedTraversal(fact.getEdgeFunction());
+		}
+		else {
+			lock();
+			fact.getResolver().resolve(fact.getEdgeFunction().composeWith(resolvedEdgeFunction), new InterestCallback<Fact, Stmt, Method, Value>() {
+				@Override
+				public void interest(PerAccessPathMethodAnalyzer<Fact, Stmt, Method, Value> analyzer, 
+						Resolver<Fact, Stmt, Method, Value> resolver, EdgeFunction<Value> edgeFunction) {
+					addIncomingWithoutCheck(new FactEdgeFnResolverTuple<Fact, Stmt, Method, Value>(
+							fact.getFact(), edgeFunction.composeWith(fact.getEdgeFunction())//TODO effect of this composition not tested!
+							, resolver));
+					ControlFlowJoinResolver.this.resolvedUnbalanced(edgeFunction, resolver);
+				}
+	
+				@Override
+				public void continueBalancedTraversal(EdgeFunction<Value> edgeFunction) {
+					ControlFlowJoinResolver.this.continueBalancedTraversal(edgeFunction.composeWith(fact.getEdgeFunction()));
+				}
+			});
+			unlock();
+		}
 	}
 	
 	@Override
