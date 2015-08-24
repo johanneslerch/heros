@@ -40,6 +40,8 @@ public abstract class Resolver<Fact, Stmt, Method, Value> {
 
 	public abstract void resolve(EdgeFunction<Value> edgeFunction, InterestCallback<Fact, Stmt, Method, Value> callback);
 
+	public abstract EdgeFunction<Value> getResolvedFunction();
+	
 	protected boolean isLocked() {
 		if(recursionLock)
 			return true;
@@ -75,6 +77,9 @@ public abstract class Resolver<Fact, Stmt, Method, Value> {
 	}
 	
 	public void resolvedUnbalanced(EdgeFunction<Value> edgeFunction, Resolver<Fact, Stmt, Method, Value> resolver) {
+		if(parent != null)
+			edgeFunction = edgeFunction.composeWith(parent.getResolvedFunction());
+		
 		if(resolvedUnbalanced.containsKey(edgeFunction)) {
 			for(Resolver<Fact, Stmt, Method, Value> candidate : resolvedUnbalanced.get(edgeFunction)) {
 				if(candidate == this && getParentRoot().isParentOf(resolver))
@@ -96,6 +101,8 @@ public abstract class Resolver<Fact, Stmt, Method, Value> {
 	}
 	
 	protected void continueBalancedTraversal(EdgeFunction<Value> edgeFunction) {
+		edgeFunction = edgeFunction.composeWith(parent.getResolvedFunction());
+		
 		if(balancedFunctions.add(edgeFunction)) {
 			for(InterestCallback<Fact, Stmt, Method, Value> callback : Lists.newLinkedList(interestCallbacks)) {
 				callback.continueBalancedTraversal(edgeFunction);

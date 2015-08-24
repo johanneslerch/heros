@@ -145,7 +145,7 @@ public class ReturnSiteResolverTest {
 			@Override
 			public Object answer(InvocationOnMock invocation) throws Throwable {
 				ReturnSiteResolver<TestFact, Statement, TestMethod, AccessPathBundle<String>> resolver = (ReturnSiteResolver<TestFact, Statement, TestMethod, AccessPathBundle<String>>) invocation.getArguments()[1];
-				resolver.resolve(factory.read("a").composeWith(factory.read("b")), innerCallback);
+				resolver.resolve(factory.read("b"), innerCallback);
 				return null;
 			}
 		}).when(callback).interest(eq(analyzer), argThat(new ReturnSiteResolverArgumentMatcher(factory.read("a"))), eq(factory.prepend("b").composeWith(factory.prepend("a"))));
@@ -155,7 +155,7 @@ public class ReturnSiteResolverTest {
 		sut.resolve(factory.read("a"), callback);
 		
 		verify(innerCallback).interest(eq(analyzer), argThat(new ReturnSiteResolverArgumentMatcher(factory.read("a").composeWith(factory.read("b")))), 
-				eq(factory.prepend("b").composeWith(factory.prepend("a"))));
+				eq(factory.prepend("b")));
 	}
 	
 	@Test
@@ -165,7 +165,7 @@ public class ReturnSiteResolverTest {
 			@Override
 			public Object answer(InvocationOnMock invocation) throws Throwable {
 				ReturnSiteResolver<TestFact, Statement, TestMethod, AccessPathBundle<String>> resolver = (ReturnSiteResolver<TestFact, Statement, TestMethod, AccessPathBundle<String>>) invocation.getArguments()[1];
-				resolver.resolve(factory.read("a").composeWith(factory.read("b")), innerCallback);
+				resolver.resolve(factory.read("b"), innerCallback);
 				return null;
 			}
 		}).when(callback).interest(eq(analyzer), argThat(new ReturnSiteResolverArgumentMatcher(factory.read("a"))), eq(factory.prepend("a")));
@@ -173,7 +173,7 @@ public class ReturnSiteResolverTest {
 		sut.addIncoming(new FactEdgeFnResolverTuple<TestFact, Statement, TestMethod, AccessPathBundle<String>>(fact, factory.id(), callEdgeResolver), 
 				callEdgeResolver, factory.prepend("a"));
 		sut.resolve(factory.read("a"), callback);
-		verify(innerCallback).continueBalancedTraversal(factory.prepend("a"));
+		verify(innerCallback).continueBalancedTraversal(factory.id());
 	}
 
 	@Test
@@ -276,6 +276,36 @@ public class ReturnSiteResolverTest {
 		verify(resolver, never()).resolve(any(EdgeFunction.class), any(InterestCallback.class));
 		verify(callback, never()).interest(any(PerAccessPathMethodAnalyzer.class), any(Resolver.class), any(EdgeFunction.class));
 		verify(callback, never()).continueBalancedTraversal(any(EdgeFunction.class));
+	}
+	
+	@Test
+	public void keepIncEdgeOnContinueBalancedTraversal() {
+		Resolver<TestFact, Statement, TestMethod, AccessPathBundle<String>> resolver = mock(Resolver.class);
+		InterestCallback<TestFact, Statement, TestMethod, AccessPathBundle<String>> secondCallback = mock(InterestCallback.class);
+		sut.addIncoming(new FactEdgeFnResolverTuple<TestFact, Statement, TestMethod, AccessPathBundle<String>>(
+				fact, factory.prepend("y"), resolver), callEdgeResolver, factory.id());
+		
+		doAnswer(new Answer() {
+			@Override
+			public Object answer(InvocationOnMock invocation) throws Throwable {
+				Resolver<TestFact, Statement, TestMethod, AccessPathBundle<String>> resolver = (Resolver) invocation.getArguments()[1];
+				resolver.resolve(factory.read("x"), secondCallback);
+				return null;
+			}
+		}).when(callback).interest(eq(analyzer), 
+				argThat(new ReturnSiteResolverArgumentMatcher(factory.read("y"))), eq(factory.prepend("y")));
+		doAnswer(new Answer() {
+			@Override
+			public Object answer(InvocationOnMock invocation) throws Throwable {
+				InterestCallback<TestFact, Statement, TestMethod, AccessPathBundle<String>> callback = 
+						(InterestCallback<TestFact, Statement, TestMethod, AccessPathBundle<String>>) invocation.getArguments()[1];
+				callback.continueBalancedTraversal(factory.id());
+				return null;
+			}
+		}).when(resolver).resolve(eq(factory.read("x")), any(InterestCallback.class));
+		
+		sut.resolve(factory.read("y"), callback);
+		verify(secondCallback).continueBalancedTraversal(eq(factory.id()));
 	}
 	
 	private class ReturnSiteResolverArgumentMatcher extends

@@ -28,7 +28,7 @@ class CallEdgeResolver<Fact, Stmt, Method, Value> extends ResolverTemplate<Fact,
 	}
 
 	@Override
-	protected EdgeFunction<Value> getResolvedFunction() {
+	public EdgeFunction<Value> getResolvedFunction() {
 		return analyzer.getConstraint();
 	}
 	

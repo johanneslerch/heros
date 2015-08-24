@@ -48,7 +48,7 @@ public class ReturnSiteResolver<Fact, Stmt, Method, Value> extends ResolverTempl
 	}
 	
 	@Override
-	protected EdgeFunction<Value> getResolvedFunction() {
+	public EdgeFunction<Value> getResolvedFunction() {
 		return resolvedEdgeFunction;
 	}
 	
@@ -114,15 +114,15 @@ public class ReturnSiteResolver<Fact, Stmt, Method, Value> extends ResolverTempl
 						ReturnSiteResolver.this.resolvedUnbalanced(edgeFunction,
 								((ZeroCallEdgeResolver<Fact, Stmt, Method, Value>) resolver).copyWithAnalyzer(ReturnSiteResolver.this.analyzer));
 					} else {
-						addIncomingWithoutCheck(retEdge.copyWithIncomingResolver(resolver, retEdge.incEdgeFunction));
+						addIncomingWithoutCheck(retEdge.copyWithIncomingResolver(resolver, edgeFunction.composeWith(retEdge.incEdgeFunction)));
 						ReturnSiteResolver.this.resolvedUnbalanced(edgeFunction, ReturnSiteResolver.this);
 					}
 				}
 				
 				@Override
 				public void continueBalancedTraversal(EdgeFunction<Value> edgeFunction) {
-					//TODO should it be edgeFunction.composeWith(retEdge.incEdgeFunction) ???
-					resolveViaDeltaAndPotentiallyDelegateToCallSite(retEdge, edgeFunction);
+					EdgeFunction<Value> composedFn = edgeFunction.composeWith(retEdge.incEdgeFunction);
+					resolveViaDeltaAndPotentiallyDelegateToCallSite(retEdge, composedFn);
 				}
 			});
 		}			
@@ -150,14 +150,15 @@ public class ReturnSiteResolver<Fact, Stmt, Method, Value> extends ResolverTempl
 			retEdge.resolverIntoCallee.resolve(constraint, new InterestCallback<Fact, Stmt, Method, Value>() {
 				@Override
 				public void interest(PerAccessPathMethodAnalyzer<Fact, Stmt, Method, Value> analyzer, Resolver<Fact, Stmt, Method, Value> resolver, EdgeFunction<Value> edgeFunction) {
-					addIncomingWithoutCheck(retEdge.copyWithResolverAtCaller(resolver, edgeFunction));
+					addIncomingWithoutCheck(retEdge.copyWithResolverAtCaller(resolver, edgeFunction.composeWith(composedFunction)));
 //					incomingEdges.add(retEdge.copyWithResolverAtCaller(resolver, composedFunction));
-					ReturnSiteResolver.this.resolvedUnbalanced(edgeFunction, resolver);
+					ReturnSiteResolver.this.resolvedUnbalanced(edgeFunction.composeWith(composedFunction), resolver);
 				}
 				
 				@Override
 				public void continueBalancedTraversal(EdgeFunction<Value> edgeFunction) {
-					ReturnSiteResolver.this.continueBalancedTraversal(edgeFunction.composeWith(composedFunction));
+					EdgeFunction<Value> composedFn = edgeFunction.composeWith(composedFunction);
+					ReturnSiteResolver.this.continueBalancedTraversal(composedFn);
 				}
 			});
 		}

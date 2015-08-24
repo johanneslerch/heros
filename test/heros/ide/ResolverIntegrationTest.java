@@ -99,7 +99,7 @@ public class ResolverIntegrationTest {
 				PerAccessPathMethodAnalyzer<TestFact, Statement, TestMethod, AccessPathBundle<String>> callerAnalyzer = mock(PerAccessPathMethodAnalyzer.class);
 				when(callerAnalyzer.getCallEdgeResolver()).thenReturn(callerResolver);
 				CallEdge<TestFact, Statement, TestMethod, AccessPathBundle<String>> callEdge = new CallEdge<TestFact, Statement, TestMethod, AccessPathBundle<String>>(
-						callerAnalyzer, fact, fact,	factory.read("x"), resolver, callSite);
+						callerAnalyzer, fact, fact,	factory.id(), resolver, callSite);
 				PerAccessPathMethodAnalyzer<TestFact, Statement, TestMethod, AccessPathBundle<String>> interestedAnalyzer = mock(PerAccessPathMethodAnalyzer.class);
 				when(interestedAnalyzer.getConstraint()).thenReturn(factory.read("y"));
 				callEdge.registerInterestCallback(interestedAnalyzer);

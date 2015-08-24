@@ -109,7 +109,7 @@ public class ControlFlowJoinResolver<Fact, Stmt, Method, Value> extends Resolver
 	}
 
 	@Override
-	protected EdgeFunction<Value> getResolvedFunction() {
+	public EdgeFunction<Value> getResolvedFunction() {
 		return resolvedEdgeFunction;
 	}
 

@@ -85,7 +85,7 @@ public abstract class ChainableEdgeFunction<Field> implements EdgeFunction<Acces
 			return cachedMayReturnTop;
 		}
 		
-		cachedMayReturnTop = mayThisReturnTop() && chainedFunction.mayReturnTop();
+		cachedMayReturnTop = mayThisReturnTop() || chainedFunction.mayReturnTop();
 		return cachedMayReturnTop;
 	}
 

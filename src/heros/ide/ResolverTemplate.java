@@ -39,8 +39,6 @@ public abstract class ResolverTemplate<Fact, Stmt, Method, Value, Incoming>  ext
 		}
 	}
 	
-	protected abstract EdgeFunction<Value> getResolvedFunction();
-	
 	protected abstract EdgeFunction<Value> getEdgeFunction(Incoming inc);
 	
 	protected void addIncomingWithoutCheck(Incoming inc) {
@@ -83,8 +81,9 @@ public abstract class ResolverTemplate<Fact, Stmt, Method, Value, Incoming>  ext
 	@Override
 	public void resolve(EdgeFunction<Value> constraint, InterestCallback<Fact, Stmt, Method, Value> callback) {
 		if(!isLocked()) {
-			log("Resolve: "+constraint);
-			ResolverTemplate<Fact,Stmt,Method, Value,Incoming> nestedResolver = getOrCreateNestedResolver(constraint);
+			EdgeFunction<Value> composedFunction = getResolvedFunction().composeWith(constraint);
+			log("Resolve: "+composedFunction);
+			ResolverTemplate<Fact,Stmt,Method, Value,Incoming> nestedResolver = getOrCreateNestedResolver(composedFunction);
 			nestedResolver.registerCallback(callback);
 		}
 	}

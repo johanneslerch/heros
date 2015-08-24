@@ -13,9 +13,26 @@ package heros.ide;
 import heros.ide.edgefunc.EdgeFunction;
 
 
+/**
+ * Is passed as callback to Resolver.resolve(constraint, callback);
+ *
+ */
 public interface InterestCallback<Fact, Stmt, Method, Value> {
 
+	/**
+	 * 
+	 * @param analyzer
+	 * @param resolver The resolver that was able to resolve the constraint. This may be a nested resolver of the resolver
+	 *  that was asked to resolve the constraint or some preceding resolver.
+	 * @param edgeFunction The updated edge function that was composed with preceding edge functions to satisfy the constraint.
+	 *  This edge function is not composed with the constraint nor with previous constraints of the resolver!
+	 */
 	void interest(PerAccessPathMethodAnalyzer<Fact, Stmt, Method, Value> analyzer, Resolver<Fact, Stmt, Method, Value> resolver, EdgeFunction<Value> edgeFunction);
 	
+	/**
+	 * 
+	 * @param edgeFunction A partially resolved edge function that does not yet satisfy the constraint. This edge function is
+	 *  not composed with the given constraint, but with previous constraints resolved by the resolver!
+	 */
 	void continueBalancedTraversal(EdgeFunction<Value> edgeFunction);
 }
