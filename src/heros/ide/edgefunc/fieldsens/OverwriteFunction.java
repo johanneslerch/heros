@@ -26,9 +26,10 @@ public class OverwriteFunction<Field> extends ChainableEdgeFunction<Field> {
 
 	@Override
 	protected boolean mayThisReturnTop() {
-		//if this does not have a preceding function it may return top, e.g., a prepend with the same field may precede in the future
-		//o.w. the succeeding function (e.g., read of overwritten field) may return top, but not this overwrite
-		//this definition is important to propagate overwrite functions at initial seeds
+		//If this does not have a preceding function it may return top, e.g., a prepend with the same field may precede in the future.
+		//This overwrite may cause a composition resulting in allTop, but the respective mayReturnTop must be handled
+		//by the succeeding function (e.g., read of overwritten field).
+		//This definition is important to propagate overwrite functions at initial seeds.
 		return chainedFunction == null;
 	}
 	
