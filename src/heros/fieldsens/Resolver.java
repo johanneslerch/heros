@@ -20,13 +20,36 @@ import com.google.common.collect.Sets;
 
 public abstract class Resolver<Field, Fact, Stmt, Method> {
 
+	private boolean recursionLock = false;
+	private Resolver<Field, Fact, Stmt, Method> parent;
 	private Set<Resolver<Field, Fact, Stmt, Method>> interest = Sets.newHashSet();
 	private List<InterestCallback<Field, Fact, Stmt, Method>> interestCallbacks = Lists.newLinkedList();
 	protected PerAccessPathMethodAnalyzer<Field, Fact, Stmt, Method> analyzer;
 	private boolean canBeResolvedEmpty = false;
 	
-	public Resolver(PerAccessPathMethodAnalyzer<Field, Fact, Stmt, Method> analyzer) {
+	public Resolver(Resolver<Field, Fact, Stmt, Method> parent, PerAccessPathMethodAnalyzer<Field, Fact, Stmt, Method> analyzer) {
+		this.parent = parent;
 		this.analyzer = analyzer;
+	}
+	
+	protected boolean isLocked() {
+		if(recursionLock)
+			return true;
+		if(parent == null)
+			return false;
+		return parent.isLocked();
+	}
+
+	protected void lock() {
+		recursionLock = true;
+		if(parent != null)
+			parent.lock();
+	}
+	
+	protected void unlock() {
+		recursionLock = false;
+		if(parent != null)
+			parent.unlock();
 	}
 
 	public abstract void resolve(Constraint<Field> constraint, InterestCallback<Field, Fact, Stmt, Method> callback);

@@ -44,9 +44,7 @@ class CallEdgeResolver<Fact, Stmt, Method, Value> extends ResolverTemplate<Fact,
 	
 	@Override
 	protected void processIncomingPotentialPrefix(CallEdge<Fact, Stmt, Method, Value> inc) {
-		lock();
 		inc.registerInterestCallback(analyzer);
-		unlock();
 	}
 
 	@Override

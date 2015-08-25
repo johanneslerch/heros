@@ -69,7 +69,6 @@ public class ControlFlowJoinResolver<Field, Fact, Stmt, Method> extends Resolver
 			canBeResolvedEmpty();
 		}
 		else {
-			lock();
 			Delta<Field> delta = fact.getAccessPath().getDeltaTo(resolvedAccessPath);
 			fact.getResolver().resolve(new DeltaConstraint<Field>(delta), new InterestCallback<Field, Fact, Stmt, Method>() {
 				@Override
@@ -83,7 +82,6 @@ public class ControlFlowJoinResolver<Field, Fact, Stmt, Method> extends Resolver
 					ControlFlowJoinResolver.this.canBeResolvedEmpty();
 				}
 			});
-			unlock();
 		}
 	}
 	

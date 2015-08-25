@@ -62,7 +62,11 @@ public abstract class ResolverTemplate<Fact, Stmt, Method, Value, Incoming>  ext
 			if(composedFunction.mayReturnTop()) {
 				if(composedFunction instanceof AllTop)
 					return;
+				
+				assert !isLocked();
+				lock();
 				processIncomingPotentialPrefix(inc); //TODO: Improve performance by passing composedFunction here
+				unlock();
 				return;
 			}
 		}

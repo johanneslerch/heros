@@ -23,9 +23,7 @@ import heros.fieldsens.FlowFunction.Constraint;
 
 public abstract class ResolverTemplate<Field, Fact, Stmt, Method, Incoming>  extends Resolver<Field, Fact, Stmt, Method> {
 
-	private boolean recursionLock = false;
 	protected Set<Incoming> incomingEdges = Sets.newHashSet();
-	private ResolverTemplate<Field, Fact, Stmt, Method, Incoming> parent;
 	private Map<AccessPath<Field>, ResolverTemplate<Field, Fact, Stmt, Method, Incoming>> nestedResolvers = Maps.newHashMap();
 	private Map<AccessPath<Field>, ResolverTemplate<Field, Fact, Stmt, Method, Incoming>> allResolversInExclHierarchy;
 	protected AccessPath<Field> resolvedAccessPath;
@@ -35,9 +33,8 @@ public abstract class ResolverTemplate<Field, Fact, Stmt, Method, Incoming>  ext
 			AccessPath<Field> resolvedAccessPath,
 			ResolverTemplate<Field, Fact, Stmt, Method, Incoming> parent, 
 			Debugger<Field, Fact, Stmt, Method> debugger) {
-		super(analyzer);
+		super(parent, analyzer);
 		this.resolvedAccessPath = resolvedAccessPath;
-		this.parent = parent;
 		this.debugger = debugger;
 		if(parent == null || resolvedAccessPath.getExclusions().isEmpty()) {
 			allResolversInExclHierarchy = Maps.newHashMap();
@@ -46,22 +43,6 @@ public abstract class ResolverTemplate<Field, Fact, Stmt, Method, Incoming>  ext
 			allResolversInExclHierarchy = parent.allResolversInExclHierarchy;
 		}
 		debugger.newResolver(analyzer, this);
-	}
-	
-	protected boolean isLocked() {
-		if(recursionLock)
-			return true;
-		if(parent == null)
-			return false;
-		return parent.isLocked();
-	}
-
-	protected void lock() {
-		recursionLock = true;
-	}
-	
-	protected void unlock() {
-		recursionLock = false;
 	}
 	
 	protected abstract AccessPath<Field> getAccessPathOf(Incoming inc);
@@ -81,7 +62,10 @@ public abstract class ResolverTemplate<Field, Fact, Stmt, Method, Incoming>  ext
 			processIncomingGuaranteedPrefix(inc);
 		}
 		else if(getAccessPathOf(inc).isPrefixOf(resolvedAccessPath).atLeast(PrefixTestResult.POTENTIAL_PREFIX)) {
+			assert !isLocked();
+			lock();
 			processIncomingPotentialPrefix(inc);
+			unlock();
 		}
 	}
 
@@ -91,13 +75,15 @@ public abstract class ResolverTemplate<Field, Fact, Stmt, Method, Incoming>  ext
 	
 	@Override
 	public void resolve(Constraint<Field> constraint, InterestCallback<Field, Fact, Stmt, Method> callback) {
-		log("Resolve: "+constraint);
-		debugger.askedToResolve(this, constraint);
-		if(constraint.canBeAppliedTo(resolvedAccessPath) && !isLocked()) {
-			AccessPath<Field> newAccPath = constraint.applyToAccessPath(resolvedAccessPath);
-			ResolverTemplate<Field,Fact,Stmt,Method,Incoming> nestedResolver = getOrCreateNestedResolver(newAccPath);
-			assert nestedResolver.resolvedAccessPath.equals(constraint.applyToAccessPath(resolvedAccessPath));
-			nestedResolver.registerCallback(callback);
+		if(!isLocked()) {
+			log("Resolve: "+constraint);
+			debugger.askedToResolve(this, constraint);
+			if(constraint.canBeAppliedTo(resolvedAccessPath) && !isLocked()) {
+				AccessPath<Field> newAccPath = constraint.applyToAccessPath(resolvedAccessPath);
+				ResolverTemplate<Field,Fact,Stmt,Method,Incoming> nestedResolver = getOrCreateNestedResolver(newAccPath);
+				assert nestedResolver.resolvedAccessPath.equals(constraint.applyToAccessPath(resolvedAccessPath));
+				nestedResolver.registerCallback(callback);
+			}
 		}
 	}
 
