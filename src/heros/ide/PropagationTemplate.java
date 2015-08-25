@@ -15,6 +15,7 @@ import java.util.Set;
 import heros.FlowFunction;
 import heros.ide.edgefunc.AllTop;
 import heros.ide.edgefunc.EdgeFunction;
+import heros.ide.edgefunc.EdgeIdentity;
 import heros.ide.structs.FactEdgeFnResolverStatementTuple;
 
 public abstract class PropagationTemplate<Fact, Stmt, Method, Value> {
@@ -40,13 +41,26 @@ public abstract class PropagationTemplate<Fact, Stmt, Method, Value> {
 				factAtStmt.getResolver().resolve(composedFunction, new InterestCallback<Fact, Stmt, Method, Value>() {
 					@Override
 					public void interest(PerAccessPathMethodAnalyzer<Fact, Stmt, Method, Value> analyzer, Resolver<Fact, Stmt, Method, Value> resolver, EdgeFunction<Value> edgeFunction) {
-//						propagate(analyzer, resolver, targetFact, edgeFunction.composeWith(composedFunction));
-						propagate(analyzer, resolver, targetFact, composedFunction);
+						propagate(analyzer, resolver, targetFact, edgeFunction.composeWith(composedFunction));
 					}
 
 					@Override
 					public void continueBalancedTraversal(EdgeFunction<Value> balancedFunction) {
-						analyzer.getCallEdgeResolver().resolve(balancedFunction.composeWith(composedFunction), this);
+						final EdgeFunction<Value> constraint = balancedFunction.composeWith(composedFunction);
+						analyzer.getCallEdgeResolver().resolve(constraint, new InterestCallback<Fact, Stmt, Method, Value>() {
+
+							@Override
+							public void interest(PerAccessPathMethodAnalyzer<Fact, Stmt, Method, Value> analyzer,
+									Resolver<Fact, Stmt, Method, Value> resolver, EdgeFunction<Value> edgeFunction) {
+								assert edgeFunction.equals(EdgeIdentity.<Value>v());
+								propagate(analyzer, resolver, targetFact, constraint);
+							}
+
+							@Override
+							public void continueBalancedTraversal(EdgeFunction<Value> edgeFunction) {
+								throw new IllegalStateException();
+							}
+						});
 					}
 				});
 			}

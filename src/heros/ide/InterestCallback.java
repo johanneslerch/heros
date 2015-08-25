@@ -24,15 +24,15 @@ public interface InterestCallback<Fact, Stmt, Method, Value> {
 	 * @param analyzer
 	 * @param resolver The resolver that was able to resolve the constraint. This may be a nested resolver of the resolver
 	 *  that was asked to resolve the constraint or some preceding resolver.
-	 * @param edgeFunction The updated edge function that was composed with preceding edge functions to satisfy the constraint.
-	 *  This edge function is not composed with the constraint nor with previous constraints of the resolver!
+	 * @param edgeFunction id if the resolver that was asked was able to resolve the request, otherwise an edge function representing 
+	 * the edge functions between the resolver that was asked and the resolver that was able to resolve the request (the latter is given as argument as well).
 	 */
 	void interest(PerAccessPathMethodAnalyzer<Fact, Stmt, Method, Value> analyzer, Resolver<Fact, Stmt, Method, Value> resolver, EdgeFunction<Value> edgeFunction);
 	
 	/**
 	 * 
 	 * @param edgeFunction A partially resolved edge function that does not yet satisfy the constraint. This edge function is
-	 *  not composed with the given constraint, but with previous constraints resolved by the resolver!
+	 *  not composed with the constraint nor with previous constraints of the resolver!
 	 */
 	void continueBalancedTraversal(EdgeFunction<Value> edgeFunction);
 }

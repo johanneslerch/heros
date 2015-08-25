@@ -28,7 +28,7 @@ public abstract class Resolver<Fact, Stmt, Method, Value> {
 
 	private boolean recursionLock = false;
 	private Resolver<Fact, Stmt, Method, Value> parent;
-	private Multimap<EdgeFunction<Value>, Resolver<Fact, Stmt, Method, Value>> resolvedUnbalanced = HashMultimap.create();
+	private Map<Resolver<Fact, Stmt, Method, Value>, EdgeFunction<Value>> resolvedUnbalanced = Maps.newHashMap();
 	private List<InterestCallback<Fact, Stmt, Method, Value>> interestCallbacks = Lists.newLinkedList();
 	protected PerAccessPathMethodAnalyzer<Fact, Stmt, Method, Value> analyzer;
 	private Set<EdgeFunction<Value>> balancedFunctions = Sets.newHashSet();
@@ -52,17 +52,14 @@ public abstract class Resolver<Fact, Stmt, Method, Value> {
 
 	protected void lock() {
 		recursionLock = true;
+		if(parent != null)
+			parent.lock();
 	}
 	
 	protected void unlock() {
 		recursionLock = false;
-	}
-	
-	private Resolver<Fact, Stmt, Method, Value> getParentRoot() {
-		if(parent == null)
-			return this;
-		else
-			return parent.getParentRoot();
+		if(parent != null)
+			parent.unlock();
 	}
 	
 	private boolean isParentOf(Resolver<Fact, Stmt, Method, Value> resolver) {
@@ -77,18 +74,15 @@ public abstract class Resolver<Fact, Stmt, Method, Value> {
 	}
 	
 	public void resolvedUnbalanced(EdgeFunction<Value> edgeFunction, Resolver<Fact, Stmt, Method, Value> resolver) {
-		if(parent != null)
-			edgeFunction = edgeFunction.composeWith(parent.getResolvedFunction());
-		
-		if(resolvedUnbalanced.containsKey(edgeFunction)) {
-			for(Resolver<Fact, Stmt, Method, Value> candidate : resolvedUnbalanced.get(edgeFunction)) {
-				if(candidate == this && getParentRoot().isParentOf(resolver))
-					return;
-				if(candidate == resolver || candidate.isParentOf(resolver))
-					return;
-			}
+		if(resolvedUnbalanced.containsKey(resolver)) {
+			return;
 		}
-		resolvedUnbalanced.put(edgeFunction, resolver);
+				
+		for(Resolver<Fact, Stmt, Method, Value> candidate : resolvedUnbalanced.keySet()) {
+			if(candidate.isParentOf(resolver))
+				return;
+		}
+		resolvedUnbalanced.put(resolver, edgeFunction);
 		
 		log("Interest given by EdgeFunction: "+edgeFunction);
 		for(InterestCallback<Fact, Stmt, Method, Value> callback : Lists.newLinkedList(interestCallbacks)) {
@@ -101,7 +95,7 @@ public abstract class Resolver<Fact, Stmt, Method, Value> {
 	}
 	
 	protected void continueBalancedTraversal(EdgeFunction<Value> edgeFunction) {
-		edgeFunction = edgeFunction.composeWith(parent.getResolvedFunction());
+//		edgeFunction = edgeFunction.composeWith(parent.getResolvedFunction());
 		
 		if(balancedFunctions.add(edgeFunction)) {
 			for(InterestCallback<Fact, Stmt, Method, Value> callback : Lists.newLinkedList(interestCallbacks)) {
@@ -111,8 +105,8 @@ public abstract class Resolver<Fact, Stmt, Method, Value> {
 	}
 
 	protected void registerCallback(InterestCallback<Fact, Stmt, Method, Value> callback) {
-		for(Entry<EdgeFunction<Value>, Resolver<Fact, Stmt, Method, Value>> resolved : Lists.newLinkedList(resolvedUnbalanced.entries())) {
-			callback.interest(analyzer, resolved.getValue(), resolved.getKey());
+		for(Entry<Resolver<Fact, Stmt, Method, Value>, EdgeFunction<Value>> resolved : Lists.newLinkedList(resolvedUnbalanced.entrySet())) {
+			callback.interest(analyzer, resolved.getKey(), resolved.getValue());
 		}
 		log("Callback registered");
 		interestCallbacks.add(callback);

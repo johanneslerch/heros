@@ -73,15 +73,17 @@ public class ControlFlowJoinResolver<Fact, Stmt, Method, Value> extends Resolver
 			continueBalancedTraversal(fact.getEdgeFunction());
 		}
 		else {
+			assert !isLocked();
 			lock();
 			fact.getResolver().resolve(fact.getEdgeFunction().composeWith(resolvedEdgeFunction), new InterestCallback<Fact, Stmt, Method, Value>() {
 				@Override
 				public void interest(PerAccessPathMethodAnalyzer<Fact, Stmt, Method, Value> analyzer, 
 						Resolver<Fact, Stmt, Method, Value> resolver, EdgeFunction<Value> edgeFunction) {
-					addIncomingWithoutCheck(new FactEdgeFnResolverTuple<Fact, Stmt, Method, Value>(
-							fact.getFact(), edgeFunction.composeWith(fact.getEdgeFunction())//TODO effect of this composition not tested!
-							, resolver));
-					ControlFlowJoinResolver.this.resolvedUnbalanced(edgeFunction, resolver);
+					EdgeFunction<Value> composedFunction = edgeFunction.composeWith(fact.getEdgeFunction());
+					// do not add as incoming, only as resolved unbalanced (this resolver will not be forwarded anyways).
+//					addIncomingWithoutCheck(new FactEdgeFnResolverTuple<Fact, Stmt, Method, Value>(
+//							fact.getFact(), composedFunction, resolver));
+					ControlFlowJoinResolver.this.resolvedUnbalanced(composedFunction, resolver);
 				}
 	
 				@Override

@@ -57,9 +57,9 @@ public class ReturnSiteResolver<Fact, Stmt, Method, Value> extends ResolverTempl
 		return inc.incEdgeFunction;
 	}
 	
-	public void addIncoming(final FactEdgeFnResolverTuple<Fact, Stmt, Method, Value> fact, 
+	public void addIncomingWithoutCheck(final FactEdgeFnResolverTuple<Fact, Stmt, Method, Value> fact, 
 			Resolver<Fact, Stmt, Method, Value> resolverAtCaller, EdgeFunction<Value> edgeFunctionIntoCallee) {
-		addIncoming(new ReturnEdge<Fact, Stmt, Method, Value>(fact, resolverAtCaller, edgeFunctionIntoCallee));
+		addIncomingWithoutCheck(new ReturnEdge<Fact, Stmt, Method, Value>(fact, resolverAtCaller, edgeFunctionIntoCallee));
 	}
 	
 	protected void processIncomingGuaranteedPrefix(ReturnEdge<Fact, Stmt, Method, Value> retEdge) {
@@ -110,12 +110,12 @@ public class ReturnSiteResolver<Fact, Stmt, Method, Value> extends ResolverTempl
 
 				@Override
 				public void interest(PerAccessPathMethodAnalyzer<Fact, Stmt, Method, Value> analyzer, Resolver<Fact, Stmt, Method, Value> resolver, EdgeFunction<Value> edgeFunction) {
+					EdgeFunction<Value> composedFunction = edgeFunction.composeWith(retEdge.incEdgeFunction);
 					if(resolver instanceof ZeroCallEdgeResolver) {
-						ReturnSiteResolver.this.resolvedUnbalanced(edgeFunction,
+						ReturnSiteResolver.this.resolvedUnbalanced(composedFunction,
 								((ZeroCallEdgeResolver<Fact, Stmt, Method, Value>) resolver).copyWithAnalyzer(ReturnSiteResolver.this.analyzer));
 					} else {
-						addIncomingWithoutCheck(retEdge.copyWithIncomingResolver(resolver, edgeFunction.composeWith(retEdge.incEdgeFunction)));
-						ReturnSiteResolver.this.resolvedUnbalanced(edgeFunction, ReturnSiteResolver.this);
+						addIncomingWithoutCheck(retEdge.copyWithIncomingResolver(resolver, composedFunction));
 					}
 				}
 				
@@ -138,7 +138,6 @@ public class ReturnSiteResolver<Fact, Stmt, Method, Value> extends ResolverTempl
 		}
 		else {
 			addIncomingWithoutCheck(retEdge.copyWithoutIncomingResolver(composedFunction));
-			resolvedUnbalanced(composedFunction, this);
 		}
 	}
 
@@ -150,8 +149,6 @@ public class ReturnSiteResolver<Fact, Stmt, Method, Value> extends ResolverTempl
 			retEdge.resolverIntoCallee.resolve(constraint, new InterestCallback<Fact, Stmt, Method, Value>() {
 				@Override
 				public void interest(PerAccessPathMethodAnalyzer<Fact, Stmt, Method, Value> analyzer, Resolver<Fact, Stmt, Method, Value> resolver, EdgeFunction<Value> edgeFunction) {
-					addIncomingWithoutCheck(retEdge.copyWithResolverAtCaller(resolver, edgeFunction.composeWith(composedFunction)));
-//					incomingEdges.add(retEdge.copyWithResolverAtCaller(resolver, composedFunction));
 					ReturnSiteResolver.this.resolvedUnbalanced(edgeFunction.composeWith(composedFunction), resolver);
 				}
 				

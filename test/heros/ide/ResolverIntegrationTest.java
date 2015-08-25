@@ -58,7 +58,7 @@ public class ResolverIntegrationTest {
 		Statement returnSite = new Statement("returnSite");
 		ReturnSiteResolver<TestFact, Statement, TestMethod, AccessPathBundle<String>> returnSiteResolver = new ReturnSiteResolver<TestFact, Statement, TestMethod, AccessPathBundle<String>>(
 				factMergeHandler, analyzer, returnSite);
-		returnSiteResolver.addIncoming(new FactEdgeFnResolverTuple<TestFact, Statement, TestMethod, AccessPathBundle<String>>(fact, factory.read("x"), calleeResolver), 
+		returnSiteResolver.addIncomingWithoutCheck(new FactEdgeFnResolverTuple<TestFact, Statement, TestMethod, AccessPathBundle<String>>(fact, factory.read("x"), calleeResolver), 
 				callerResolver, factory.read("z"));
 		
 		verify(analyzer).scheduleEdgeTo(new FactEdgeFnResolverStatementTuple<TestFact, Statement, TestMethod, AccessPathBundle<String>>(
@@ -78,13 +78,13 @@ public class ResolverIntegrationTest {
 	
 	@Test
 	public void balancedTraversalOnResolveViaCallEdgeResolver2() {
-		CallEdgeResolver<TestFact, Statement, TestMethod, AccessPathBundle<String>> callerResolver = mock(CallEdgeResolver.class);
+		final CallEdgeResolver<TestFact, Statement, TestMethod, AccessPathBundle<String>> callerResolver = mock(CallEdgeResolver.class);
 		CallEdgeResolver<TestFact, Statement, TestMethod, AccessPathBundle<String>> calleeResolver = mock(CallEdgeResolver.class);
 		
 		Statement returnSite = new Statement("returnSite");
 		ReturnSiteResolver<TestFact, Statement, TestMethod, AccessPathBundle<String>> returnSiteResolver = new ReturnSiteResolver<TestFact, Statement, TestMethod, AccessPathBundle<String>>(
 				factMergeHandler, analyzer, returnSite);
-		returnSiteResolver.addIncoming(new FactEdgeFnResolverTuple<TestFact, Statement, TestMethod, AccessPathBundle<String>>(fact, factory.prepend("x"), calleeResolver), 
+		returnSiteResolver.addIncomingWithoutCheck(new FactEdgeFnResolverTuple<TestFact, Statement, TestMethod, AccessPathBundle<String>>(fact, factory.prepend("x"), calleeResolver), 
 				callerResolver, factory.read("z"));
 		
 		verify(analyzer).scheduleEdgeTo(new FactEdgeFnResolverStatementTuple<TestFact, Statement, TestMethod, AccessPathBundle<String>>(
@@ -101,12 +101,12 @@ public class ResolverIntegrationTest {
 				CallEdge<TestFact, Statement, TestMethod, AccessPathBundle<String>> callEdge = new CallEdge<TestFact, Statement, TestMethod, AccessPathBundle<String>>(
 						callerAnalyzer, fact, fact,	factory.id(), resolver, callSite);
 				PerAccessPathMethodAnalyzer<TestFact, Statement, TestMethod, AccessPathBundle<String>> interestedAnalyzer = mock(PerAccessPathMethodAnalyzer.class);
-				when(interestedAnalyzer.getConstraint()).thenReturn(factory.read("y"));
+				when(interestedAnalyzer.getConstraint()).thenReturn(factory.read("x").composeWith(factory.read("y")));
 				callEdge.registerInterestCallback(interestedAnalyzer);
 				
 				return null;
 			}
-		}).when(callback).interest(any(PerAccessPathMethodAnalyzer.class), any(Resolver.class), eq(factory.prepend("x")));
+		}).when(callback).interest(any(PerAccessPathMethodAnalyzer.class), any(Resolver.class), eq(factory.id()));
 		returnSiteResolver.resolve(factory.read("x"), callback);
 		verify(callerResolver).resolve(eq(factory.read("z").composeWith(factory.read("y"))), any(InterestCallback.class));
 	}

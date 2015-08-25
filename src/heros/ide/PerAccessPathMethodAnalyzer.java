@@ -97,7 +97,7 @@ class PerAccessPathMethodAnalyzer<Fact, Stmt, Method, Value> {
 	}
 
 	private void bootstrapAtMethodStartPoints(EdgeFunction<Value> edgeFunction) {
-		callEdgeResolver.resolvedUnbalanced(edgeFunction, callEdgeResolver);
+		callEdgeResolver.resolvedUnbalanced(EdgeIdentity.<Value>v(), callEdgeResolver);
 		for(Stmt startPoint : context.icfg.getStartPointsOf(method)) {
 			WrappedFactAtStatement<Fact, Stmt, Method, Value> target = new WrappedFactAtStatement<Fact, Stmt, Method, Value>(startPoint, wrappedSource());
 			if(!reachableStatements.containsKey(target))
@@ -211,7 +211,7 @@ class PerAccessPathMethodAnalyzer<Fact, Stmt, Method, Value> {
 	
 	private void processCallToReturnEdge(FactEdgeFnResolverStatementTuple<Fact, Stmt, Method, Value> factAtStmt) {
 		if(isLoopStart(factAtStmt.getStatement())) {
-			ctrFlowJoinResolvers.getOrCreate(factAtStmt.getAsFactAtStatement()).addIncoming(factAtStmt.withoutStatement());
+			ctrFlowJoinResolvers.getOrCreate(factAtStmt.getAsFactAtStatement()).addIncomingWithoutCheck(factAtStmt.withoutStatement());
 		}
 		else {
 			processNonJoiningCallToReturnFlow(factAtStmt);
@@ -243,7 +243,7 @@ class PerAccessPathMethodAnalyzer<Fact, Stmt, Method, Value> {
 
 	private void processNormalFlow(FactEdgeFnResolverStatementTuple<Fact, Stmt, Method, Value> factAtStmt) {
 		if(isLoopStart(factAtStmt.getStatement())) {
-			ctrFlowJoinResolvers.getOrCreate(factAtStmt.getAsFactAtStatement()).addIncoming(factAtStmt.withoutStatement());
+			ctrFlowJoinResolvers.getOrCreate(factAtStmt.getAsFactAtStatement()).addIncomingWithoutCheck(factAtStmt.withoutStatement());
 		}
 		else {
 			processNormalNonJoiningFlow(factAtStmt);
@@ -297,12 +297,12 @@ class PerAccessPathMethodAnalyzer<Fact, Stmt, Method, Value> {
 		}
 	}
 	
-	public void addIncomingEdge(CallEdge<Fact, Stmt, Method, Value> incEdge) {
+	public void addIncomingEdgeWithoutCheck(CallEdge<Fact, Stmt, Method, Value> incEdge) {
 		if(isBootStrapped()) {
 			context.factHandler.merge(sourceFact, incEdge.getCalleeSourceFact());
 		} else 
 			bootstrapAtMethodStartPoints(incEdge.getEdgeFunctionAtCallee());
-		callEdgeResolver.addIncoming(incEdge);
+		callEdgeResolver.addIncomingWithoutCheck(incEdge);
 	}
 
 	void applySummary(final CallEdge<Fact, Stmt, Method, Value> incEdge, final FactEdgeFnResolverStatementTuple<Fact, Stmt, Method, Value> exitFact) {
@@ -331,13 +331,13 @@ class PerAccessPathMethodAnalyzer<Fact, Stmt, Method, Value> {
 
 	public void scheduleUnbalancedReturnEdgeTo(FactEdgeFnResolverStatementTuple<Fact, Stmt, Method, Value> target) {
 		ReturnSiteResolver<Fact,Stmt,Method, Value> resolver = returnSiteResolvers.getOrCreate(target.getAsFactAtStatement());
-		resolver.addIncoming(target.withoutStatement(), null, EdgeIdentity.<Value>v());
+		resolver.addIncomingWithoutCheck(target.withoutStatement(), null, EdgeIdentity.<Value>v());
 	}
 	
 	private void scheduleReturnEdge(CallEdge<Fact, Stmt, Method, Value> incEdge, FactEdgeFnResolverStatementTuple<Fact, Stmt, Method, Value> factAtStmt) {
 		ReturnSiteResolver<Fact, Stmt, Method, Value> returnSiteResolver = incEdge.getCallerAnalyzer().returnSiteResolvers.getOrCreate(
 				new FactAtStatement<Fact, Stmt>(factAtStmt.getFact(), factAtStmt.getStatement()));
-		returnSiteResolver.addIncoming(factAtStmt.withoutStatement(), incEdge.getResolverIntoCallee(), incEdge.getEdgeFunctionAtCallee());
+		returnSiteResolver.addIncomingWithoutCheck(factAtStmt.withoutStatement(), incEdge.getResolverIntoCallee(), incEdge.getEdgeFunctionAtCallee());
 	}
 
 	void applySummaries(CallEdge<Fact, Stmt, Method, Value> incEdge) {

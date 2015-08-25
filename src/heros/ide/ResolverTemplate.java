@@ -12,6 +12,7 @@ package heros.ide;
 
 import heros.ide.edgefunc.AllTop;
 import heros.ide.edgefunc.EdgeFunction;
+import heros.ide.edgefunc.EdgeIdentity;
 import heros.ide.edgefunc.fieldsens.ChainableEdgeFunction;
 
 import java.util.Map;
@@ -45,9 +46,14 @@ public abstract class ResolverTemplate<Fact, Stmt, Method, Value, Incoming>  ext
 		log("Incoming Edge: "+inc+ " with EdgeFunction: "+getEdgeFunction(inc));
 		if(!incomingEdges.add(inc))
 			return;
+		
+		resolvedUnbalanced(EdgeIdentity.<Value>v(), this);
+		
 		for(ResolverTemplate<Fact, Stmt, Method, Value, Incoming> nestedResolver : Lists.newLinkedList(nestedResolvers.values())) {
 			nestedResolver.addIncoming(inc);
 		}
+		
+		processIncomingGuaranteedPrefix(inc);
 	}
 	
 	public void addIncoming(Incoming inc) {
@@ -61,17 +67,7 @@ public abstract class ResolverTemplate<Fact, Stmt, Method, Value, Incoming>  ext
 			}
 		}
 
-		log("Incoming Edge: "+inc+ " with EdgeFunction: "+getEdgeFunction(inc));		
-		if(!incomingEdges.add(inc))
-			return;
-		
-		resolvedUnbalanced(getEdgeFunction(inc), this);
-		
-		for(ResolverTemplate<Fact, Stmt, Method, Value, Incoming> nestedResolver : nestedResolvers.values()) {
-			nestedResolver.addIncoming(inc);
-		}
-		
-		processIncomingGuaranteedPrefix(inc);
+		addIncomingWithoutCheck(inc);
 	}
 
 	protected abstract void processIncomingPotentialPrefix(Incoming inc);
@@ -81,9 +77,10 @@ public abstract class ResolverTemplate<Fact, Stmt, Method, Value, Incoming>  ext
 	@Override
 	public void resolve(EdgeFunction<Value> constraint, InterestCallback<Fact, Stmt, Method, Value> callback) {
 		if(!isLocked()) {
-			EdgeFunction<Value> composedFunction = getResolvedFunction().composeWith(constraint);
-			log("Resolve: "+composedFunction);
-			ResolverTemplate<Fact,Stmt,Method, Value,Incoming> nestedResolver = getOrCreateNestedResolver(composedFunction);
+			//do not include already resolvedPath, it was propagated to the next edge and therefore will be included in the given constraint.
+//			EdgeFunction<Value> composedFunction = getResolvedFunction().composeWith(constraint);
+			log("Resolve: "+constraint);
+			ResolverTemplate<Fact,Stmt,Method, Value,Incoming> nestedResolver = getOrCreateNestedResolver(constraint);
 			nestedResolver.registerCallback(callback);
 		}
 	}

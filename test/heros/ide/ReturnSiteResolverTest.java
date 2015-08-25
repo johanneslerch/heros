@@ -58,7 +58,7 @@ public class ReturnSiteResolverTest {
 
 	@Test
 	public void emptyIncomingFact() {
-		sut.addIncoming(new FactEdgeFnResolverTuple<TestFact, Statement, TestMethod, AccessPathBundle<String>>(fact, factory.id(), callEdgeResolver),
+		sut.addIncomingWithoutCheck(new FactEdgeFnResolverTuple<TestFact, Statement, TestMethod, AccessPathBundle<String>>(fact, factory.id(), callEdgeResolver),
 				callEdgeResolver, factory.id());
 		verify(analyzer).scheduleEdgeTo(eq(new FactEdgeFnResolverStatementTuple<TestFact, Statement, TestMethod, AccessPathBundle<String>>(fact, factory.id(), sut, returnSite)));
 		assertTrue(sut.isResolvedUnbalanced());
@@ -67,15 +67,15 @@ public class ReturnSiteResolverTest {
 	@Test
 	public void resolveViaIncomingFact() {
 		sut.resolve(factory.read("a"), callback);
-		sut.addIncoming(new FactEdgeFnResolverTuple<TestFact, Statement, TestMethod, AccessPathBundle<String>>(fact, factory.prepend("a"), callEdgeResolver), 
+		sut.addIncomingWithoutCheck(new FactEdgeFnResolverTuple<TestFact, Statement, TestMethod, AccessPathBundle<String>>(fact, factory.prepend("a"), callEdgeResolver), 
 				callEdgeResolver, factory.id());
-		verify(callback).interest(eq(analyzer), argThat(new ReturnSiteResolverArgumentMatcher(factory.read("a"))), eq(factory.prepend("a")));
+		verify(callback).interest(eq(analyzer), argThat(new ReturnSiteResolverArgumentMatcher(factory.read("a"))), eq(factory.id()));
 	}
 
 	@Test
 	public void registerCallbackAtIncomingResolver() {
 		Resolver<TestFact, Statement, TestMethod, AccessPathBundle<String>> resolver = mock(Resolver.class);
-		sut.addIncoming(new FactEdgeFnResolverTuple<TestFact, Statement, TestMethod, AccessPathBundle<String>>(fact, factory.id(), resolver), 
+		sut.addIncomingWithoutCheck(new FactEdgeFnResolverTuple<TestFact, Statement, TestMethod, AccessPathBundle<String>>(fact, factory.id(), resolver), 
 				callEdgeResolver, factory.id());
 		sut.resolve(factory.read("a"), callback);
 		verify(resolver).resolve(eq(factory.read("a")), any(InterestCallback.class));
@@ -90,16 +90,16 @@ public class ReturnSiteResolverTest {
 			public Object answer(InvocationOnMock invocation) throws Throwable {
 				InterestCallback<TestFact, Statement, TestMethod, AccessPathBundle<String>> argCallback = 
 						(InterestCallback<TestFact, Statement, TestMethod, AccessPathBundle<String>>) invocation.getArguments()[1];
-				argCallback.interest(analyzer, nestedResolver, factory.prepend("a"));
+				argCallback.interest(analyzer, nestedResolver, factory.read("x"));
 				return null;
 			}
 		}).when(resolver).resolve(eq(factory.read("a")), any(InterestCallback.class));
 		
-		sut.addIncoming(new FactEdgeFnResolverTuple<TestFact, Statement, TestMethod, AccessPathBundle<String>>(fact, factory.id(), resolver), 
+		sut.addIncomingWithoutCheck(new FactEdgeFnResolverTuple<TestFact, Statement, TestMethod, AccessPathBundle<String>>(fact, factory.id(), resolver), 
 				callEdgeResolver, factory.id());
 		sut.resolve(factory.read("a"), callback);
 		
-		verify(callback).interest(eq(analyzer), argThat(new ReturnSiteResolverArgumentMatcher(factory.read("a"))), eq(factory.prepend("a")));
+		verify(callback).interest(eq(analyzer), argThat(new ReturnSiteResolverArgumentMatcher(factory.read("a"))), eq(factory.id()));
 	}
 	
 	@Test
@@ -118,7 +118,7 @@ public class ReturnSiteResolverTest {
 			}
 		}).when(resolver).resolve(eq(factory.read("a")), any(InterestCallback.class));
 		
-		sut.addIncoming(new FactEdgeFnResolverTuple<TestFact, Statement, TestMethod, AccessPathBundle<String>>(fact, factory.id(), resolver), 
+		sut.addIncomingWithoutCheck(new FactEdgeFnResolverTuple<TestFact, Statement, TestMethod, AccessPathBundle<String>>(fact, factory.id(), resolver), 
 				callEdgeResolver, factory.id());
 		sut.resolve(factory.read("a"), callback);
 		
@@ -127,15 +127,15 @@ public class ReturnSiteResolverTest {
 		assertEquals(1, callbacks.size());
 		Resolver transitiveResolver = mock(Resolver.class);
 		callbacks.get(0).interest(analyzer, transitiveResolver, factory.prepend("a"));
-		verify(callback).interest(eq(analyzer), argThat(new ReturnSiteResolverArgumentMatcher(factory.read("a"))), eq(factory.prepend("a")));
+		verify(callback).interest(eq(analyzer), argThat(new ReturnSiteResolverArgumentMatcher(factory.read("a"))), eq(factory.id()));
 	}
 	
 	@Test
 	public void resolveViaDelta() {
-		sut.addIncoming(new FactEdgeFnResolverTuple<TestFact, Statement, TestMethod, AccessPathBundle<String>>(fact, factory.id(), callEdgeResolver), 
+		sut.addIncomingWithoutCheck(new FactEdgeFnResolverTuple<TestFact, Statement, TestMethod, AccessPathBundle<String>>(fact, factory.id(), callEdgeResolver), 
 				callEdgeResolver, factory.prepend("a"));
 		sut.resolve(factory.read("a"), callback);
-		verify(callback).interest(eq(analyzer), argThat(new ReturnSiteResolverArgumentMatcher(factory.read("a"))), eq(factory.prepend("a")));
+		verify(callback).interest(eq(analyzer), argThat(new ReturnSiteResolverArgumentMatcher(factory.read("a"))), eq(factory.id()));
 	}
 	
 	@Test
@@ -145,17 +145,17 @@ public class ReturnSiteResolverTest {
 			@Override
 			public Object answer(InvocationOnMock invocation) throws Throwable {
 				ReturnSiteResolver<TestFact, Statement, TestMethod, AccessPathBundle<String>> resolver = (ReturnSiteResolver<TestFact, Statement, TestMethod, AccessPathBundle<String>>) invocation.getArguments()[1];
-				resolver.resolve(factory.read("b"), innerCallback);
+				resolver.resolve(factory.read("a").composeWith(factory.read("b")), innerCallback);
 				return null;
 			}
-		}).when(callback).interest(eq(analyzer), argThat(new ReturnSiteResolverArgumentMatcher(factory.read("a"))), eq(factory.prepend("b").composeWith(factory.prepend("a"))));
+		}).when(callback).interest(eq(analyzer), argThat(new ReturnSiteResolverArgumentMatcher(factory.read("a"))), eq(factory.id()));
 		
-		sut.addIncoming(new FactEdgeFnResolverTuple<TestFact, Statement, TestMethod, AccessPathBundle<String>>(fact, factory.id(), callEdgeResolver), 
+		sut.addIncomingWithoutCheck(new FactEdgeFnResolverTuple<TestFact, Statement, TestMethod, AccessPathBundle<String>>(fact, factory.id(), callEdgeResolver), 
 				callEdgeResolver, factory.prepend("b").composeWith(factory.prepend("a")));
 		sut.resolve(factory.read("a"), callback);
 		
 		verify(innerCallback).interest(eq(analyzer), argThat(new ReturnSiteResolverArgumentMatcher(factory.read("a").composeWith(factory.read("b")))), 
-				eq(factory.prepend("b")));
+				eq(factory.id()));
 	}
 	
 	@Test
@@ -165,20 +165,20 @@ public class ReturnSiteResolverTest {
 			@Override
 			public Object answer(InvocationOnMock invocation) throws Throwable {
 				ReturnSiteResolver<TestFact, Statement, TestMethod, AccessPathBundle<String>> resolver = (ReturnSiteResolver<TestFact, Statement, TestMethod, AccessPathBundle<String>>) invocation.getArguments()[1];
-				resolver.resolve(factory.read("b"), innerCallback);
+				resolver.resolve(factory.read("a").composeWith(factory.read("b")), innerCallback);
 				return null;
 			}
-		}).when(callback).interest(eq(analyzer), argThat(new ReturnSiteResolverArgumentMatcher(factory.read("a"))), eq(factory.prepend("a")));
+		}).when(callback).interest(eq(analyzer), argThat(new ReturnSiteResolverArgumentMatcher(factory.read("a"))), eq(factory.id()));
 		
-		sut.addIncoming(new FactEdgeFnResolverTuple<TestFact, Statement, TestMethod, AccessPathBundle<String>>(fact, factory.id(), callEdgeResolver), 
+		sut.addIncomingWithoutCheck(new FactEdgeFnResolverTuple<TestFact, Statement, TestMethod, AccessPathBundle<String>>(fact, factory.id(), callEdgeResolver), 
 				callEdgeResolver, factory.prepend("a"));
 		sut.resolve(factory.read("a"), callback);
-		verify(innerCallback).continueBalancedTraversal(factory.id());
+		verify(innerCallback).continueBalancedTraversal(factory.prepend("a"));
 	}
 
 	@Test
 	public void resolveViaCallEdgeResolverAtCallSite() {
-		sut.addIncoming(new FactEdgeFnResolverTuple<TestFact, Statement, TestMethod, AccessPathBundle<String>>(fact, factory.id(), callEdgeResolver), 
+		sut.addIncomingWithoutCheck(new FactEdgeFnResolverTuple<TestFact, Statement, TestMethod, AccessPathBundle<String>>(fact, factory.id(), callEdgeResolver), 
 				callEdgeResolver, factory.id());
 		sut.resolve(factory.read("a"), callback);
 		verify(callback).continueBalancedTraversal(factory.id());
@@ -187,7 +187,7 @@ public class ReturnSiteResolverTest {
 	@Test
 	public void resolveViaResolverAtCallSite() {
 		Resolver<TestFact, Statement, TestMethod, AccessPathBundle<String>> resolver = mock(Resolver.class);
-		sut.addIncoming(new FactEdgeFnResolverTuple<TestFact, Statement, TestMethod, AccessPathBundle<String>>(fact, factory.id(), callEdgeResolver), 
+		sut.addIncomingWithoutCheck(new FactEdgeFnResolverTuple<TestFact, Statement, TestMethod, AccessPathBundle<String>>(fact, factory.id(), callEdgeResolver), 
 				resolver, factory.id());
 		sut.resolve(factory.read("a"), callback);
 		verify(resolver).resolve(eq(factory.read("a")), any(InterestCallback.class));
@@ -225,7 +225,7 @@ public class ReturnSiteResolverTest {
 			
 		}).when(callback).interest(eq(analyzer), eq(nestedResolver), eq(factory.prepend("a")));
 		
-		sut.addIncoming(new FactEdgeFnResolverTuple<TestFact, Statement, TestMethod, AccessPathBundle<String>>(fact, factory.id(), callEdgeResolver), 
+		sut.addIncomingWithoutCheck(new FactEdgeFnResolverTuple<TestFact, Statement, TestMethod, AccessPathBundle<String>>(fact, factory.id(), callEdgeResolver), 
 				resolver, factory.id());
 		sut.resolve(factory.read("a"), callback);
 		
@@ -245,7 +245,7 @@ public class ReturnSiteResolverTest {
 			}
 		}).when(resolver).resolve(eq(factory.read("a")), any(InterestCallback.class));
 
-		sut.addIncoming(new FactEdgeFnResolverTuple<TestFact, Statement, TestMethod, AccessPathBundle<String>>(fact, factory.id(), resolver), 
+		sut.addIncomingWithoutCheck(new FactEdgeFnResolverTuple<TestFact, Statement, TestMethod, AccessPathBundle<String>>(fact, factory.id(), resolver), 
 				callEdgeResolver, factory.overwrite("a"));
 		sut.resolve(factory.read("a"), callback);
 		
@@ -257,7 +257,7 @@ public class ReturnSiteResolverTest {
 	public void resolveViaCallSiteResolver() {
 		Resolver<TestFact, Statement, TestMethod, AccessPathBundle<String>> resolver = mock(Resolver.class);
 		
-		sut.addIncoming(new FactEdgeFnResolverTuple<TestFact, Statement, TestMethod, AccessPathBundle<String>>(fact, factory.id(), callEdgeResolver), 
+		sut.addIncomingWithoutCheck(new FactEdgeFnResolverTuple<TestFact, Statement, TestMethod, AccessPathBundle<String>>(fact, factory.id(), callEdgeResolver), 
 				resolver, factory.id());
 		sut.resolve(factory.read("a"), callback);
 		
@@ -268,7 +268,7 @@ public class ReturnSiteResolverTest {
 	public void incomingZeroCallEdgeResolver() {
 		Resolver<TestFact, Statement, TestMethod, AccessPathBundle<String>> resolver = mock(Resolver.class);
 		ZeroCallEdgeResolver<TestFact, Statement, TestMethod, AccessPathBundle<String>> zeroResolver = mock(ZeroCallEdgeResolver.class); 
-		sut.addIncoming(new FactEdgeFnResolverTuple<TestFact, Statement, TestMethod, AccessPathBundle<String>>(
+		sut.addIncomingWithoutCheck(new FactEdgeFnResolverTuple<TestFact, Statement, TestMethod, AccessPathBundle<String>>(
 				fact, factory.id(), zeroResolver), resolver, factory.id());
 				
 		sut.resolve(factory.read("a"), callback);
@@ -281,31 +281,31 @@ public class ReturnSiteResolverTest {
 	@Test
 	public void keepIncEdgeOnContinueBalancedTraversal() {
 		Resolver<TestFact, Statement, TestMethod, AccessPathBundle<String>> resolver = mock(Resolver.class);
-		InterestCallback<TestFact, Statement, TestMethod, AccessPathBundle<String>> secondCallback = mock(InterestCallback.class);
-		sut.addIncoming(new FactEdgeFnResolverTuple<TestFact, Statement, TestMethod, AccessPathBundle<String>>(
-				fact, factory.prepend("y"), resolver), callEdgeResolver, factory.id());
+		final InterestCallback<TestFact, Statement, TestMethod, AccessPathBundle<String>> secondCallback = mock(InterestCallback.class);
+		sut.addIncomingWithoutCheck(new FactEdgeFnResolverTuple<TestFact, Statement, TestMethod, AccessPathBundle<String>>(
+				fact, factory.prepend("y"), resolver), callEdgeResolver, factory.read("z"));
 		
 		doAnswer(new Answer() {
 			@Override
 			public Object answer(InvocationOnMock invocation) throws Throwable {
 				Resolver<TestFact, Statement, TestMethod, AccessPathBundle<String>> resolver = (Resolver) invocation.getArguments()[1];
-				resolver.resolve(factory.read("x"), secondCallback);
+				resolver.resolve(factory.read("y").composeWith(factory.read("x")), secondCallback);
 				return null;
 			}
 		}).when(callback).interest(eq(analyzer), 
-				argThat(new ReturnSiteResolverArgumentMatcher(factory.read("y"))), eq(factory.prepend("y")));
+				argThat(new ReturnSiteResolverArgumentMatcher(factory.read("y"))), eq(factory.id()));
 		doAnswer(new Answer() {
 			@Override
 			public Object answer(InvocationOnMock invocation) throws Throwable {
 				InterestCallback<TestFact, Statement, TestMethod, AccessPathBundle<String>> callback = 
 						(InterestCallback<TestFact, Statement, TestMethod, AccessPathBundle<String>>) invocation.getArguments()[1];
-				callback.continueBalancedTraversal(factory.id());
+				callback.continueBalancedTraversal(factory.read("u"));
 				return null;
 			}
 		}).when(resolver).resolve(eq(factory.read("x")), any(InterestCallback.class));
 		
 		sut.resolve(factory.read("y"), callback);
-		verify(secondCallback).continueBalancedTraversal(eq(factory.id()));
+		verify(secondCallback).continueBalancedTraversal(eq(factory.read("z").composeWith(factory.read("u")).composeWith(factory.prepend("y"))));
 	}
 	
 	private class ReturnSiteResolverArgumentMatcher extends
