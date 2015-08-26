@@ -56,11 +56,15 @@ public class Factory<Field> {
 		return new OverwriteFunction<Field>(this, field);
 	}
 
-	public EdgeFunction<AccessPathBundle<Field>> initialSeed() {
-		return new InitialSeedFunction<Field>(this);
+	public EdgeFunction<AccessPathBundle<Field>> anyFields() {
+		return new AnyFieldsFunction<Field>(this);
 	}
 
 	public EdgeFunction<AccessPathBundle<Field>> ensureEmpty() {
 		return new EnsureEmptyFunction<Field>(this);
+	}
+
+	public EdgeFunction<AccessPathBundle<Field>> initialSeed() {
+		return new InitialSeedFunction<Field>(this);
 	}
 }

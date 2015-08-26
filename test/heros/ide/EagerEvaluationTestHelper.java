@@ -614,7 +614,7 @@ public class EagerEvaluationTestHelper {
 			
 			@Override
 			public EdgeFunction<AccessPathBundle<String>> initialSeedEdgeFunction(Statement seed, TestFact val) {
-				return factory.initialSeed();
+				return factory.initialSeed().composeWith(factory.anyFields());
 			}
 
 			@Override

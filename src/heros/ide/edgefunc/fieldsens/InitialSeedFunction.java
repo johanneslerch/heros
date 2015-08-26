@@ -22,28 +22,34 @@ public class InitialSeedFunction<Field> extends ChainableEdgeFunction<Field> {
 	public EdgeFunction<AccessPathBundle<Field>> chain(ChainableEdgeFunction<Field> f) {
 		throw new IllegalStateException();
 	}
-	
+
 	@Override
 	protected AccessPathBundle<Field> _computeTarget(AccessPathBundle<Field> source) {
 		return factory.getLattice().bottomElement();
 	}
-	
-	@Override
-	protected EdgeFunction<AccessPathBundle<Field>> _composeWith(ChainableEdgeFunction<Field> chainableFunction) {
-		if(chainableFunction instanceof ReadFunction)
-			return this;
-		if(chainableFunction instanceof EnsureEmptyFunction)
-			return chainableFunction;
-		return chainableFunction.chain(this);
-	}
-	
+
 	@Override
 	protected boolean mayThisReturnTop() {
 		return false;
 	}
+
+	@Override
+	protected EdgeFunction<AccessPathBundle<Field>> _composeWith(ChainableEdgeFunction<Field> chainableFunction) {
+		if(chainableFunction instanceof EnsureEmptyFunction)
+			return this;
+		if(chainableFunction instanceof OverwriteFunction)
+			return this;
+		if(chainableFunction instanceof PrependFunction)
+			return chainableFunction.chain(this);
+		if(chainableFunction instanceof ReadFunction)
+			return factory.allTop();
+		if(chainableFunction instanceof AnyFieldsFunction)
+			return chainableFunction.chain(this);
+		throw new IllegalStateException();
+	}
 	
 	@Override
 	public String toString() {
-		return "init";
+		return "init" + super.toString();
 	}
 }
