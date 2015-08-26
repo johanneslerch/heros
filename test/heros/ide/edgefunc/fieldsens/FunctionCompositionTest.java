@@ -110,6 +110,12 @@ public class FunctionCompositionTest {
 		actual = factory.overwrite(f).composeWith(factory.overwrite(g));
 		assertEquals(new OverwriteFunction<String>(factory, Sets.newHashSet(f, g), null), actual);
 	}
+	
+	@Test
+	public void overwriteAfterOverwriteAndPrepend() {
+		actual = (factory.prepend(g).composeWith(factory.overwrite(f))).composeWith(factory.overwrite(g));
+		assertAllTop(actual);
+	}
 
 	@Test
 	public void overwriteAfterRead() {

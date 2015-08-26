@@ -52,6 +52,8 @@ public class OverwriteFunction<Field> extends ChainableEdgeFunction<Field> {
 			else
 				return chainableFunction.chainIfNotNull(chainedFunction);
 		}
+		if(chainableFunction instanceof EnsureEmptyFunction)
+			return chainableFunction;
 
 		return chainableFunction.chain(this);
 	}

@@ -59,4 +59,8 @@ public class Factory<Field> {
 	public EdgeFunction<AccessPathBundle<Field>> initialSeed() {
 		return new InitialSeedFunction<Field>(this);
 	}
+
+	public EdgeFunction<AccessPathBundle<Field>> ensureEmpty() {
+		return new EnsureEmptyFunction<Field>(this);
+	}
 }

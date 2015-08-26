@@ -12,38 +12,38 @@ package heros.ide.edgefunc.fieldsens;
 
 import heros.ide.edgefunc.EdgeFunction;
 
-public class InitialSeedFunction<Field> extends ChainableEdgeFunction<Field> {
+public class EnsureEmptyFunction<Field> extends ChainableEdgeFunction<Field> {
 
-	public InitialSeedFunction(Factory<Field> factory) {
+	public EnsureEmptyFunction(Factory<Field> factory) {
 		super(factory, null);
+	}
+	
+	public EnsureEmptyFunction(Factory<Field> factory, ChainableEdgeFunction<Field> chainedFunction) {
+		super(factory, chainedFunction);
 	}
 
 	@Override
 	public EdgeFunction<AccessPathBundle<Field>> chain(ChainableEdgeFunction<Field> f) {
-		throw new IllegalStateException();
+		return new EnsureEmptyFunction<Field>(factory, f);
 	}
-	
+
 	@Override
 	protected AccessPathBundle<Field> _computeTarget(AccessPathBundle<Field> source) {
-		return factory.getLattice().bottomElement();
+		return source;
 	}
-	
+
+	@Override
+	protected boolean mayThisReturnTop() {
+		return true;
+	}
+
 	@Override
 	protected EdgeFunction<AccessPathBundle<Field>> _composeWith(ChainableEdgeFunction<Field> chainableFunction) {
 		if(chainableFunction instanceof ReadFunction)
+			return factory.allTop();
+		if(chainableFunction instanceof OverwriteFunction)
 			return this;
-		if(chainableFunction instanceof EnsureEmptyFunction)
-			return chainableFunction;
 		return chainableFunction.chain(this);
 	}
-	
-	@Override
-	protected boolean mayThisReturnTop() {
-		return false;
-	}
-	
-	@Override
-	public String toString() {
-		return "init";
-	}
+
 }

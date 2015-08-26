@@ -40,6 +40,8 @@ public class PrependFunction<Field> extends ChainableEdgeFunction<Field> {
 			else
 				return this;
 		}
+		if(chainableFunction instanceof EnsureEmptyFunction)
+			return factory.allTop();
 
 		return chainableFunction.chain(this);
 	}
