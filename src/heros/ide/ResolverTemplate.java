@@ -63,7 +63,9 @@ public abstract class ResolverTemplate<Fact, Stmt, Method, Value, Incoming>  ext
 				if(composedFunction instanceof AllTop)
 					return;
 				
-				assert !isLocked();
+//				assert !isLocked();
+				if(isLocked())
+					return;
 				lock();
 				processIncomingPotentialPrefix(inc); //TODO: Improve performance by passing composedFunction here
 				unlock();

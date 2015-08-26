@@ -62,7 +62,9 @@ public abstract class ResolverTemplate<Field, Fact, Stmt, Method, Incoming>  ext
 			processIncomingGuaranteedPrefix(inc);
 		}
 		else if(getAccessPathOf(inc).isPrefixOf(resolvedAccessPath).atLeast(PrefixTestResult.POTENTIAL_PREFIX)) {
-			assert !isLocked();
+//			assert !isLocked();
+			if(isLocked())
+				return;
 			lock();
 			processIncomingPotentialPrefix(inc);
 			unlock();
