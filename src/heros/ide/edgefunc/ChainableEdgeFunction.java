@@ -1,4 +1,4 @@
-package heros.ide.edgefunc.fieldsens;
+package heros.ide.edgefunc;
 
 import heros.ide.edgefunc.AllTop;
 import heros.ide.edgefunc.EdgeFunction;
@@ -8,24 +8,24 @@ import java.util.Set;
 
 import com.google.common.base.Function;
 
-public abstract class ChainableEdgeFunction<Field> implements EdgeFunction<AccessPathBundle<Field>> {
+public abstract class ChainableEdgeFunction<T extends Joinable<T>> implements EdgeFunction<T> {
 
-	protected final ChainableEdgeFunction<Field> chainedFunction;
-	protected final Factory<Field> factory;
+	protected final ChainableEdgeFunction<T> chainedFunction;
+	protected final AbstractFactory<T> factory;
 	private Boolean cachedMayReturnTop;
 
-	public ChainableEdgeFunction(Factory<Field> factory, ChainableEdgeFunction<Field> chainedFunction) {
+	public ChainableEdgeFunction(AbstractFactory<T> factory, ChainableEdgeFunction<T> chainedFunction) {
 		this.factory = factory;
 		this.chainedFunction = chainedFunction;
 	}
 
-	public abstract EdgeFunction<AccessPathBundle<Field>> chain(ChainableEdgeFunction<Field> f);
+	public abstract EdgeFunction<T> chain(ChainableEdgeFunction<T> f);
 
-	public EdgeFunction<AccessPathBundle<Field>> chainedFunction() {
-		return chainedFunction == null ? EdgeIdentity.<AccessPathBundle<Field>> v() : chainedFunction;
+	public EdgeFunction<T> chainedFunction() {
+		return chainedFunction == null ? factory.id() : chainedFunction;
 	}
 
-	protected EdgeFunction<AccessPathBundle<Field>> chainIfNotNull(ChainableEdgeFunction<Field> chainedFunction) {
+	public EdgeFunction<T> chainIfNotNull(ChainableEdgeFunction<T> chainedFunction) {
 		if (chainedFunction == null)
 			return this;
 		else
@@ -33,34 +33,34 @@ public abstract class ChainableEdgeFunction<Field> implements EdgeFunction<Acces
 	}
 
 	@Override
-	public AccessPathBundle<Field> computeTarget(AccessPathBundle<Field> source) {
+	public T computeTarget(T source) {
 		if (chainedFunction == null)
 			return _computeTarget(source);
 		else
 			return _computeTarget(chainedFunction.computeTarget(source));
 	}
 
-	protected abstract AccessPathBundle<Field> _computeTarget(AccessPathBundle<Field> source);
+	protected abstract T _computeTarget(T source);
 
 	@Override
-	public EdgeFunction<AccessPathBundle<Field>> composeWith(EdgeFunction<AccessPathBundle<Field>> secondFunction) {
+	public EdgeFunction<T> composeWith(EdgeFunction<T> secondFunction) {
 		if (secondFunction instanceof EdgeIdentity)
 			return this;
 		if (secondFunction instanceof AllTop)
 			return secondFunction;
 
-		Set<EdgeFunction<AccessPathBundle<Field>>> result = CompositeFunction.foreach(secondFunction,
-				new Function<EdgeFunction<AccessPathBundle<Field>>, EdgeFunction<AccessPathBundle<Field>>>() {
+		Set<EdgeFunction<T>> result = CompositeFunction.foreach(secondFunction,
+				new Function<EdgeFunction<T>, EdgeFunction<T>>() {
 					@Override
-					public EdgeFunction<AccessPathBundle<Field>> apply(EdgeFunction<AccessPathBundle<Field>> input) {
+					public EdgeFunction<T> apply(EdgeFunction<T> input) {
 						if (input instanceof EdgeIdentity)
 							return ChainableEdgeFunction.this;
 
-						ChainableEdgeFunction<Field> chainableFunction = (ChainableEdgeFunction<Field>) input;
+						ChainableEdgeFunction<T> chainableFunction = (ChainableEdgeFunction<T>) input;
 						if (chainableFunction.chainedFunction == null)
 							return _composeWith(chainableFunction);
 
-						EdgeFunction<AccessPathBundle<Field>> composition = composeWith(chainableFunction.chainedFunction);
+						EdgeFunction<T> composition = composeWith(chainableFunction.chainedFunction);
 						return composition.composeWith(chainableFunction.chain(null));
 					}
 				});
@@ -70,7 +70,7 @@ public abstract class ChainableEdgeFunction<Field> implements EdgeFunction<Acces
 		else if (result.size() == 1)
 			return result.iterator().next();
 		else
-			return new CompositeFunction<Field>(factory, result);
+			return new CompositeFunction<T>(factory, result);
 	}
 	
 	protected abstract boolean mayThisReturnTop();
@@ -89,17 +89,17 @@ public abstract class ChainableEdgeFunction<Field> implements EdgeFunction<Acces
 		return cachedMayReturnTop;
 	}
 
-	protected abstract EdgeFunction<AccessPathBundle<Field>> _composeWith(ChainableEdgeFunction<Field> chainableFunction);
+	protected abstract EdgeFunction<T> _composeWith(ChainableEdgeFunction<T> chainableFunction);
 
 	@Override
-	public EdgeFunction<AccessPathBundle<Field>> joinWith(EdgeFunction<AccessPathBundle<Field>> otherFunction) {
+	public EdgeFunction<T> joinWith(EdgeFunction<T> otherFunction) {
 		if (equals(otherFunction))
 			return this;
 
 		if (otherFunction instanceof AllTop)
 			return this;
 
-		return new CompositeFunction<Field>(factory, this, otherFunction);
+		return new CompositeFunction<T>(factory, this, otherFunction);
 	}
 
 	@Override
@@ -118,7 +118,8 @@ public abstract class ChainableEdgeFunction<Field> implements EdgeFunction<Acces
 			return false;
 		if (getClass() != obj.getClass())
 			return false;
-		ChainableEdgeFunction<Field> other = (ChainableEdgeFunction<Field>) obj;
+		@SuppressWarnings("unchecked")
+		ChainableEdgeFunction<T> other = (ChainableEdgeFunction<T>) obj;
 		if (chainedFunction == null) {
 			if (other.chainedFunction != null)
 				return false;

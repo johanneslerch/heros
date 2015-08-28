@@ -1,5 +1,7 @@
 package heros.ide.edgefunc.fieldsens;
 
+import heros.ide.edgefunc.Joinable;
+
 import java.util.Set;
 
 import com.google.common.base.Function;
@@ -9,7 +11,7 @@ import com.google.common.collect.Sets;
 
 import fj.data.List;
 
-public class AccessPathBundle<FieldAccess> {
+public class AccessPathBundle<FieldAccess> implements Joinable<AccessPathBundle<FieldAccess>> {
 
 	private Set<List<FieldAccess>> paths = Sets.newHashSet();
 

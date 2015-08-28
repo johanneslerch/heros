@@ -21,7 +21,6 @@ import heros.fieldsens.FlowFunction.ConstrainedFact;
 import heros.fieldsens.Scheduler;
 import heros.ide.edgefunc.EdgeFunction;
 import heros.ide.edgefunc.fieldsens.AccessPathBundle;
-import heros.ide.edgefunc.fieldsens.ChainableEdgeFunction;
 import heros.ide.edgefunc.fieldsens.Factory;
 import heros.ide.edgefunc.fieldsens.ReadFunction;
 import heros.utilities.Edge;

@@ -3,7 +3,9 @@ package heros.ide.edgefunc.fieldsens;
 import static org.junit.Assert.assertEquals;
 import static org.mockito.Mockito.mock;
 import heros.JoinLattice;
+import heros.ide.edgefunc.CompositeFunction;
 import heros.ide.edgefunc.EdgeFunction;
+import heros.ide.edgefunc.Joinable;
 
 import org.junit.Test;
 
@@ -15,10 +17,10 @@ public class FunctionJoinTest {
 	private Factory<String> factory = new Factory<String>(mock(JoinLattice.class));
 	private EdgeFunction<AccessPathBundle<String>> id = factory.id();
 	private EdgeFunction<AccessPathBundle<String>> actual = null;
-	private CompositeFunction<String> expected = null;
+	private CompositeFunction<AccessPathBundle<String>> expected = null;
 
-	private CompositeFunction<String> composite(EdgeFunction<AccessPathBundle<String>>... functions) {
-		return new CompositeFunction<String>(factory, functions);
+	private CompositeFunction<AccessPathBundle<String>> composite(EdgeFunction<AccessPathBundle<String>>... functions) {
+		return new CompositeFunction<AccessPathBundle<String>>(factory, functions);
 	}
 
 	@Test

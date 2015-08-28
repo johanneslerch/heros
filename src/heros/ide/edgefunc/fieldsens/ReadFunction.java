@@ -1,18 +1,20 @@
 package heros.ide.edgefunc.fieldsens;
 
+import heros.ide.edgefunc.AbstractFactory;
+import heros.ide.edgefunc.ChainableEdgeFunction;
 import heros.ide.edgefunc.EdgeFunction;
 
 
-public class ReadFunction<Field> extends ChainableEdgeFunction<Field> {
+public class ReadFunction<Field> extends ChainableEdgeFunction<AccessPathBundle<Field>> {
 
 	Field field;
 
-	public ReadFunction(Factory<Field> factory, Field field) {
+	public ReadFunction(AbstractFactory<AccessPathBundle<Field>> factory, Field field) {
 		super(factory, null);
 		this.field = field;
 	}
 
-	private ReadFunction(Factory<Field> factory, Field field, ChainableEdgeFunction<Field> chainedFunction) {
+	private ReadFunction(AbstractFactory<AccessPathBundle<Field>> factory, Field field, ChainableEdgeFunction<AccessPathBundle<Field>> chainedFunction) {
 		super(factory, chainedFunction);
 		this.field = field;
 	}
@@ -28,12 +30,12 @@ public class ReadFunction<Field> extends ChainableEdgeFunction<Field> {
 	}
 
 	@Override
-	protected EdgeFunction<AccessPathBundle<Field>> _composeWith(ChainableEdgeFunction<Field> chainableFunction) {
+	protected EdgeFunction<AccessPathBundle<Field>> _composeWith(ChainableEdgeFunction<AccessPathBundle<Field>> chainableFunction) {
 		return chainableFunction.chain(this);
 	}
 
 	@Override
-	public ChainableEdgeFunction<Field> chain(ChainableEdgeFunction<Field> f) {
+	public ChainableEdgeFunction<AccessPathBundle<Field>> chain(ChainableEdgeFunction<AccessPathBundle<Field>> f) {
 		return new ReadFunction<Field>(factory, field, f);
 	}
 

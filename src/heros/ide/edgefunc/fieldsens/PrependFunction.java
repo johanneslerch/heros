@@ -1,17 +1,19 @@
 package heros.ide.edgefunc.fieldsens;
 
+import heros.ide.edgefunc.AbstractFactory;
+import heros.ide.edgefunc.ChainableEdgeFunction;
 import heros.ide.edgefunc.EdgeFunction;
 
-public class PrependFunction<Field> extends ChainableEdgeFunction<Field> {
+public class PrependFunction<Field> extends ChainableEdgeFunction<AccessPathBundle<Field>> {
 
 	public final Field field;
 
-	public PrependFunction(Factory<Field> factory, Field field) {
+	public PrependFunction(AbstractFactory<AccessPathBundle<Field>> factory, Field field) {
 		super(factory, null);
 		this.field = field;
 	}
 
-	private PrependFunction(Factory<Field> factory, Field field, ChainableEdgeFunction<Field> chainedFunction) {
+	private PrependFunction(AbstractFactory<AccessPathBundle<Field>> factory, Field field, ChainableEdgeFunction<AccessPathBundle<Field>> chainedFunction) {
 		super(factory, chainedFunction);
 		this.field = field;
 	}
@@ -27,7 +29,7 @@ public class PrependFunction<Field> extends ChainableEdgeFunction<Field> {
 	}
 
 	@Override
-	protected EdgeFunction<AccessPathBundle<Field>> _composeWith(ChainableEdgeFunction<Field> chainableFunction) {
+	protected EdgeFunction<AccessPathBundle<Field>> _composeWith(ChainableEdgeFunction<AccessPathBundle<Field>> chainableFunction) {
 		if (chainableFunction instanceof ReadFunction) {
 			if (((ReadFunction<Field>) chainableFunction).field.equals(field))
 				return chainedFunction();
@@ -47,7 +49,7 @@ public class PrependFunction<Field> extends ChainableEdgeFunction<Field> {
 	}
 
 	@Override
-	public ChainableEdgeFunction<Field> chain(ChainableEdgeFunction<Field> f) {
+	public ChainableEdgeFunction<AccessPathBundle<Field>> chain(ChainableEdgeFunction<AccessPathBundle<Field>> f) {
 		return new PrependFunction<Field>(factory, field, f);
 	}
 

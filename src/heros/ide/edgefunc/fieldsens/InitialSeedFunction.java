@@ -10,16 +10,17 @@
  ******************************************************************************/
 package heros.ide.edgefunc.fieldsens;
 
+import heros.ide.edgefunc.ChainableEdgeFunction;
 import heros.ide.edgefunc.EdgeFunction;
 
-public class InitialSeedFunction<Field> extends ChainableEdgeFunction<Field> {
+public class InitialSeedFunction<Field> extends ChainableEdgeFunction<AccessPathBundle<Field>> {
 
 	public InitialSeedFunction(Factory<Field> factory) {
 		super(factory, null);
 	}
 
 	@Override
-	public EdgeFunction<AccessPathBundle<Field>> chain(ChainableEdgeFunction<Field> f) {
+	public EdgeFunction<AccessPathBundle<Field>> chain(ChainableEdgeFunction<AccessPathBundle<Field>> f) {
 		throw new IllegalStateException();
 	}
 
@@ -34,7 +35,7 @@ public class InitialSeedFunction<Field> extends ChainableEdgeFunction<Field> {
 	}
 
 	@Override
-	protected EdgeFunction<AccessPathBundle<Field>> _composeWith(ChainableEdgeFunction<Field> chainableFunction) {
+	protected EdgeFunction<AccessPathBundle<Field>> _composeWith(ChainableEdgeFunction<AccessPathBundle<Field>> chainableFunction) {
 		if(chainableFunction instanceof EnsureEmptyFunction)
 			return this;
 		if(chainableFunction instanceof OverwriteFunction)

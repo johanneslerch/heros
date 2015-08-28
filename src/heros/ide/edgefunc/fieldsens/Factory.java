@@ -11,12 +11,13 @@
 package heros.ide.edgefunc.fieldsens;
 
 import heros.JoinLattice;
+import heros.ide.edgefunc.AbstractFactory;
 import heros.ide.edgefunc.AllBottom;
 import heros.ide.edgefunc.AllTop;
 import heros.ide.edgefunc.EdgeFunction;
 import heros.ide.edgefunc.EdgeIdentity;
 
-public class Factory<Field> {
+public class Factory<Field> extends AbstractFactory<AccessPathBundle<Field>> {
 
 	private AllTop<AccessPathBundle<Field>> allTop;
 	private AllBottom<AccessPathBundle<Field>> allBottom;
@@ -38,10 +39,6 @@ public class Factory<Field> {
 	
 	public AllBottom<AccessPathBundle<Field>> allBottom() {
 		return allBottom;
-	}
-	
-	public EdgeIdentity<AccessPathBundle<Field>> id() {
-		return EdgeIdentity.<AccessPathBundle<Field>> v();
 	}
 	
 	public PrependFunction<Field> prepend(Field field) {

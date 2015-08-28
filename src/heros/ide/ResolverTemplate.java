@@ -11,9 +11,9 @@
 package heros.ide;
 
 import heros.ide.edgefunc.AllTop;
+import heros.ide.edgefunc.ChainableEdgeFunction;
 import heros.ide.edgefunc.EdgeFunction;
 import heros.ide.edgefunc.EdgeIdentity;
-import heros.ide.edgefunc.fieldsens.ChainableEdgeFunction;
 
 import java.util.Map;
 import java.util.Set;

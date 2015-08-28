@@ -1,5 +1,7 @@
 package heros.ide.edgefunc.fieldsens;
 
+import heros.ide.edgefunc.AbstractFactory;
+import heros.ide.edgefunc.ChainableEdgeFunction;
 import heros.ide.edgefunc.EdgeFunction;
 
 import java.util.HashSet;
@@ -9,17 +11,17 @@ import com.google.common.base.Joiner;
 import com.google.common.collect.Sets;
 
 
-public class OverwriteFunction<Field> extends ChainableEdgeFunction<Field> {
+public class OverwriteFunction<Field> extends ChainableEdgeFunction<AccessPathBundle<Field>> {
 
 	private final Set<Field> fields;
 
 	@SuppressWarnings("unchecked")
-	public OverwriteFunction(Factory<Field> factory, Field field) {
+	public OverwriteFunction(AbstractFactory<AccessPathBundle<Field>> factory, Field field) {
 		super(factory, null);
 		this.fields = Sets.newHashSet(field);
 	}
 
-	OverwriteFunction(Factory<Field> factory, Set<Field> fields, ChainableEdgeFunction<Field> chainedFunction) {
+	OverwriteFunction(AbstractFactory<AccessPathBundle<Field>> factory, Set<Field> fields, ChainableEdgeFunction<AccessPathBundle<Field>> chainedFunction) {
 		super(factory, chainedFunction);
 		this.fields = fields;
 	}
@@ -39,7 +41,7 @@ public class OverwriteFunction<Field> extends ChainableEdgeFunction<Field> {
 	}
 
 	@Override
-	protected EdgeFunction<AccessPathBundle<Field>> _composeWith(ChainableEdgeFunction<Field> chainableFunction) {
+	protected EdgeFunction<AccessPathBundle<Field>> _composeWith(ChainableEdgeFunction<AccessPathBundle<Field>> chainableFunction) {
 		if (chainableFunction instanceof OverwriteFunction) {
 			OverwriteFunction<Field> overwriteFunction = (OverwriteFunction<Field>) chainableFunction;
 			HashSet<Field> newFields = Sets.newHashSet(fields);
@@ -53,13 +55,13 @@ public class OverwriteFunction<Field> extends ChainableEdgeFunction<Field> {
 				return chainableFunction.chainIfNotNull(chainedFunction);
 		}
 		if(chainableFunction instanceof EnsureEmptyFunction)
-			return chainableFunction;
+			return chainableFunction.chainIfNotNull(chainedFunction);
 
 		return chainableFunction.chain(this);
 	}
 
 	@Override
-	public ChainableEdgeFunction<Field> chain(ChainableEdgeFunction<Field> f) {
+	public ChainableEdgeFunction<AccessPathBundle<Field>> chain(ChainableEdgeFunction<AccessPathBundle<Field>> f) {
 		return new OverwriteFunction<Field>(factory, fields, f);
 	}
 

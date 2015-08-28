@@ -11,9 +11,9 @@
 package heros.ide;
 
 import heros.FlowFunction;
+import heros.ide.edgefunc.ChainableEdgeFunction;
 import heros.ide.edgefunc.EdgeFunction;
 import heros.ide.edgefunc.EdgeIdentity;
-import heros.ide.edgefunc.fieldsens.ChainableEdgeFunction;
 import heros.ide.structs.FactAtStatement;
 import heros.ide.structs.FactEdgeFnResolverStatementTuple;
 import heros.ide.structs.WrappedFact;

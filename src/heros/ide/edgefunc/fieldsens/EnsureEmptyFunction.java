@@ -10,20 +10,22 @@
  ******************************************************************************/
 package heros.ide.edgefunc.fieldsens;
 
+import heros.ide.edgefunc.AbstractFactory;
+import heros.ide.edgefunc.ChainableEdgeFunction;
 import heros.ide.edgefunc.EdgeFunction;
 
-public class EnsureEmptyFunction<Field> extends ChainableEdgeFunction<Field> {
+public class EnsureEmptyFunction<Field> extends ChainableEdgeFunction<AccessPathBundle<Field>> {
 
-	public EnsureEmptyFunction(Factory<Field> factory) {
+	public EnsureEmptyFunction(AbstractFactory<AccessPathBundle<Field>> factory) {
 		super(factory, null);
 	}
 	
-	public EnsureEmptyFunction(Factory<Field> factory, ChainableEdgeFunction<Field> chainedFunction) {
+	public EnsureEmptyFunction(AbstractFactory<AccessPathBundle<Field>> factory, ChainableEdgeFunction<AccessPathBundle<Field>> chainedFunction) {
 		super(factory, chainedFunction);
 	}
 
 	@Override
-	public EdgeFunction<AccessPathBundle<Field>> chain(ChainableEdgeFunction<Field> f) {
+	public EdgeFunction<AccessPathBundle<Field>> chain(ChainableEdgeFunction<AccessPathBundle<Field>> f) {
 		return new EnsureEmptyFunction<Field>(factory, f);
 	}
 
@@ -38,7 +40,7 @@ public class EnsureEmptyFunction<Field> extends ChainableEdgeFunction<Field> {
 	}
 
 	@Override
-	protected EdgeFunction<AccessPathBundle<Field>> _composeWith(ChainableEdgeFunction<Field> chainableFunction) {
+	protected EdgeFunction<AccessPathBundle<Field>> _composeWith(ChainableEdgeFunction<AccessPathBundle<Field>> chainableFunction) {
 		if(chainableFunction instanceof ReadFunction)
 			return factory.allTop();
 		if(chainableFunction instanceof OverwriteFunction)
