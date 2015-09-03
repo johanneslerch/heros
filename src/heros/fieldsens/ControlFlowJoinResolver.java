@@ -73,8 +73,8 @@ public class ControlFlowJoinResolver<Field, Fact, Stmt, Method> extends Resolver
 			fact.getResolver().resolve(new DeltaConstraint<Field>(delta), new InterestCallback<Field, Fact, Stmt, Method>() {
 				@Override
 				public void interest(PerAccessPathMethodAnalyzer<Field, Fact, Stmt, Method> analyzer, 
-						Resolver<Field, Fact, Stmt, Method> resolver) {
-					ControlFlowJoinResolver.this.interest(resolver);
+						Delta<Field> delta, Resolver<Field, Fact, Stmt, Method> resolver) {
+					ControlFlowJoinResolver.this.interest(delta, resolver);
 				}
 	
 				@Override

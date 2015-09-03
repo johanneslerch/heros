@@ -17,6 +17,7 @@ import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 
+import heros.fieldsens.AccessPath.Delta;
 import heros.fieldsens.AccessPath.PrefixTestResult;
 import heros.fieldsens.FlowFunction.Constraint;
 
@@ -49,11 +50,18 @@ public abstract class ResolverTemplate<Field, Fact, Stmt, Method, Incoming>  ext
 	
 	public void addIncoming(Incoming inc) {
 		if(resolvedAccessPath.isPrefixOf(getAccessPathOf(inc)) == PrefixTestResult.GUARANTEED_PREFIX) {
-			log("Incoming Edge: "+inc);
 			if(!incomingEdges.add(inc))
 				return;
-			
-			interest(this);
+			log("Incoming Edge: "+inc);
+					
+			if(getAccessPathOf(inc).equals(resolvedAccessPath) || resolvedAccessPath.getExclusions().size() < 1) {
+				interest(Delta.<Field>empty(), this);
+			}
+			else {
+				Delta<Field> deltaTo = resolvedAccessPath.getDeltaTo(getAccessPathOf(inc));
+				ResolverTemplate<Field,Fact,Stmt,Method,Incoming> nestedResolver = getOrCreateNestedResolver(getAccessPathOf(inc));
+				interest(deltaTo, nestedResolver);
+			}
 			
 			for(ResolverTemplate<Field, Fact, Stmt, Method, Incoming> nestedResolver : Lists.newLinkedList(nestedResolvers.values())) {
 				nestedResolver.addIncoming(inc);
@@ -70,7 +78,7 @@ public abstract class ResolverTemplate<Field, Fact, Stmt, Method, Incoming>  ext
 			unlock();
 		}
 	}
-
+	
 	protected abstract void processIncomingPotentialPrefix(Incoming inc);
 
 	protected abstract void processIncomingGuaranteedPrefix(Incoming inc);
@@ -94,7 +102,7 @@ public abstract class ResolverTemplate<Field, Fact, Stmt, Method, Incoming>  ext
 			return this;
 		
 		if(!nestedResolvers.containsKey(newAccPath)) {
-			assert resolvedAccessPath.getDeltaTo(newAccPath).accesses.length <= 1;
+//			assert resolvedAccessPath.getDeltaTo(newAccPath).accesses.length <= 1;
 			if(allResolversInExclHierarchy.containsKey(newAccPath)) {
 				return allResolversInExclHierarchy.get(newAccPath);
 			}

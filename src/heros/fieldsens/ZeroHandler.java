@@ -10,6 +10,8 @@
  ******************************************************************************/
 package heros.fieldsens;
 
+import com.google.common.base.Optional;
+
 
 public interface ZeroHandler<Field> {
 
@@ -17,7 +19,8 @@ public interface ZeroHandler<Field> {
 	 * If reading fields on a fact abstraction directly connected to a Zero fact, this handler is consulted
 	 * to decide if the field may be read. 
 	 * @param accPath The AccessPath consisting of fields already read in addition to a new field to be read.
-	 * @return true if the AccessPath can be generated from within the Zero fact, false otherwise.
+	 * @return Returns Optional.absent() if the given AccessPath cannot be generated. Otherwise the given 
+	 * AccessPath must be a prefix or equal to the returned AccessPath.
 	 */
-	boolean shouldGenerateAccessPath(AccessPath<Field> accPath);
+	Optional<AccessPath<Field>> shouldGenerateAccessPath(AccessPath<Field> accPath);
 }

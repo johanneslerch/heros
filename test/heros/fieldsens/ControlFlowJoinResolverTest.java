@@ -82,7 +82,7 @@ public class ControlFlowJoinResolverTest {
 	public void resolveViaIncomingFact() {
 		sut.resolve(getDeltaConstraint("a"), callback);
 		sut.addIncoming(new WrappedFact<String, TestFact, Statement, TestMethod>(fact, createAccessPath("a"), callEdgeResolver));
-		verify(callback).interest(eq(analyzer), argThat(new ResolverArgumentMatcher(createAccessPath("a"))));
+		verify(callback).interest(eq(analyzer), eq(Delta.empty()), argThat(new ResolverArgumentMatcher(createAccessPath("a"))));
 	}
 
 	@Test
@@ -97,12 +97,13 @@ public class ControlFlowJoinResolverTest {
 	public void resolveViaIncomingResolver() {
 		Resolver<String, TestFact, Statement, TestMethod> resolver = mock(Resolver.class);
 		final Resolver<String, TestFact, Statement, TestMethod> nestedResolver = mock(Resolver.class);
+		nestedResolver.analyzer = mock(PerAccessPathMethodAnalyzer.class);
 		Mockito.doAnswer(new Answer(){
 			@Override
 			public Object answer(InvocationOnMock invocation) throws Throwable {
 				InterestCallback<String, TestFact, Statement, TestMethod> argCallback = 
 						(InterestCallback<String, TestFact, Statement, TestMethod>) invocation.getArguments()[1];
-				argCallback.interest(analyzer, nestedResolver);
+				argCallback.interest(analyzer, Delta.empty(), nestedResolver);
 				return null;
 			}
 		}).when(resolver).resolve(eq(getDeltaConstraint("a")), any(InterestCallback.class));
@@ -110,7 +111,7 @@ public class ControlFlowJoinResolverTest {
 		sut.addIncoming(new WrappedFact<String, TestFact, Statement, TestMethod>(fact, createAccessPath(), resolver));
 		sut.resolve(getDeltaConstraint("a"), callback);
 		
-		verify(callback).interest(eq(analyzer), eq(nestedResolver));
+		verify(callback).interest(eq(nestedResolver.analyzer), eq(Delta.empty()), eq(nestedResolver));
 	}
 	
 	

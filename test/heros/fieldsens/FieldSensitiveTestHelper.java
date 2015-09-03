@@ -45,6 +45,7 @@ import java.util.Map;
 import java.util.Set;
 
 import com.google.common.base.Joiner;
+import com.google.common.base.Optional;
 import com.google.common.base.Predicate;
 import com.google.common.collect.HashMultimap;
 import com.google.common.collect.HashMultiset;
@@ -157,7 +158,12 @@ public class FieldSensitiveTestHelper {
 		return new AccessPathTransformer() {
 			@Override
 			public ConstrainedFact<String, TestFact, Statement, TestMethod> apply(TestFact target, AccessPathHandler<String, TestFact, Statement, TestMethod> accPathHandler) {
-				return accPathHandler.overwrite(new String(fieldName)).generate(target);
+				if(accPathHandler.mayBeEmpty())
+					return accPathHandler.overwrite(new String(fieldName)).generate(target);
+				else if(accPathHandler.canRead(fieldName))
+					throw new IllegalStateException();
+				else
+					return accPathHandler.generate(target);
 			}
 			
 			@Override
@@ -589,8 +595,8 @@ public class FieldSensitiveTestHelper {
 			public ZeroHandler<String> zeroHandler() {
 				return new ZeroHandler<String>() {
 					@Override
-					public boolean shouldGenerateAccessPath(AccessPath<String> accPath) {
-						return true;
+					public Optional<AccessPath<String>> shouldGenerateAccessPath(AccessPath<String> accPath) {
+						return Optional.of(accPath);
 					}
 				};
 			}

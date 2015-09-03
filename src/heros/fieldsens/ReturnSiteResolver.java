@@ -104,13 +104,19 @@ public class ReturnSiteResolver<Field, Fact, Stmt, Method> extends ResolverTempl
 			retEdge.incResolver.resolve(new DeltaConstraint<Field>(delta), new InterestCallback<Field, Fact, Stmt, Method>() {
 
 				@Override
-				public void interest(PerAccessPathMethodAnalyzer<Field, Fact, Stmt, Method> analyzer, Resolver<Field, Fact, Stmt, Method> resolver) {
+				public void interest(PerAccessPathMethodAnalyzer<Field, Fact, Stmt, Method> analyzer,
+						Delta<Field> delta, Resolver<Field, Fact, Stmt, Method> resolver) {
 					if(resolver instanceof ZeroCallEdgeResolver) {
-						ReturnSiteResolver.this.interest(((ZeroCallEdgeResolver<Field, Fact, Stmt, Method>) resolver).
+						ReturnSiteResolver.this.interest(delta, ((ZeroCallEdgeResolver<Field, Fact, Stmt, Method>) resolver).
 								copyWithAnalyzer(ReturnSiteResolver.this.analyzer));
 					} else {
-						incomingEdges.add(retEdge.copyWithIncomingResolver(resolver, retEdge.incAccessPath.getDeltaTo(resolvedAccessPath)));
-						ReturnSiteResolver.this.interest(ReturnSiteResolver.this);
+						AccessPath<Field> nestedResolvedAccPath = delta.applyTo(resolvedAccessPath);
+						ResolverTemplate<Field,Fact,Stmt,Method,ReturnEdge<Field,Fact,Stmt,Method>> nestedResolver = getOrCreateNestedResolver(nestedResolvedAccPath);
+						nestedResolver.incomingEdges.add(retEdge.copyWithIncomingResolver(resolver, delta.applyTo(retEdge.incAccessPath), 
+								retEdge.incAccessPath.getDeltaTo(nestedResolvedAccPath)));
+						if(nestedResolver != ReturnSiteResolver.this)
+							nestedResolver.interest(Delta.empty(), nestedResolver);
+						ReturnSiteResolver.this.interest(delta, nestedResolver);
 					}
 				}
 				
@@ -129,8 +135,11 @@ public class ReturnSiteResolver<Field, Fact, Stmt, Method> extends ResolverTempl
 		
 		final AccessPath<Field> currAccPath = retEdge.callDelta.applyTo(inc);
 		if(resolvedAccessPath.isPrefixOf(currAccPath) == PrefixTestResult.GUARANTEED_PREFIX) {
-			incomingEdges.add(retEdge.copyWithIncomingResolver(null, retEdge.usedAccessPathOfIncResolver));
-			interest(this);
+			ResolverTemplate<Field,Fact,Stmt,Method,ReturnEdge<Field,Fact,Stmt,Method>> nestedResolver = getOrCreateNestedResolver(currAccPath);
+			nestedResolver.incomingEdges.add(retEdge.copyWithIncomingResolver(null, retEdge.incAccessPath, retEdge.usedAccessPathOfIncResolver));
+			if(nestedResolver != this)
+				nestedResolver.interest(Delta.empty(), nestedResolver);
+			interest(resolvedAccessPath.getDeltaTo(currAccPath), nestedResolver);
 		} else if(currAccPath.isPrefixOf(resolvedAccessPath).atLeast(PrefixTestResult.POTENTIAL_PREFIX)) {
 			resolveViaCallSiteResolver(retEdge, currAccPath);
 		}
@@ -142,9 +151,9 @@ public class ReturnSiteResolver<Field, Fact, Stmt, Method> extends ResolverTempl
 		} else {
 			retEdge.resolverAtCaller.resolve(new DeltaConstraint<Field>(currAccPath.getDeltaTo(resolvedAccessPath)), new InterestCallback<Field, Fact, Stmt, Method>() {
 				@Override
-				public void interest(PerAccessPathMethodAnalyzer<Field, Fact, Stmt, Method> analyzer, Resolver<Field, Fact, Stmt, Method> resolver) {
+				public void interest(PerAccessPathMethodAnalyzer<Field, Fact, Stmt, Method> analyzer, Delta<Field> delta, Resolver<Field, Fact, Stmt, Method> resolver) {
 //					incomingEdges.add(retEdge.copyWithResolverAtCaller(resolver, retEdge.incAccessPath.getDeltaTo(getResolvedAccessPath())));
-					ReturnSiteResolver.this.interest(resolver);
+					ReturnSiteResolver.this.interest(delta, resolver);
 				}
 				
 				@Override

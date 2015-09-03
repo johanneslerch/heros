@@ -96,7 +96,7 @@ public class PerAccessPathMethodAnalyzer<Field, Fact, Stmt, Method> {
 	}
 
 	private void bootstrapAtMethodStartPoints() {
-		callEdgeResolver.interest(callEdgeResolver);
+		callEdgeResolver.interest(Delta.empty(), callEdgeResolver);
 		for(Stmt startPoint : context.icfg.getStartPointsOf(method)) {
 			WrappedFactAtStatement<Field, Fact, Stmt, Method> target = new WrappedFactAtStatement<Field, Fact, Stmt, Method>(startPoint, wrappedSource());
 			if(!reachableStatements.containsKey(target))
@@ -248,8 +248,9 @@ public class PerAccessPathMethodAnalyzer<Field, Fact, Stmt, Method> {
 				targetFact.getFact().getResolver().resolve(targetFact.getConstraint(), new InterestCallback<Field, Fact, Stmt, Method>() {
 					@Override
 					public void interest(PerAccessPathMethodAnalyzer<Field, Fact, Stmt, Method> analyzer,
-							Resolver<Field, Fact, Stmt, Method> resolver) {
-						analyzer.scheduleEdgeTo(successors, new WrappedFact<Field, Fact, Stmt, Method>(targetFact.getFact().getFact(), targetFact.getFact().getAccessPath(), resolver));
+							Delta<Field> delta, Resolver<Field, Fact, Stmt, Method> resolver) {
+						analyzer.scheduleEdgeTo(successors, new WrappedFact<Field, Fact, Stmt, Method>(
+								targetFact.getFact().getFact(), delta.applyTo(targetFact.getFact().getAccessPath()), resolver));
 					}
 
 					@Override

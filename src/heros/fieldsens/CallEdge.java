@@ -59,20 +59,21 @@ public class CallEdge<Field, Fact, Stmt, Method> {
 		factAtCallSite.getWrappedFact().getResolver().resolve(new DeltaConstraint<Field>(delta), new InterestCallback<Field, Fact, Stmt, Method>() {
 			
 			@Override
-			public void interest(PerAccessPathMethodAnalyzer<Field, Fact, Stmt, Method> analyzer, Resolver<Field, Fact, Stmt, Method> resolver) {
-				WrappedFact<Field, Fact, Stmt, Method> calleeSourceFactWithDelta = new WrappedFact<Field, Fact, Stmt, Method>(calleeSourceFact.getFact(), delta.applyTo(calleeSourceFact.getAccessPath()), resolver);
+			public void interest(PerAccessPathMethodAnalyzer<Field, Fact, Stmt, Method> analyzer,  Delta<Field> resDelta, Resolver<Field, Fact, Stmt, Method> resolver) {
+				WrappedFact<Field, Fact, Stmt, Method> calleeSourceFactWithDelta = new WrappedFact<Field, Fact, Stmt, Method>(
+						calleeSourceFact.getFact(), resDelta.applyTo(delta.applyTo(calleeSourceFact.getAccessPath())), resolver);
 				assert interestedAnalyzer.getAccessPath().isPrefixOf(calleeSourceFactWithDelta.getAccessPath()) == PrefixTestResult.GUARANTEED_PREFIX;
 				
 				CallEdge<Field, Fact, Stmt, Method> newCallEdge = new CallEdge<Field, Fact, Stmt, Method>(analyzer, 
 						new WrappedFactAtStatement<Field, Fact, Stmt, Method>(factAtCallSite.getStatement(), 
 											new WrappedFact<Field, Fact, Stmt, Method>(factAtCallSite.getWrappedFact().getFact(), 
-													delta.applyTo(factAtCallSite.getWrappedFact().getAccessPath()), 
+													resDelta.applyTo(delta.applyTo(factAtCallSite.getWrappedFact().getAccessPath())), 
 													resolver)), 
 						calleeSourceFactWithDelta);
 				
 				if (resolver instanceof ZeroCallEdgeResolver) {
 					interestedAnalyzer.getCallEdgeResolver().incomingEdges.add(newCallEdge);
-					interestedAnalyzer.getCallEdgeResolver().interest(((ZeroCallEdgeResolver<Field, Fact, Stmt, Method>) resolver).copyWithAnalyzer(interestedAnalyzer));
+					interestedAnalyzer.getCallEdgeResolver().interest(resDelta, ((ZeroCallEdgeResolver<Field, Fact, Stmt, Method>) resolver).copyWithAnalyzer(interestedAnalyzer));
 					interestedAnalyzer.getCallEdgeResolver().processIncomingGuaranteedPrefix(newCallEdge);
 				}
 				else

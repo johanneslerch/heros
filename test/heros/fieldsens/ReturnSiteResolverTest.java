@@ -92,7 +92,7 @@ public class ReturnSiteResolverTest {
 	public void resolveViaIncomingFact() {
 		sut.resolve(getDeltaConstraint("a"), callback);
 		sut.addIncoming(new WrappedFact<String, TestFact, Statement, TestMethod>(fact, createAccessPath("a"), callEdgeResolver), callEdgeResolver, getDelta());
-		verify(callback).interest(eq(analyzer), argThat(new ReturnSiteResolverArgumentMatcher(createAccessPath("a"))));
+		verify(callback).interest(eq(analyzer), eq(Delta.empty()), argThat(new ReturnSiteResolverArgumentMatcher(createAccessPath("a"))));
 	}
 
 	@Test
@@ -112,7 +112,7 @@ public class ReturnSiteResolverTest {
 			public Object answer(InvocationOnMock invocation) throws Throwable {
 				InterestCallback<String, TestFact, Statement, TestMethod> argCallback = 
 						(InterestCallback<String, TestFact, Statement, TestMethod>) invocation.getArguments()[1];
-				argCallback.interest(analyzer, nestedResolver);
+				argCallback.interest(analyzer, Delta.empty(), nestedResolver);
 				return null;
 			}
 		}).when(resolver).resolve(eq(getDeltaConstraint("a")), any(InterestCallback.class));
@@ -120,7 +120,7 @@ public class ReturnSiteResolverTest {
 		sut.addIncoming(new WrappedFact<String, TestFact, Statement, TestMethod>(fact, createAccessPath(), resolver), callEdgeResolver, getDelta());
 		sut.resolve(getDeltaConstraint("a"), callback);
 		
-		verify(callback).interest(eq(analyzer), argThat(new ReturnSiteResolverArgumentMatcher(createAccessPath("a"))));
+		verify(callback).interest(eq(analyzer), eq(Delta.empty()), argThat(new ReturnSiteResolverArgumentMatcher(createAccessPath("a"))));
 	}
 	
 	@Test
@@ -142,37 +142,26 @@ public class ReturnSiteResolverTest {
 		sut.addIncoming(new WrappedFact<String, TestFact, Statement, TestMethod>(fact, createAccessPath(), resolver), callEdgeResolver, getDelta());
 		sut.resolve(getDeltaConstraint("a"), callback);
 		
-		verify(callback, never()).interest(any(PerAccessPathMethodAnalyzer.class), any(Resolver.class));
+		verify(callback, never()).interest(any(PerAccessPathMethodAnalyzer.class), eq(Delta.empty()), any(Resolver.class));
 		
 		assertEquals(1, callbacks.size());
 		Resolver transitiveResolver = mock(Resolver.class);
-		callbacks.get(0).interest(analyzer, transitiveResolver);
-		verify(callback).interest(eq(analyzer), argThat(new ReturnSiteResolverArgumentMatcher(createAccessPath("a"))));
+		callbacks.get(0).interest(analyzer, Delta.empty(), transitiveResolver);
+		verify(callback).interest(eq(analyzer), eq(Delta.empty()), argThat(new ReturnSiteResolverArgumentMatcher(createAccessPath("a"))));
 	}
 	
 	@Test
 	public void resolveViaDelta() {
 		sut.addIncoming(new WrappedFact<String, TestFact, Statement, TestMethod>(fact, createAccessPath(), callEdgeResolver), callEdgeResolver, getDelta("a"));
 		sut.resolve(getDeltaConstraint("a"), callback);
-		verify(callback).interest(eq(analyzer), argThat(new ReturnSiteResolverArgumentMatcher(createAccessPath("a"))));
+		verify(callback).interest(eq(analyzer), eq(Delta.empty()),  argThat(new ReturnSiteResolverArgumentMatcher(createAccessPath("a"))));
 	}
 	
 	@Test
-	public void resolveViaDeltaTwice() {
-		final InterestCallback<String, TestFact, Statement, TestMethod> innerCallback = mock(InterestCallback.class);
-		doAnswer(new Answer() {
-			@Override
-			public Object answer(InvocationOnMock invocation) throws Throwable {
-				ReturnSiteResolver<String, TestFact, Statement, TestMethod> resolver = (ReturnSiteResolver<String, TestFact, Statement, TestMethod>) invocation.getArguments()[1];
-				resolver.resolve(getDeltaConstraint("b"), innerCallback);
-				return null;
-			}
-		}).when(callback).interest(eq(analyzer), argThat(new ReturnSiteResolverArgumentMatcher(createAccessPath("a"))));
-		
+	public void resolveViaDeltaSpecialized() {
 		sut.addIncoming(new WrappedFact<String, TestFact, Statement, TestMethod>(fact, createAccessPath(), callEdgeResolver), callEdgeResolver, getDelta("a", "b"));
 		sut.resolve(getDeltaConstraint("a"), callback);
-		
-		verify(innerCallback).interest(eq(analyzer), argThat(new ReturnSiteResolverArgumentMatcher(createAccessPath("a", "b"))));
+		verify(callback).interest(eq(analyzer), eq(getDelta("b")), argThat(new ReturnSiteResolverArgumentMatcher(createAccessPath("a", "b"))));
 	}
 	
 	@Test
@@ -181,11 +170,11 @@ public class ReturnSiteResolverTest {
 		doAnswer(new Answer() {
 			@Override
 			public Object answer(InvocationOnMock invocation) throws Throwable {
-				ReturnSiteResolver<String, TestFact, Statement, TestMethod> resolver = (ReturnSiteResolver<String, TestFact, Statement, TestMethod>) invocation.getArguments()[1];
+				ReturnSiteResolver<String, TestFact, Statement, TestMethod> resolver = (ReturnSiteResolver<String, TestFact, Statement, TestMethod>) invocation.getArguments()[2];
 				resolver.resolve(getDeltaConstraint("b"), innerCallback);
 				return null;
 			}
-		}).when(callback).interest(eq(analyzer), argThat(new ReturnSiteResolverArgumentMatcher(createAccessPath("a"))));
+		}).when(callback).interest(eq(analyzer), eq(Delta.empty()), argThat(new ReturnSiteResolverArgumentMatcher(createAccessPath("a"))));
 		
 		sut.addIncoming(new WrappedFact<String, TestFact, Statement, TestMethod>(fact, createAccessPath(), callEdgeResolver), callEdgeResolver, getDelta("a"));
 		sut.resolve(getDeltaConstraint("a"), callback);
@@ -211,11 +200,12 @@ public class ReturnSiteResolverTest {
 	public void resolveViaResolverAtCallSiteTwice() {
 		Resolver<String, TestFact, Statement, TestMethod> resolver = mock(Resolver.class);
 		final Resolver<String, TestFact, Statement, TestMethod> nestedResolver = mock(Resolver.class);
+		nestedResolver.analyzer = mock(PerAccessPathMethodAnalyzer.class);
 		doAnswer(new Answer() {
 			@Override
 			public Object answer(InvocationOnMock invocation) throws Throwable {
 				InterestCallback innerCallback = (InterestCallback) invocation.getArguments()[1];
-				innerCallback.interest(analyzer, nestedResolver);
+				innerCallback.interest(analyzer, Delta.empty(), nestedResolver);
 				return null;
 			}
 		}).when(resolver).resolve(eq(getDeltaConstraint("a")), any(InterestCallback.class));
@@ -223,7 +213,7 @@ public class ReturnSiteResolverTest {
 			@Override
 			public Object answer(InvocationOnMock invocation) throws Throwable {
 				InterestCallback innerCallback = (InterestCallback) invocation.getArguments()[1];
-				innerCallback.interest(analyzer, nestedResolver);
+				innerCallback.interest(analyzer, Delta.empty(), nestedResolver);
 				return null;
 			}
 		}).when(nestedResolver).resolve(eq(getDeltaConstraint("b")), any(InterestCallback.class));
@@ -232,17 +222,17 @@ public class ReturnSiteResolverTest {
 		doAnswer(new Answer() {
 			@Override
 			public Object answer(InvocationOnMock invocation) throws Throwable {
-				Resolver<String, TestFact, Statement, TestMethod> resolver = (Resolver) invocation.getArguments()[1];
+				Resolver<String, TestFact, Statement, TestMethod> resolver = (Resolver) invocation.getArguments()[2];
 				resolver.resolve(getDeltaConstraint("b"), secondCallback);
 				return null;
 			}
 			
-		}).when(callback).interest(eq(analyzer), eq(nestedResolver));
+		}).when(callback).interest(eq(nestedResolver.analyzer), eq(Delta.empty()), eq(nestedResolver));
 		
 		sut.addIncoming(new WrappedFact<String, TestFact, Statement, TestMethod>(fact, createAccessPath(), callEdgeResolver), resolver, getDelta());
 		sut.resolve(getDeltaConstraint("a"), callback);
 		
-		verify(secondCallback).interest(eq(analyzer), eq(nestedResolver));
+		verify(secondCallback).interest(eq(analyzer), eq(Delta.empty()), eq(nestedResolver));
 	}
 	
 	@Test
@@ -263,7 +253,7 @@ public class ReturnSiteResolverTest {
 		sut.resolve(getDeltaConstraint("a"), callback);
 		
 		verify(callback, never()).canBeResolvedEmpty();
-		verify(callback, never()).interest(any(PerAccessPathMethodAnalyzer.class), any(Resolver.class));
+		verify(callback, never()).interest(any(PerAccessPathMethodAnalyzer.class), eq(Delta.empty()), any(Resolver.class));
 	}
 	
 	@Test
@@ -284,7 +274,7 @@ public class ReturnSiteResolverTest {
 		sut.resolve(getDeltaConstraint("a"), callback);
 		
 		verify(resolver, never()).resolve(any(Constraint.class), any(InterestCallback.class));
-		verify(callback, never()).interest(any(PerAccessPathMethodAnalyzer.class), any(Resolver.class));
+		verify(callback, never()).interest(any(PerAccessPathMethodAnalyzer.class), eq(Delta.empty()), any(Resolver.class));
 		verify(callback, never()).canBeResolvedEmpty();
 	}
 	
