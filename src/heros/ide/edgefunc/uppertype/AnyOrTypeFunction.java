@@ -50,7 +50,7 @@ public class AnyOrTypeFunction<T extends Type<T>> extends ChainableEdgeFunction<
 		if(chainableFunction instanceof EnsureEmptyFunction)
 			return chainableFunction.chainIfNotNull(chainedFunction);
 		if(chainableFunction instanceof PopFunction)
-			return new AnyFunction<>(factory, chainedFunction);
+			return new AnyFunction<T>(factory, chainedFunction);
 		if(chainableFunction instanceof SetTypeFunction) {
 			if(((SetTypeFunction<T>) chainableFunction).getType().equals(type))
 				return this;

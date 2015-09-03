@@ -115,7 +115,7 @@ public class ReturnSiteResolver<Field, Fact, Stmt, Method> extends ResolverTempl
 						nestedResolver.incomingEdges.add(retEdge.copyWithIncomingResolver(resolver, delta.applyTo(retEdge.incAccessPath), 
 								retEdge.incAccessPath.getDeltaTo(nestedResolvedAccPath)));
 						if(nestedResolver != ReturnSiteResolver.this)
-							nestedResolver.interest(Delta.empty(), nestedResolver);
+							nestedResolver.interest(Delta.<Field>empty(), nestedResolver);
 						ReturnSiteResolver.this.interest(delta, nestedResolver);
 					}
 				}
@@ -138,7 +138,7 @@ public class ReturnSiteResolver<Field, Fact, Stmt, Method> extends ResolverTempl
 			ResolverTemplate<Field,Fact,Stmt,Method,ReturnEdge<Field,Fact,Stmt,Method>> nestedResolver = getOrCreateNestedResolver(currAccPath);
 			nestedResolver.incomingEdges.add(retEdge.copyWithIncomingResolver(null, retEdge.incAccessPath, retEdge.usedAccessPathOfIncResolver));
 			if(nestedResolver != this)
-				nestedResolver.interest(Delta.empty(), nestedResolver);
+				nestedResolver.interest(Delta.<Field>empty(), nestedResolver);
 			interest(resolvedAccessPath.getDeltaTo(currAccPath), nestedResolver);
 		} else if(currAccPath.isPrefixOf(resolvedAccessPath).atLeast(PrefixTestResult.POTENTIAL_PREFIX)) {
 			resolveViaCallSiteResolver(retEdge, currAccPath);

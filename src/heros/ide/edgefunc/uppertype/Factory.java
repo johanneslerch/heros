@@ -43,7 +43,7 @@ public class Factory<T extends Type<T>> extends AbstractFactory<T> {
 	}
 	
 	public EdgeFunction<T> any() {
-		return new AnyFunction<>(this, null);
+		return new AnyFunction<T>(this, null);
 	}
 	
 	public EdgeFunction<T> anyOrType(T type) {

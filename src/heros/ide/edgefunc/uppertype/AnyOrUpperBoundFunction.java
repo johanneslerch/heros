@@ -56,7 +56,7 @@ public class AnyOrUpperBoundFunction<T extends Type<T>> extends ChainableEdgeFun
 		if(chainableFunction instanceof EnsureEmptyFunction)
 			return chainableFunction.chainIfNotNull(chainedFunction);
 		if(chainableFunction instanceof PopFunction)
-			return new AnyFunction<>(factory, chainedFunction);
+			return new AnyFunction<T>(factory, chainedFunction);
 		if(chainableFunction instanceof SetTypeFunction) {
 			T setType = ((SetTypeFunction<T>) chainableFunction).getType();
 			if(setType.meet(type).equals(setType))
