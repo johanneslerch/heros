@@ -54,14 +54,7 @@ public abstract class ResolverTemplate<Field, Fact, Stmt, Method, Incoming>  ext
 				return;
 			log("Incoming Edge: "+inc);
 					
-			if(getAccessPathOf(inc).equals(resolvedAccessPath) || resolvedAccessPath.getExclusions().size() < 1) {
-				interest(Delta.<Field>empty(), this);
-			}
-			else {
-				Delta<Field> deltaTo = resolvedAccessPath.getDeltaTo(getAccessPathOf(inc));
-				ResolverTemplate<Field,Fact,Stmt,Method,Incoming> nestedResolver = getOrCreateNestedResolver(getAccessPathOf(inc));
-				interest(deltaTo, nestedResolver);
-			}
+			interestByIncoming(inc);
 			
 			for(ResolverTemplate<Field, Fact, Stmt, Method, Incoming> nestedResolver : Lists.newLinkedList(nestedResolvers.values())) {
 				nestedResolver.addIncoming(inc);
@@ -76,6 +69,17 @@ public abstract class ResolverTemplate<Field, Fact, Stmt, Method, Incoming>  ext
 			lock();
 			processIncomingPotentialPrefix(inc);
 			unlock();
+		}
+	}
+
+	protected void interestByIncoming(Incoming inc) {
+		if(getAccessPathOf(inc).equals(resolvedAccessPath) || resolvedAccessPath.getExclusions().size() < 1) {
+			interest(Delta.<Field>empty(), this);
+		}
+		else {
+			Delta<Field> deltaTo = resolvedAccessPath.getDeltaTo(getAccessPathOf(inc));
+			ResolverTemplate<Field,Fact,Stmt,Method,Incoming> nestedResolver = getOrCreateNestedResolver(getAccessPathOf(inc));
+			interest(deltaTo, nestedResolver);
 		}
 	}
 	

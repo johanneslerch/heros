@@ -64,6 +64,16 @@ public class ControlFlowJoinResolver<Field, Fact, Stmt, Method> extends Resolver
 	}
 	
 	@Override
+	protected void interestByIncoming(WrappedFact<Field, Fact, Stmt, Method> inc) {
+		if(resolvedAccessPath.isEmpty())
+			interest(Delta.<Field>empty(), this);
+		else {
+			Delta<Field> delta = resolvedAccessPath.getDeltaTo(inc.getAccessPath());
+			interest(delta, inc.getResolver());
+		}
+	}
+	
+	@Override
 	protected void processIncomingPotentialPrefix(final WrappedFact<Field, Fact, Stmt, Method> fact) {
 		if(isNullOrCallEdgeResolver(fact.getResolver())) {
 			canBeResolvedEmpty();
