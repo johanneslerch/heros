@@ -12,6 +12,7 @@ package heros.fieldsens;
 
 import heros.fieldsens.AccessPath.Delta;
 import heros.fieldsens.FlowFunction.Constraint;
+import heros.fieldsens.structs.AccessPathAndResolver;
 import heros.solver.Pair;
 
 import java.util.List;
@@ -24,7 +25,7 @@ public abstract class Resolver<Field, Fact, Stmt, Method> {
 
 	private boolean recursionLock = false;
 	private Resolver<Field, Fact, Stmt, Method> parent;
-	private Set<Pair<Delta<Field>, Resolver<Field, Fact, Stmt, Method>>> interest = Sets.newHashSet();
+	private Set<AccessPathAndResolver<Field, Fact, Stmt, Method>> interest = Sets.newHashSet();
 	private List<InterestCallback<Field, Fact, Stmt, Method>> interestCallbacks = Lists.newLinkedList();
 	protected PerAccessPathMethodAnalyzer<Field, Fact, Stmt, Method> analyzer;
 	private boolean canBeResolvedEmpty = false;
@@ -32,6 +33,10 @@ public abstract class Resolver<Field, Fact, Stmt, Method> {
 	public Resolver(Resolver<Field, Fact, Stmt, Method> parent, PerAccessPathMethodAnalyzer<Field, Fact, Stmt, Method> analyzer) {
 		this.parent = parent;
 		this.analyzer = analyzer;
+	}
+	
+	public PerAccessPathMethodAnalyzer<Field, Fact, Stmt, Method> getAnalyzer() {
+		return analyzer;
 	}
 	
 	protected boolean isLocked() {
@@ -56,14 +61,13 @@ public abstract class Resolver<Field, Fact, Stmt, Method> {
 
 	public abstract void resolve(Constraint<Field> constraint, InterestCallback<Field, Fact, Stmt, Method> callback);
 	
-	public void interest(Delta<Field> delta, Resolver<Field, Fact, Stmt, Method> resolver) {
-		Pair<Delta<Field>, Resolver<Field, Fact, Stmt, Method>> pair = new Pair<Delta<Field>, Resolver<Field, Fact, Stmt, Method>>(delta, resolver);
-		if(!interest.add(pair))
+	public void interest(AccessPathAndResolver<Field, Fact, Stmt, Method> accPathResolver) {
+		if(!interest.add(accPathResolver))
 			return;
 
-		log("Interest given by delta: "+delta+" and resolver: "+resolver);
+		log("Interest given by: "+accPathResolver);
 		for(InterestCallback<Field, Fact, Stmt, Method> callback : Lists.newLinkedList(interestCallbacks)) {
-			callback.interest(resolver.analyzer, delta, resolver);
+			callback.interest(accPathResolver.getLast().resolver.analyzer, accPathResolver);
 		}
 	}
 	
@@ -83,10 +87,9 @@ public abstract class Resolver<Field, Fact, Stmt, Method> {
 
 	protected void registerCallback(InterestCallback<Field, Fact, Stmt, Method> callback) {
 		if(!interest.isEmpty()) {
-			for(Pair<Delta<Field>, Resolver<Field, Fact, Stmt, Method>> pair : Lists.newLinkedList(interest))
-				callback.interest(pair.getO2().analyzer, pair.getO1(), pair.getO2());
+			for(AccessPathAndResolver<Field, Fact, Stmt, Method> accPathResolver : Lists.newLinkedList(interest))
+				callback.interest(accPathResolver.getLast().resolver.analyzer, accPathResolver);
 		}
-		log("Callback registered");
 		interestCallbacks.add(callback);
 
 		if(canBeResolvedEmpty)

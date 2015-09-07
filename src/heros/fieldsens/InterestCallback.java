@@ -11,12 +11,13 @@
 package heros.fieldsens;
 
 import heros.fieldsens.AccessPath.Delta;
+import heros.fieldsens.structs.AccessPathAndResolver;
 
 
 public interface InterestCallback<Field, Fact, Stmt, Method> {
 
 	void interest(PerAccessPathMethodAnalyzer<Field, Fact, Stmt, Method> analyzer,
-			Delta<Field> delta, Resolver<Field, Fact, Stmt, Method> resolver);
+			AccessPathAndResolver<Field, Fact, Stmt, Method> accPathResolver);
 	
 	void canBeResolvedEmpty();
 }

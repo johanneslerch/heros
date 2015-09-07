@@ -11,13 +11,12 @@
 package heros.fieldsens;
 
 import heros.fieldsens.AccessPath.Delta;
-import heros.fieldsens.AccessPath.PrefixTestResult;
+import heros.fieldsens.structs.AccessPathAndResolver;
 import heros.fieldsens.structs.DeltaConstraint;
-import heros.fieldsens.structs.ReturnEdge;
 import heros.fieldsens.structs.WrappedFact;
 import heros.fieldsens.structs.WrappedFactAtStatement;
 
-public class ReturnSiteResolver<Field, Fact, Stmt, Method> extends ResolverTemplate<Field, Fact, Stmt, Method, ReturnEdge<Field, Fact, Stmt, Method>> {
+public class ReturnSiteResolver<Field, Fact, Stmt, Method> extends ResolverTemplate<Field, Fact, Stmt, Method, WrappedFact<Field, Fact, Stmt, Method>> {
 
 	private Stmt returnSite;
 	private boolean propagated = false;
@@ -40,44 +39,59 @@ public class ReturnSiteResolver<Field, Fact, Stmt, Method> extends ResolverTempl
 	}
 	
 	@Override
+	protected void interestByIncoming(WrappedFact<Field, Fact, Stmt, Method> inc) {
+		if(resolvedAccessPath.isEmpty())
+			interest(new AccessPathAndResolver<Field, Fact, Stmt, Method>(AccessPath.<Field>empty(), this));
+		else {
+			AccessPath<Field> delta = resolvedAccessPath.getDeltaToAsAccessPath(inc.getAccessPathAndResolver().accessPath);
+			interest(inc.getAccessPathAndResolver().withAccessPath(delta));
+		}
+	}
+	
+	@Override
 	public String toString() {
 		return "<"+resolvedAccessPath+":"+returnSite+" in "+analyzer.getMethod()+">";
 	}
 	
-	protected AccessPath<Field> getAccessPathOf(ReturnEdge<Field, Fact, Stmt, Method> inc) {
-		return inc.usedAccessPathOfIncResolver.applyTo(inc.incAccessPath);
+	@Override
+	protected AccessPath<Field> getAccessPathOf(WrappedFact<Field, Fact, Stmt, Method> inc) {
+		return inc.getAccessPathAndResolver().accessPath;
 	}
 	
-	public void addIncoming(final WrappedFact<Field, Fact, Stmt, Method> fact, 
-			Resolver<Field, Fact, Stmt, Method> resolverAtCaller, 
-			Delta<Field> callDelta) {
-		
-		addIncoming(new ReturnEdge<Field, Fact, Stmt, Method>(fact, resolverAtCaller, callDelta));
-	}
-	
-	protected void processIncomingGuaranteedPrefix(ReturnEdge<Field, Fact, Stmt, Method> retEdge) {
+	protected void processIncomingGuaranteedPrefix(WrappedFact<Field, Fact, Stmt, Method> inc) {
 		if(propagated) {
-			factMergeHandler.merge(sourceFact, retEdge.incFact);
+			factMergeHandler.merge(sourceFact, inc.getFact());
 		} 
 		else {
 			propagated=true;
-			sourceFact = retEdge.incFact;
+			sourceFact = inc.getFact();
 			analyzer.scheduleEdgeTo(new WrappedFactAtStatement<Field, Fact, Stmt, Method>(returnSite, 
-					new WrappedFact<Field, Fact, Stmt, Method>(retEdge.incFact, new AccessPath<Field>(), this)));
+					new WrappedFact<Field, Fact, Stmt, Method>(inc.getFact(), new AccessPathAndResolver<Field, Fact, Stmt, Method>(new AccessPath<Field>(), this))));
 		}
 	};
 	
-	protected void processIncomingPotentialPrefix(ReturnEdge<Field, Fact, Stmt, Method> retEdge) {
-		log("Incoming potential prefix:  "+retEdge);
-		resolveViaDelta(retEdge);
-	};
-	
+	@Override
+	protected void processIncomingPotentialPrefix(final WrappedFact<Field, Fact, Stmt, Method> fact) {
+		Delta<Field> delta = fact.getAccessPathAndResolver().accessPath.getDeltaTo(resolvedAccessPath);
+		fact.getAccessPathAndResolver().resolve(new DeltaConstraint<Field>(delta), new InterestCallback<Field, Fact, Stmt, Method>() {
+			@Override
+			public void interest(PerAccessPathMethodAnalyzer<Field, Fact, Stmt, Method> analyzer,
+					AccessPathAndResolver<Field, Fact, Stmt, Method> accPathResolver) {
+				ReturnSiteResolver.this.interest(accPathResolver);
+			}
+
+			@Override
+			public void canBeResolvedEmpty() {
+				ReturnSiteResolver.this.canBeResolvedEmpty();
+			}
+		});
+	}
 	protected void log(String message) {
 		analyzer.log("Return Site "+toString()+": "+message);
 	}
 
 	@Override
-	protected ResolverTemplate<Field, Fact, Stmt, Method, ReturnEdge<Field, Fact, Stmt, Method>> createNestedResolver(AccessPath<Field> newAccPath) {
+	protected ReturnSiteResolver<Field, Fact, Stmt, Method> createNestedResolver(AccessPath<Field> newAccPath) {
 		return new ReturnSiteResolver<Field, Fact, Stmt, Method>(factMergeHandler, analyzer, returnSite, sourceFact, debugger, newAccPath, this);
 	}
 	
@@ -85,82 +99,4 @@ public class ReturnSiteResolver<Field, Fact, Stmt, Method> extends ResolverTempl
 		return returnSite;
 	}
 	
-	private boolean isNullOrCallEdgeResolver(Resolver<Field, Fact, Stmt, Method> resolver) {
-		if(resolver == null)
-			return true;
-		if(resolver instanceof CallEdgeResolver) {
-			return !(resolver instanceof ZeroCallEdgeResolver);
-		}
-		return false;
-	}
-	
-	private void resolveViaDelta(final ReturnEdge<Field, Fact, Stmt, Method> retEdge) {
-		if(isNullOrCallEdgeResolver(retEdge.incResolver)) {
-			resolveViaDeltaAndPotentiallyDelegateToCallSite(retEdge);
-		} else {
-			//resolve via incoming facts resolver
-			Delta<Field> delta = retEdge.usedAccessPathOfIncResolver.applyTo(retEdge.incAccessPath).getDeltaTo(resolvedAccessPath);
-			assert delta.accesses.length <= 1;
-			retEdge.incResolver.resolve(new DeltaConstraint<Field>(delta), new InterestCallback<Field, Fact, Stmt, Method>() {
-
-				@Override
-				public void interest(PerAccessPathMethodAnalyzer<Field, Fact, Stmt, Method> analyzer,
-						Delta<Field> delta, Resolver<Field, Fact, Stmt, Method> resolver) {
-					if(resolver instanceof ZeroCallEdgeResolver) {
-						ReturnSiteResolver.this.interest(delta, ((ZeroCallEdgeResolver<Field, Fact, Stmt, Method>) resolver).
-								copyWithAnalyzer(ReturnSiteResolver.this.analyzer));
-					} else {
-						AccessPath<Field> nestedResolvedAccPath = delta.applyTo(resolvedAccessPath);
-						ResolverTemplate<Field,Fact,Stmt,Method,ReturnEdge<Field,Fact,Stmt,Method>> nestedResolver = getOrCreateNestedResolver(nestedResolvedAccPath);
-						nestedResolver.incomingEdges.add(retEdge.copyWithIncomingResolver(resolver, delta.applyTo(retEdge.incAccessPath), 
-								retEdge.incAccessPath.getDeltaTo(nestedResolvedAccPath)));
-						if(nestedResolver != ReturnSiteResolver.this)
-							nestedResolver.interest(Delta.<Field>empty(), nestedResolver);
-						ReturnSiteResolver.this.interest(delta, nestedResolver);
-					}
-				}
-				
-				@Override
-				public void canBeResolvedEmpty() {
-					resolveViaDeltaAndPotentiallyDelegateToCallSite(retEdge);
-				}
-			});
-		}			
-	}
-
-	private void resolveViaDeltaAndPotentiallyDelegateToCallSite(final ReturnEdge<Field, Fact, Stmt, Method> retEdge) {
-		AccessPath<Field> inc = retEdge.usedAccessPathOfIncResolver.applyTo(retEdge.incAccessPath);
-		if(!retEdge.callDelta.canBeAppliedTo(inc))
-			return;
-		
-		final AccessPath<Field> currAccPath = retEdge.callDelta.applyTo(inc);
-		if(resolvedAccessPath.isPrefixOf(currAccPath) == PrefixTestResult.GUARANTEED_PREFIX) {
-			ResolverTemplate<Field,Fact,Stmt,Method,ReturnEdge<Field,Fact,Stmt,Method>> nestedResolver = getOrCreateNestedResolver(currAccPath);
-			nestedResolver.incomingEdges.add(retEdge.copyWithIncomingResolver(null, retEdge.incAccessPath, retEdge.usedAccessPathOfIncResolver));
-			if(nestedResolver != this)
-				nestedResolver.interest(Delta.<Field>empty(), nestedResolver);
-			interest(resolvedAccessPath.getDeltaTo(currAccPath), nestedResolver);
-		} else if(currAccPath.isPrefixOf(resolvedAccessPath).atLeast(PrefixTestResult.POTENTIAL_PREFIX)) {
-			resolveViaCallSiteResolver(retEdge, currAccPath);
-		}
-	}
-
-	protected void resolveViaCallSiteResolver(final ReturnEdge<Field, Fact, Stmt, Method> retEdge, AccessPath<Field> currAccPath) {
-		if(isNullOrCallEdgeResolver(retEdge.resolverAtCaller)) {
-			canBeResolvedEmpty();
-		} else {
-			retEdge.resolverAtCaller.resolve(new DeltaConstraint<Field>(currAccPath.getDeltaTo(resolvedAccessPath)), new InterestCallback<Field, Fact, Stmt, Method>() {
-				@Override
-				public void interest(PerAccessPathMethodAnalyzer<Field, Fact, Stmt, Method> analyzer, Delta<Field> delta, Resolver<Field, Fact, Stmt, Method> resolver) {
-//					incomingEdges.add(retEdge.copyWithResolverAtCaller(resolver, retEdge.incAccessPath.getDeltaTo(getResolvedAccessPath())));
-					ReturnSiteResolver.this.interest(delta, resolver);
-				}
-				
-				@Override
-				public void canBeResolvedEmpty() {
-					ReturnSiteResolver.this.canBeResolvedEmpty();
-				}
-			});
-		}
-	}
 }

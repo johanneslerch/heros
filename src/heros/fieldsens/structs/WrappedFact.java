@@ -19,53 +19,36 @@ import heros.fieldsens.FlowFunction.Constraint;
 public class WrappedFact<Field, Fact, Stmt, Method>{
 
 	private final Fact fact;
-	private final AccessPath<Field> accessPath;
-	private final Resolver<Field, Fact, Stmt, Method> resolver;
+	private final AccessPathAndResolver<Field, Fact, Stmt, Method> accPathResolver;
 	
-	public WrappedFact(Fact fact, AccessPath<Field> accessPath, Resolver<Field, Fact, Stmt, Method> resolver) {
+	public WrappedFact(Fact fact, AccessPathAndResolver<Field, Fact, Stmt, Method> accPathResolver) {
 		assert fact != null;
-		assert accessPath != null;
-		assert resolver != null;
-		
+		this.accPathResolver = accPathResolver;
 		this.fact = fact;
-		this.accessPath = accessPath;
-		this.resolver = resolver;
 	}
 	
 	public Fact getFact() {
 		return fact;
 	}
-	
-	public WrappedFact<Field, Fact, Stmt, Method> applyDelta(AccessPath.Delta<Field> delta) {
-		return new WrappedFact<Field, Fact, Stmt, Method>(fact, delta.applyTo(accessPath), resolver); //TODO keep resolver?
-	}
 
-	public AccessPath<Field> getAccessPath() {
-		return accessPath;
-	}
-	
-	public WrappedFact<Field, Fact, Stmt, Method> applyConstraint(Constraint<Field> constraint, Fact zeroValue) {
-		if(fact.equals(zeroValue))
-			return this;
-		else
-			return new WrappedFact<Field, Fact, Stmt, Method>(fact, constraint.applyToAccessPath(accessPath), resolver);
-	}
+//	public WrappedFact<Field, Fact, Stmt, Method> applyConstraint(Constraint<Field> constraint, Fact zeroValue) {
+//		if(fact.equals(zeroValue))
+//			return this;
+//		else
+//			return new WrappedFact<Field, Fact, Stmt, Method>(fact, constraint.applyToAccessPath(accessPath), resolver);
+//	}
 	
 	@Override
 	public String toString() {
-		String result = fact.toString()+accessPath;
-		if(resolver != null)
-			result+=resolver.toString();
-		return result;
+		return fact.toString()+accPathResolver.toString();
 	}
 	
 	@Override
 	public int hashCode() {
 		final int prime = 31;
 		int result = 1;
-		result = prime * result + ((accessPath == null) ? 0 : accessPath.hashCode());
+		result = prime * result + ((accPathResolver == null) ? 0 : accPathResolver.hashCode());
 		result = prime * result + ((fact == null) ? 0 : fact.hashCode());
-		result = prime * result + ((resolver == null) ? 0 : resolver.hashCode());
 		return result;
 	}
 
@@ -78,27 +61,20 @@ public class WrappedFact<Field, Fact, Stmt, Method>{
 		if (getClass() != obj.getClass())
 			return false;
 		WrappedFact other = (WrappedFact) obj;
-		if (accessPath == null) {
-			if (other.accessPath != null)
+		if (accPathResolver == null) {
+			if (other.accPathResolver != null)
 				return false;
-		} else if (!accessPath.equals(other.accessPath))
+		} else if (!accPathResolver.equals(other.accPathResolver))
 			return false;
 		if (fact == null) {
 			if (other.fact != null)
 				return false;
 		} else if (!fact.equals(other.fact))
 			return false;
-		if (resolver == null) {
-			if (other.resolver != null)
-				return false;
-		} else if (!resolver.equals(other.resolver))
-			return false;
 		return true;
 	}
 
-	public Resolver<Field, Fact, Stmt, Method> getResolver() {
-		return resolver;
+	public AccessPathAndResolver<Field, Fact, Stmt, Method> getAccessPathAndResolver() {
+		return accPathResolver;
 	}
-	
-	
 }

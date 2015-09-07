@@ -155,7 +155,7 @@ public class FieldSensitiveIFDSSolverTest {
 		helper.method("bar",
 				startPoints("c"),
 				normalStmt("c", flow("2", readField("f"), "3")).succ("d"),
-				exitStmt("d").returns(over("b"), to("e"), flow(2, "3", "4")).returns(over("e"), to("f"), flow(2, "3", "5")));
+				exitStmt("d").returns(over("b"), to("e"), flow("3", "4")).returns(over("e"), to("f"), flow("3", "5")));
 		
 		helper.runSolver(false, "a");
 	}
@@ -183,25 +183,6 @@ public class FieldSensitiveIFDSSolverTest {
 				normalStmt("c", flow("1", "1")).succ("b").succ("d"),
 				normalStmt("d", flow("1", readField("f"), "2")).succ("e"),
 				normalStmt("e", kill("2")).succ("f"));
-		
-		helper.runSolver(false, "a0");
-	}
-	
-	@Test
-	@Ignore("not implemented optimization")
-	public void loopAndMergeExclusion() {
-		helper.method("foo",
-				startPoints("a0"),
-				normalStmt("a0", flow("0", "1")).succ("a1"),
-				callSite("a1").calls("bar", flow("1", "1.f")));
-		
-		helper.method("bar",
-				startPoints("b"),
-				normalStmt("b", flow("1", "1", "1^f")).succ("c"),
-				normalStmt("c", flow("1", "1")).succ("d").succ("b"),
-				normalStmt("d", flow("1", overwriteField("f"), "2")).succ("e"),
-				normalStmt("e", kill("2")).succ("f"));
-			
 		
 		helper.runSolver(false, "a0");
 	}
@@ -356,18 +337,6 @@ public class FieldSensitiveIFDSSolverTest {
 	}
 	
 	@Test
-	@Ignore("not implemented optimization")
-	public void mergeExcludedField() {
-		helper.method("foo",
-				startPoints("a"),
-				normalStmt("a", flow("0", "1")).succ("b"),
-				normalStmt("b", flow("1", "2", "2^f")).succ("c"),
-				normalStmt("c", kill("2")).succ("d"));
-		
-		helper.runSolver(false, "a");
-	}
-	
-	@Test
 	public void resumeOnTransitiveInterestedCaller() {
 		helper.method("foo",
 				startPoints("sp"),
@@ -395,7 +364,8 @@ public class FieldSensitiveIFDSSolverTest {
 				startPoints("a"),
 				normalStmt("a", flow("0", "x")).succ("b"),
 				normalStmt("b", flow("x", "x")).succ("c"),
-				callSite("c").calls("foo", flow("x", "y")).retSite("f", flow("x", "x")));
+				callSite("c").calls("foo", flow("x", "y")).retSite("f", flow("x", "x")),
+				normalStmt("f", kill("x"), kill("u")).succ("g"));
 		
 		helper.method("foo",
 				startPoints("d"),
@@ -1297,6 +1267,45 @@ public class FieldSensitiveIFDSSolverTest {
 	}
 	
 	@Test
+	public void loopReadAfterRecursiveReturnWrite() {
+		helper.method("main",
+				startPoints("a"),
+				normalStmt("a", flow("0", "1")).succ("b"),
+				callSite("b").calls("foo", flow("1", "1")).retSite("f", kill("1")),
+				normalStmt("f", flow("1", "1")).succ("g").succ("h"),
+				normalStmt("g", flow("1", readField("f"), "1")).succ("f"),
+				normalStmt("h", kill("1")).succ("i"));
+		
+		helper.method("foo",
+				startPoints("c"),
+				normalStmt("c", flow("1", prependField("f"), "1")).succ("d"),
+				callSite("d").calls("foo", flow("1", "1")).retSite("e", flow("1", "1")),
+				exitStmt("e").returns(over("d"), to("e"), flow(2, "1", "1")).returns(over("b"), to("f"), flow(2, "1", "1")));
+		
+		helper.runSolver(false, "a");
+	}
+	
+	@Test
+	public void loopReadAfterReturnFromLoopWrite() {
+		helper.method("main",
+				startPoints("a"),
+				normalStmt("a", flow("0", "1")).succ("b"),
+				callSite("b").calls("foo", flow("1", "1")).retSite("f", kill("1")),
+				normalStmt("f", flow("1", "1")).succ("g").succ("h"),
+				normalStmt("g", flow("1", readField("f"), "1")).succ("f"),
+				normalStmt("h", kill("1")).succ("i"));
+		
+		helper.method("foo",
+				startPoints("c"),
+				normalStmt("c", flow("1", "1")).succ("d").succ("e"),
+				normalStmt("d", flow("1", prependField("f"), "1")).succ("c"),
+				exitStmt("e").returns(over("b"), to("f"), flow("1", "1")));
+		
+		helper.runSolver(false, "a");
+	}
+	
+	@Test
+	@Ignore("* recognition for calls")
 	public void loopAndReadAfterCall() {
 		helper.method("main",
 				startPoints("a"),
@@ -1321,7 +1330,8 @@ public class FieldSensitiveIFDSSolverTest {
 	}
 	
 	@Test
-	public void resolveViaReturnSite() {
+	@Ignore("evaluate constraints on call edges if applying recursive return edges")
+	public void resolveViaReturnAndConsiderCallEdgeConstraints() {
 		helper.method("main",
 				startPoints("a"),
 				normalStmt("a", flow("0", overwriteField("f"), "1")).succ("b1"),

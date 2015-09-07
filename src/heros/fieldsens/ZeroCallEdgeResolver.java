@@ -14,6 +14,7 @@ import com.google.common.base.Optional;
 
 import heros.fieldsens.AccessPath.Delta;
 import heros.fieldsens.FlowFunction.Constraint;
+import heros.fieldsens.structs.AccessPathAndResolver;
 
 public class ZeroCallEdgeResolver<Field, Fact, Stmt, Method> extends CallEdgeResolver<Field, Fact, Stmt, Method> {
 
@@ -33,11 +34,11 @@ public class ZeroCallEdgeResolver<Field, Fact, Stmt, Method> extends CallEdgeRes
 		AccessPath<Field> accPath = constraint.applyToAccessPath(new AccessPath<Field>());
 		Optional<AccessPath<Field>> gen = zeroHandler.shouldGenerateAccessPath(accPath);
 		if(gen.isPresent())
-			callback.interest(analyzer, accPath.getDeltaTo(gen.get()), this);
+			callback.interest(analyzer, new AccessPathAndResolver<Field, Fact, Stmt, Method>(accPath.getDeltaToAsAccessPath(gen.get()), this));
 	}
 	
 	@Override
-	public void interest(Delta<Field> delta, Resolver<Field, Fact, Stmt, Method> resolver) {
+	public void interest(AccessPathAndResolver<Field, Fact, Stmt, Method> accPathResolver) {
 	}
 	
 	@Override

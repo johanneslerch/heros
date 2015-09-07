@@ -20,6 +20,7 @@ import com.google.common.collect.Sets;
 import heros.fieldsens.AccessPath.Delta;
 import heros.fieldsens.AccessPath.PrefixTestResult;
 import heros.fieldsens.FlowFunction.Constraint;
+import heros.fieldsens.structs.AccessPathAndResolver;
 
 
 public abstract class ResolverTemplate<Field, Fact, Stmt, Method, Incoming>  extends Resolver<Field, Fact, Stmt, Method> {
@@ -74,12 +75,12 @@ public abstract class ResolverTemplate<Field, Fact, Stmt, Method, Incoming>  ext
 
 	protected void interestByIncoming(Incoming inc) {
 		if(getAccessPathOf(inc).equals(resolvedAccessPath) || resolvedAccessPath.getExclusions().size() < 1) {
-			interest(Delta.<Field>empty(), this);
+			interest(new AccessPathAndResolver<Field, Fact, Stmt, Method>(AccessPath.<Field>empty(), this));
 		}
 		else {
-			Delta<Field> deltaTo = resolvedAccessPath.getDeltaTo(getAccessPathOf(inc));
+			AccessPath<Field> deltaTo = resolvedAccessPath.getDeltaToAsAccessPath(getAccessPathOf(inc));
 			ResolverTemplate<Field,Fact,Stmt,Method,Incoming> nestedResolver = getOrCreateNestedResolver(getAccessPathOf(inc));
-			interest(deltaTo, nestedResolver);
+			interest(new AccessPathAndResolver<Field, Fact, Stmt, Method>(deltaTo, nestedResolver));
 		}
 	}
 	

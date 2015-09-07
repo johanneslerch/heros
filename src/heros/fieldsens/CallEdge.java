@@ -12,6 +12,7 @@ package heros.fieldsens;
 
 import heros.fieldsens.AccessPath.Delta;
 import heros.fieldsens.AccessPath.PrefixTestResult;
+import heros.fieldsens.structs.AccessPathAndResolver;
 import heros.fieldsens.structs.DeltaConstraint;
 import heros.fieldsens.structs.WrappedFact;
 import heros.fieldsens.structs.WrappedFactAtStatement;
@@ -51,32 +52,33 @@ public class CallEdge<Field, Fact, Stmt, Method> {
 	}
 	
 	public void registerInterestCallback(final PerAccessPathMethodAnalyzer<Field, Fact, Stmt, Method> interestedAnalyzer) {
-		final Delta<Field> delta = calleeSourceFact.getAccessPath().getDeltaTo(interestedAnalyzer.getAccessPath());
+		final Delta<Field> delta = calleeSourceFact.getAccessPathAndResolver().accessPath.getDeltaTo(interestedAnalyzer.getAccessPath());
 		
 		if(!factAtCallSite.canDeltaBeApplied(delta))
 			return;
 		
-		factAtCallSite.getWrappedFact().getResolver().resolve(new DeltaConstraint<Field>(delta), new InterestCallback<Field, Fact, Stmt, Method>() {
+		factAtCallSite.getWrappedFact().getAccessPathAndResolver().resolve(new DeltaConstraint<Field>(delta), new InterestCallback<Field, Fact, Stmt, Method>() {
 			
 			@Override
-			public void interest(PerAccessPathMethodAnalyzer<Field, Fact, Stmt, Method> analyzer,  Delta<Field> resDelta, Resolver<Field, Fact, Stmt, Method> resolver) {
+			public void interest(PerAccessPathMethodAnalyzer<Field, Fact, Stmt, Method> analyzer,
+					AccessPathAndResolver<Field, Fact, Stmt, Method> accPathResolver) {
+				Delta<Field> resDelta = AccessPath.<Field>empty().getDeltaTo(accPathResolver.accessPath);
 				WrappedFact<Field, Fact, Stmt, Method> calleeSourceFactWithDelta = new WrappedFact<Field, Fact, Stmt, Method>(
-						calleeSourceFact.getFact(), resDelta.applyTo(delta.applyTo(calleeSourceFact.getAccessPath())), resolver);
-				assert interestedAnalyzer.getAccessPath().isPrefixOf(calleeSourceFactWithDelta.getAccessPath()) == PrefixTestResult.GUARANTEED_PREFIX;
+						calleeSourceFact.getFact(), accPathResolver.withAccessPath(resDelta.applyTo(delta.applyTo(calleeSourceFact.getAccessPathAndResolver().accessPath))));
 				
 				CallEdge<Field, Fact, Stmt, Method> newCallEdge = new CallEdge<Field, Fact, Stmt, Method>(analyzer, 
 						new WrappedFactAtStatement<Field, Fact, Stmt, Method>(factAtCallSite.getStatement(), 
 											new WrappedFact<Field, Fact, Stmt, Method>(factAtCallSite.getWrappedFact().getFact(), 
-													resDelta.applyTo(delta.applyTo(factAtCallSite.getWrappedFact().getAccessPath())), 
-													resolver)), 
+													accPathResolver.withAccessPath(resDelta.applyTo(delta.applyTo(factAtCallSite.getAccessPathAndResolver().accessPath))))), 
 						calleeSourceFactWithDelta);
 				
-				if (resolver instanceof ZeroCallEdgeResolver) {
-					interestedAnalyzer.getCallEdgeResolver().incomingEdges.add(newCallEdge);
-					interestedAnalyzer.getCallEdgeResolver().interest(resDelta, ((ZeroCallEdgeResolver<Field, Fact, Stmt, Method>) resolver).copyWithAnalyzer(interestedAnalyzer));
-					interestedAnalyzer.getCallEdgeResolver().processIncomingGuaranteedPrefix(newCallEdge);
-				}
-				else
+//				if (accPathResolver.resolver instanceof ZeroCallEdgeResolver) {
+//					interestedAnalyzer.getCallEdgeResolver().incomingEdges.add(newCallEdge);
+//					interestedAnalyzer.getCallEdgeResolver().interest(new AccessPathAndResolver<Field, Fact,Stmt, Method>(accPathResolver.accessPath, 
+//							((ZeroCallEdgeResolver<Field, Fact, Stmt, Method>) accPathResolver.resolver).copyWithAnalyzer(interestedAnalyzer)));
+//					interestedAnalyzer.getCallEdgeResolver().processIncomingGuaranteedPrefix(newCallEdge);
+//				}
+//				else
 					interestedAnalyzer.addIncomingEdge(newCallEdge);
 			}
 			

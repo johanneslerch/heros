@@ -33,14 +33,6 @@ public class WrappedFactAtStatement<Field, Fact, Stmt, Method> {
 		return fact.getFact();
 	}
 	
-	public AccessPath<Field> getAccessPath() {
-		return fact.getAccessPath();
-	}
-	
-	public Resolver<Field, Fact, Stmt, Method> getResolver() {
-		return fact.getResolver();
-	}
-
 	public Stmt getStatement() {
 		return stmt;
 	}
@@ -50,7 +42,7 @@ public class WrappedFactAtStatement<Field, Fact, Stmt, Method> {
 	}
 	
 	public boolean canDeltaBeApplied(AccessPath.Delta<Field> delta) {
-		return delta.canBeAppliedTo(fact.getAccessPath());
+		return delta.canBeAppliedTo(fact.getAccessPathAndResolver().accessPath);
 	}
 	
 	@Override
@@ -87,6 +79,10 @@ public class WrappedFactAtStatement<Field, Fact, Stmt, Method> {
 		} else if (!stmt.equals(other.stmt))
 			return false;
 		return true;
+	}
+
+	public AccessPathAndResolver<Field, Fact, Stmt, Method> getAccessPathAndResolver() {
+		return fact.getAccessPathAndResolver();
 	}
 
 }

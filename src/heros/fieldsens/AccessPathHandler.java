@@ -13,45 +13,46 @@ package heros.fieldsens;
 import heros.fieldsens.FlowFunction.ConstrainedFact;
 import heros.fieldsens.FlowFunction.ReadFieldConstraint;
 import heros.fieldsens.FlowFunction.WriteFieldConstraint;
+import heros.fieldsens.structs.AccessPathAndResolver;
 import heros.fieldsens.structs.WrappedFact;
 
 public class AccessPathHandler<Field, Fact, Stmt, Method> {
 
-	private AccessPath<Field> accessPath;
-	private Resolver<Field, Fact, Stmt, Method> resolver;
 	private Debugger<Field, Fact, Stmt, Method> debugger;
+	private AccessPathAndResolver<Field, Fact, Stmt, Method> accPathResolver;
 
-	public AccessPathHandler(AccessPath<Field> accessPath, Resolver<Field, Fact, Stmt, Method> resolver, Debugger<Field, Fact, Stmt, Method> debugger) {
-		this.accessPath = accessPath;
-		this.resolver = resolver;
+	public AccessPathHandler(AccessPathAndResolver<Field, Fact, Stmt, Method> accPathResolver, Debugger<Field, Fact, Stmt, Method> debugger) {
+		this.accPathResolver = accPathResolver;
 		this.debugger = debugger;
 	}
 
 	public boolean canRead(Field field) {
-		return accessPath.canRead(field);
+		return accPathResolver.accessPath.canRead(field);
 	}
 	
 	public boolean mayCanRead(Field field) {
-		return accessPath.canRead(field) || (accessPath.hasEmptyAccessPath() && !accessPath.isAccessInExclusions(field));
+		return accPathResolver.accessPath.canRead(field) || (accPathResolver.accessPath.hasEmptyAccessPath() && !accPathResolver.accessPath.isAccessInExclusions(field));
 	}
 	
 	public boolean mayBeEmpty() {
-		return accessPath.hasEmptyAccessPath();
+		return accPathResolver.accessPath.hasEmptyAccessPath();
 	}
 
 	public ConstrainedFact<Field, Fact, Stmt, Method> generate(Fact fact) {
-		return new ConstrainedFact<Field, Fact, Stmt, Method>(new WrappedFact<Field, Fact, Stmt, Method>(fact, accessPath, resolver));
+		return new ConstrainedFact<Field, Fact, Stmt, Method>(new WrappedFact<Field, Fact, Stmt, Method>(fact, accPathResolver));
 	}
 	
 	public ConstrainedFact<Field, Fact, Stmt, Method> generateWithEmptyAccessPath(Fact fact, ZeroHandler<Field> zeroHandler) {
-		return new ConstrainedFact<Field, Fact, Stmt, Method>(new WrappedFact<Field, Fact, Stmt, Method>(fact, new AccessPath<Field>(), new ZeroCallEdgeResolver<Field, Fact, Stmt, Method>(resolver.analyzer, zeroHandler, debugger)));
+		return new ConstrainedFact<Field, Fact, Stmt, Method>(new WrappedFact<Field, Fact, Stmt, Method>(fact, 
+				new AccessPathAndResolver<Field, Fact, Stmt, Method>(new AccessPath<Field>(), new ZeroCallEdgeResolver<Field, Fact, Stmt, Method>(accPathResolver.resolver.analyzer, zeroHandler, debugger))));
 	}
 	
 	public ResultBuilder<Field, Fact, Stmt, Method> prepend(final Field field) {
 		return new ResultBuilder<Field, Fact, Stmt, Method>() {
 			@Override
 			public ConstrainedFact<Field, Fact, Stmt, Method> generate(Fact fact) {
-				return new ConstrainedFact<Field, Fact, Stmt, Method>(new WrappedFact<Field, Fact, Stmt, Method>(fact, accessPath.prepend(field), resolver));
+				return new ConstrainedFact<Field, Fact, Stmt, Method>(new WrappedFact<Field, Fact, Stmt, Method>(fact, 
+						accPathResolver.withAccessPath(accPathResolver.accessPath.prepend(field))));
 			}
 		};
 	}
@@ -62,9 +63,11 @@ public class AccessPathHandler<Field, Fact, Stmt, Method> {
 				@Override
 				public ConstrainedFact<Field, Fact, Stmt, Method> generate(Fact fact) {
 					if(canRead(field))
-						return new ConstrainedFact<Field, Fact, Stmt, Method>(new WrappedFact<Field, Fact, Stmt, Method>(fact, accessPath.removeFirst(), resolver));
+						return new ConstrainedFact<Field, Fact, Stmt, Method>(new WrappedFact<Field, Fact, Stmt, Method>(fact, 
+								accPathResolver.withAccessPath(accPathResolver.accessPath.removeFirst())));
 					else
-						return new ConstrainedFact<Field, Fact, Stmt, Method>(new WrappedFact<Field, Fact, Stmt, Method>(fact, new AccessPath<Field>(), resolver), new ReadFieldConstraint<Field>(field));
+						return new ConstrainedFact<Field, Fact, Stmt, Method>(new WrappedFact<Field, Fact, Stmt, Method>(fact, 
+								accPathResolver.withAccessPath(new AccessPath<Field>())), new ReadFieldConstraint<Field>(field));
 				}
 			};
 		}
@@ -78,10 +81,12 @@ public class AccessPathHandler<Field, Fact, Stmt, Method> {
 				@SuppressWarnings("unchecked")
 				@Override
 				public ConstrainedFact<Field, Fact, Stmt, Method> generate(Fact fact) {
-					if(accessPath.isAccessInExclusions(field))
-						return new ConstrainedFact<Field, Fact, Stmt, Method>(new WrappedFact<Field, Fact, Stmt, Method>(fact, accessPath, resolver));
+					if(accPathResolver.accessPath.isAccessInExclusions(field))
+						return new ConstrainedFact<Field, Fact, Stmt, Method>(new WrappedFact<Field, Fact, Stmt, Method>(fact, accPathResolver));
 					else
-						return new ConstrainedFact<Field, Fact, Stmt, Method>(new WrappedFact<Field, Fact, Stmt, Method>(fact, accessPath.appendExcludedFieldReference(field), resolver), new WriteFieldConstraint<Field>(field));
+						return new ConstrainedFact<Field, Fact, Stmt, Method>(new WrappedFact<Field, Fact, Stmt, Method>(fact, 
+								accPathResolver.withAccessPath(accPathResolver.accessPath.appendExcludedFieldReference(field))), 
+								new WriteFieldConstraint<Field>(field));
 				}
 			};
 		else

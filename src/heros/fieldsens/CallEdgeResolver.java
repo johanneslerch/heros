@@ -15,7 +15,7 @@ import heros.fieldsens.structs.WrappedFactAtStatement;
 import com.google.common.collect.Lists;
 
 
-class CallEdgeResolver<Field, Fact, Stmt, Method> extends ResolverTemplate<Field, Fact, Stmt, Method, CallEdge<Field, Fact, Stmt, Method>>  {
+public class CallEdgeResolver<Field, Fact, Stmt, Method> extends ResolverTemplate<Field, Fact, Stmt, Method, CallEdge<Field, Fact, Stmt, Method>>  {
 
 	public CallEdgeResolver(PerAccessPathMethodAnalyzer<Field, Fact, Stmt, Method> analyzer, Debugger<Field, Fact, Stmt, Method> debugger) {
 		this(analyzer, debugger, null);
@@ -27,7 +27,7 @@ class CallEdgeResolver<Field, Fact, Stmt, Method> extends ResolverTemplate<Field
 
 	@Override
 	protected AccessPath<Field> getAccessPathOf(CallEdge<Field, Fact, Stmt, Method> inc) {
-		return inc.getCalleeSourceFact().getAccessPath();
+		return inc.getCalleeSourceFact().getAccessPathAndResolver().accessPath;
 	}
 	
 	@Override

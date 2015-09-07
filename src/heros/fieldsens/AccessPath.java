@@ -49,6 +49,10 @@ public class AccessPath<T> {
 		return exclusions.containsAll(accPath.exclusions);
 	}
 	
+	public AccessPath<T> append(AccessPath<T> accPath) {
+		return append(accPath.accesses).appendExcludedFieldReference(accPath.exclusions);
+	}
+	
 	public AccessPath<T> append(T... fieldReferences) {
 		if(fieldReferences.length == 0)
 			return this;
@@ -142,6 +146,15 @@ public class AccessPath<T> {
 		Delta<T> delta = new Delta<T>(Arrays.copyOfRange(accPath.accesses, accesses.length, accPath.accesses.length), mergedExclusions);
 		assert (isPrefixOf(accPath).atLeast(PrefixTestResult.POTENTIAL_PREFIX) && accPath.isPrefixOf(delta.applyTo(this)) == PrefixTestResult.GUARANTEED_PREFIX) 
 				|| (isPrefixOf(accPath) == PrefixTestResult.GUARANTEED_PREFIX && accPath.equals(delta.applyTo(this)));
+		return delta;
+	}
+	
+	public AccessPath<T> getDeltaToAsAccessPath(AccessPath<T> accPath) {
+		assert isPrefixOf(accPath).atLeast(PrefixTestResult.POTENTIAL_PREFIX);
+		HashSet<T> mergedExclusions = Sets.newHashSet(accPath.exclusions);
+		if(accesses.length == accPath.accesses.length)
+			mergedExclusions.addAll(exclusions);
+		AccessPath<T> delta = new AccessPath<T>(Arrays.copyOfRange(accPath.accesses, accesses.length, accPath.accesses.length), mergedExclusions);
 		return delta;
 	}
 	
