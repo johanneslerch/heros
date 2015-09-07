@@ -1251,7 +1251,7 @@ public class FieldSensitiveIFDSSolverTest {
 	}
 	
 	@Test
-	public void loopAndRead() {
+	public void readPrefixInLoopToResolveFieldRead() {
 		helper.method("main",
 				startPoints("a"),
 				normalStmt("a", flow("0", "1")).succ("b"),
@@ -1349,6 +1349,69 @@ public class FieldSensitiveIFDSSolverTest {
 				callSite("f").calls("foo", flow("3", "3")).retSite("g", kill("3")),
 				normalStmt("g", flow("3", prependField("g"), "3")).succ("ep"),
 				exitStmt("ep").returns(over("c"), to("h"), flow("3", "4")).returns(over("f"), to("g"), flow("3", "3")));
+		
+		helper.runSolver(false, "a");
+	}
+	
+	public void recursiveReturnWriteBeforeRecursiveReturnRead() {
+		helper.method("main",
+				startPoints("a"),
+				normalStmt("a", flow("0", "1")).succ("b"),
+				callSite("b").calls("foo", flow("1", "1")).retSite("c", kill("1")),
+				callSite("c").calls("bar", flow("1", "1")).retSite("d", kill("1")),
+				normalStmt("d", kill("1")).succ("e"));
+		
+		helper.method("foo",
+				startPoints("foo_sp"),
+				normalStmt("foo_sp", flow("1", "1")).succ("foo_ep").succ("foo_cs"),
+				callSite("foo_cs").calls("foo", flow("1", "1")).retSite("foo_rs", kill("1")),
+				normalStmt("foo_rs", flow("1", prependField("f"), "1")).succ("foo_ep"),
+				exitStmt("foo_ep").returns(over("foo_cs"), to("foo_rs"), flow("1", "1")).
+									returns(over("b"), to("c"), flow("1", "1")));
+		
+		helper.method("bar",
+				startPoints("bar_sp"),
+				normalStmt("bar_sp", flow("1", "1")).succ("bar_ep").succ("bar_cs"),
+				callSite("bar_cs").calls("bar", flow("1", "1")).retSite("bar_rs", kill("1")),
+				normalStmt("bar_rs", flow("1", readField("f"), "1")).succ("bar_ep"),
+				exitStmt("bar_ep").returns(over("bar_cs"), to("bar_rs"), flow("1", "1")).
+				returns(over("c"), to("d"), flow("1", "1")));
+		
+		helper.runSolver(false, "a");
+	}
+	
+	@Test
+	public void intraproceduralWriteAndReadInLoops() {
+		helper.method("main",
+				startPoints("a"),
+				normalStmt("a", flow("0", "1")).succ("b"),
+				normalStmt("b", flow("1", "1")).succ("c1").succ("c2").succ("d"),
+				normalStmt("c1", flow("1", prependField("f"), "1")).succ("b"),
+				normalStmt("c2", flow("1", prependField("g"), "1")).succ("b"),
+				normalStmt("d", flow("1", "1")).succ("e1").succ("e2").succ("f"),
+				normalStmt("e1", flow("1", readField("g"), "1")).succ("d"),
+				normalStmt("e2", flow("1", readField("f"), "1")).succ("d"),
+				normalStmt("f", flow("1", readField("g"), "1")).succ("g"),
+				normalStmt("g", flow(2, "1", readField("f"), "1")).succ("h"),
+				normalStmt("h", kill(2, "1")).succ("i"));
+		
+		helper.runSolver(false, "a");
+	}
+	
+	@Test
+	public void intraproceduralWriteAndReadMultipleFieldsSubsequentlyInLoops() {
+		helper.method("main",
+				startPoints("a"),
+				normalStmt("a", flow("0", overwriteField("g"), "1")).succ("b"),
+				normalStmt("b", flow("1", "1")).succ("c1").succ("d"),
+				normalStmt("c1", flow("1", prependField("f"), "1")).succ("c2"),
+				normalStmt("c2", flow("1", prependField("g"), "1")).succ("b"),
+				normalStmt("d", flow("1", "1")).succ("e1").succ("f"),
+				normalStmt("e1", flow("1", readField("g"), "1")).succ("e2"),
+				normalStmt("e2", flow("1", readField("f"), "1")).succ("d"),
+				normalStmt("f", flow("1", readField("g"), "1")).succ("g"),
+				normalStmt("g", flow("1", readField("f"), "1")).succ("h"),
+				normalStmt("h", kill("1")).succ("i"));
 		
 		helper.runSolver(false, "a");
 	}
