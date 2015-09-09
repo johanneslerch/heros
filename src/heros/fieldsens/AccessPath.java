@@ -180,9 +180,11 @@ public class AccessPath<T> {
 		
 		@Override
 		public String toString() {
-			String result = accesses.length > 0 ? "."+Joiner.on(".").join(accesses) : "";
+			String result = accesses.length > 0 ? Joiner.on(".").join(accesses) : "";
 			if(!exclusions.isEmpty())
 				result += "^" + Joiner.on(",").join(exclusions);
+			if(result.isEmpty())
+				result = "␣";
 			return result;
 		}
 
@@ -266,6 +268,8 @@ public class AccessPath<T> {
 		String result = accesses.length > 0 ? "."+Joiner.on(".").join(accesses) : "";
 		if(!exclusions.isEmpty())
 			result += "^" + Joiner.on(",").join(exclusions);
+		if(result.isEmpty())
+			return "␣";
 		return result;
 	}
 	

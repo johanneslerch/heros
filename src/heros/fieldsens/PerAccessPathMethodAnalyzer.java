@@ -57,13 +57,27 @@ public class PerAccessPathMethodAnalyzer<Field, Fact, Stmt, Method> {
 	private CallEdgeResolver<Field, Fact, Stmt, Method> callEdgeResolver;
 	private PerAccessPathMethodAnalyzer<Field, Fact, Stmt, Method> parent;
 	private Debugger<Field, Fact, Stmt, Method> debugger;
+	private DefaultValueMap<Delta<Field>, PerAccessPathMethodAnalyzer<Field, Fact, Stmt, Method>> repeatingAnalyzers = new DefaultValueMap<Delta<Field>, PerAccessPathMethodAnalyzer<Field, Fact, Stmt, Method>>() {
+		@Override
+		protected PerAccessPathMethodAnalyzer<Field, Fact, Stmt, Method> createItem(Delta<Field> key) {
+			PerAccessPathMethodAnalyzer<Field, Fact, Stmt, Method> result = new PerAccessPathMethodAnalyzer<Field, Fact, Stmt, Method>(method, sourceFact, context, debugger, accessPath, key, PerAccessPathMethodAnalyzer.this);
+			result.callEdgeResolver = new RepeatedFieldCallEdgeResolver<Field, Fact, Stmt, Method>(result, debugger, callEdgeResolver, key);
+			return result;
+		}
+	};
+	private Delta<Field> repeatedDelta;
 
 	public PerAccessPathMethodAnalyzer(Method method, Fact sourceFact, Context<Field, Fact, Stmt, Method> context, Debugger<Field, Fact, Stmt, Method> debugger) {
-		this(method, sourceFact, context, debugger, new AccessPath<Field>(), null);
+		this(method, sourceFact, context, debugger, new AccessPath<Field>(), null, null);
+		this.callEdgeResolver = isZeroSource() ? new ZeroCallEdgeResolver<Field, Fact, Stmt, Method>(this, context.zeroHandler, debugger) : new CallEdgeResolver<Field, Fact, Stmt, Method>(this, debugger);
 	}
 	
-	private PerAccessPathMethodAnalyzer(Method method, Fact sourceFact, Context<Field, Fact, Stmt, Method> context, Debugger<Field, Fact, Stmt, Method> debugger, AccessPath<Field> accPath, PerAccessPathMethodAnalyzer<Field, Fact, Stmt, Method> parent) {
+	private PerAccessPathMethodAnalyzer(Method method, Fact sourceFact, Context<Field, Fact, Stmt, Method> context, 
+			Debugger<Field, Fact, Stmt, Method> debugger, AccessPath<Field> accPath, 
+			Delta<Field> repeatedDelta,
+			PerAccessPathMethodAnalyzer<Field, Fact, Stmt, Method> parent) {
 		this.debugger = debugger;
+		this.repeatedDelta = repeatedDelta;
 		if(method == null)
 			throw new IllegalArgumentException("Method must be not null");
 		this.parent = parent;
@@ -71,17 +85,24 @@ public class PerAccessPathMethodAnalyzer<Field, Fact, Stmt, Method> {
 		this.sourceFact = sourceFact;
 		this.accessPath = accPath;
 		this.context = context;
-		if(parent == null) {
-			this.callEdgeResolver = isZeroSource() ? new ZeroCallEdgeResolver<Field, Fact, Stmt, Method>(this, context.zeroHandler, debugger) : new CallEdgeResolver<Field, Fact, Stmt, Method>(this, debugger);
-		}
-		else {
-			this.callEdgeResolver = isZeroSource() ? parent.callEdgeResolver : new CallEdgeResolver<Field, Fact, Stmt, Method>(this, debugger, parent.callEdgeResolver);
-		}
-		log("initialized");
+	}
+	
+	public PerAccessPathMethodAnalyzer<Field, Fact, Stmt, Method> createWithRepeatingResolver(Delta<Field> delta) {
+		return parent.repeatingAnalyzers.getOrCreate(delta);
+	}
+	
+	public PerAccessPathMethodAnalyzer<Field, Fact, Stmt, Method> createWithZeroCallEdgeResolver() {
+		PerAccessPathMethodAnalyzer<Field, Fact, Stmt, Method> result = new PerAccessPathMethodAnalyzer<Field, Fact, Stmt, Method>(
+				method, sourceFact, context, debugger, accessPath, null, this);
+		result.callEdgeResolver = new ZeroCallEdgeResolver<Field, Fact, Stmt, Method>(result, context.zeroHandler, debugger);
+		return result;
 	}
 	
 	public PerAccessPathMethodAnalyzer<Field, Fact, Stmt, Method> createWithAccessPath(AccessPath<Field> accPath) {
-		return new PerAccessPathMethodAnalyzer<Field, Fact, Stmt, Method>(method, sourceFact, context, debugger, accPath, this);
+		PerAccessPathMethodAnalyzer<Field, Fact, Stmt, Method> result = new PerAccessPathMethodAnalyzer<Field, Fact, Stmt, Method>(
+				method, sourceFact, context, debugger, accPath, null, this);
+		result.callEdgeResolver = new CallEdgeResolver<Field, Fact, Stmt, Method>(result, debugger, callEdgeResolver);
+		return result;
 	}
 	
 	WrappedFact<Field, Fact, Stmt, Method> wrappedSource() {
@@ -93,7 +114,7 @@ public class PerAccessPathMethodAnalyzer<Field, Fact, Stmt, Method> {
 	}
 
 	private boolean isBootStrapped() {
-		return callEdgeResolver.hasIncomingEdges() || !accessPath.isEmpty();
+		return callEdgeResolver.hasIncomingEdges() || !accessPath.isEmpty() || repeatedDelta != null;
 	}
 
 	private void bootstrapAtMethodStartPoints() {
@@ -129,12 +150,15 @@ public class PerAccessPathMethodAnalyzer<Field, Fact, Stmt, Method> {
 	}
 
 	void log(String message) {
-		logger.trace("[{}; {}{}: "+message+"]", method, sourceFact, accessPath);
+		logger.trace(toString()+": "+message);
 	}
 
 	@Override
 	public String toString() {
-		return method+"; "+sourceFact+accessPath;
+		String result = callEdgeResolver+"; "+sourceFact+accessPath;
+		if(repeatedDelta != null)
+			result+="."+repeatedDelta+"*";
+		return result;
 	}
 
 	void processCall(WrappedFactAtStatement<Field,Fact, Stmt, Method> factAtStmt) {

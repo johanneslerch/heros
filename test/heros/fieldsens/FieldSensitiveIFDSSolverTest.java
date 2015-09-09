@@ -1329,7 +1329,6 @@ public class FieldSensitiveIFDSSolverTest {
 	}
 	
 	@Test
-	@Ignore("* recognition for calls")
 	public void loopAndReadAfterCall() {
 		helper.method("main",
 				startPoints("a"),
@@ -1344,9 +1343,9 @@ public class FieldSensitiveIFDSSolverTest {
 				
 		helper.method("bar",
 				startPoints("f"),
-				normalStmt("f", flow("1", "1")).succ("g").succ("h"),
-				normalStmt("g", flow("1", readField("f"), "1")).succ("f"),
-				normalStmt("h", flow("1", readField("f"), "1")).succ("i"),
+				normalStmt("f", flow(2, "1", "1")).succ("g").succ("h"),
+				normalStmt("g", flow(2, "1", readField("f"), "1")).succ("f"),
+				normalStmt("h", flow(2, "1", readField("f"), "1")).succ("i"),
 				normalStmt("i", flow("1", readField("g"), "1")).succ("j"),
 				normalStmt("j", kill("1")).succ("k"));
 		
@@ -1435,6 +1434,47 @@ public class FieldSensitiveIFDSSolverTest {
 				normalStmt("e2", flow("1", readField("f"), "1")).succ("d"),
 				normalStmt("f", flow("1", readField("g"), "1")).succ("g"),
 				normalStmt("g", flow("1", readField("f"), "1")).succ("h"),
+				normalStmt("h", kill("1")).succ("i"));
+		
+		helper.runSolver(false, "a");
+	}
+	
+	@Test
+	public void loopWriteThenCallAndLoopRead() {
+		helper.method("main",
+				startPoints("a"),
+				normalStmt("a", flow("0", prependField("g"), "1")).succ("js1"),
+				normalStmt("js1", flow("1", "1")).succ("b").succ("c"),
+				normalStmt("b", flow("1", prependField("f"), "1")).succ("js1"),
+				callSite("c").calls("foo", flow("1", "1")));
+		
+		helper.method("foo",
+				startPoints("d"),
+				normalStmt("d", flow("1", "1")).succ("js2"),
+				normalStmt("js2", flow(2, "1", "1")).succ("e").succ("f"),
+				normalStmt("e", flow(2, "1", readField("f"), "1")).succ("js2"),
+				normalStmt("f", flow(2, "1", readField("f"), "1")).succ("g"),
+				normalStmt("g", flow("1", readField("g"), "1")).succ("h"),
+				normalStmt("h", kill("1")).succ("i"));
+		
+		helper.runSolver(false, "a");
+	}
+	
+	@Test
+	public void callAndLoopRead() {
+		helper.method("main",
+				startPoints("a"),
+				normalStmt("a", flow("0", prependField("g"), "1")).succ("b"),
+				normalStmt("b", flow("1", prependField("f"), "1")).succ("c"),
+				callSite("c").calls("foo", flow("1", prependField("f"), "1")));
+		
+		helper.method("foo",
+				startPoints("d"),
+				normalStmt("d", flow("1", "1")).succ("js2"),
+				normalStmt("js2", flow(3, "1", "1")).succ("e").succ("f"),
+				normalStmt("e", flow(3, "1", readField("f"), "1")).succ("js2"),
+				normalStmt("f", flow(3, "1", readField("f"), "1")).succ("g"),
+				normalStmt("g", flow(2, "1", readField("g"), "1")).succ("h"),
 				normalStmt("h", kill("1")).succ("i"));
 		
 		helper.runSolver(false, "a");
