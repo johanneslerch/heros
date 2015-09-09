@@ -87,9 +87,12 @@ public class CallEdge<Field, Fact, Stmt, Method> {
 						accPathResolver.resolver instanceof RepeatedFieldCallEdgeResolver) {
 					//interest provided by loop/recursion
 					PerAccessPathMethodAnalyzer<Field, Fact, Stmt, Method> repeatingAnalyzer = interestedAnalyzer.createWithRepeatingResolver(delta);
-					repeatingAnalyzer.getCallEdgeResolver().incomingEdges.add(createNewCallEdge(analyzer, accPathResolver, Delta.<Field>empty()));
+					repeatingAnalyzer.getCallEdgeResolver().incomingEdges.add(createNewCallEdge(analyzer, 
+							accPathResolver.withAccessPath(AccessPath.<Field>empty()), Delta.<Field>empty()));
+					repeatingAnalyzer.getCallEdgeResolver().interest(new AccessPathAndResolver<Field, Fact, Stmt, Method>(
+							accPathResolver.accessPath, repeatingAnalyzer.getCallEdgeResolver()));
 					interestedAnalyzer.getCallEdgeResolver().interest(new AccessPathAndResolver<Field, Fact, Stmt, Method>(
-							AccessPath.<Field>empty() /* TODO double check */, repeatingAnalyzer.getCallEdgeResolver()));
+							accPathResolver.accessPath, repeatingAnalyzer.getCallEdgeResolver()));
 				}
 				else {
 					interestedAnalyzer.addIncomingEdge(createNewCallEdge(analyzer, accPathResolver, delta));

@@ -28,7 +28,7 @@ public class RepeatedFieldCallEdgeResolver<Field, Fact, Stmt, Method> extends Ca
 	@Override
 	public void resolve(Constraint<Field> constraint, InterestCallback<Field, Fact, Stmt, Method> callback) {
 		if(constraint.applyToAccessPath(resolvedAccessPath).isPrefixOf(repeatedField.applyTo(resolvedAccessPath)) == PrefixTestResult.GUARANTEED_PREFIX) {
-			callback.interest(analyzer, new AccessPathAndResolver<Field, Fact, Stmt, Method>(AccessPath.<Field>empty()/* TODO double check*/, this));
+			registerCallback(callback);
 		}
 		else
 			super.resolve(constraint, callback);

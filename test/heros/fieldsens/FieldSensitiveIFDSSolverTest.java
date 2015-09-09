@@ -1329,7 +1329,7 @@ public class FieldSensitiveIFDSSolverTest {
 	}
 	
 	@Test
-	public void loopAndReadAfterCall() {
+	public void loopAndReadAfterCalls() {
 		helper.method("main",
 				startPoints("a"),
 				normalStmt("a", flow("0", overwriteField("f"), "1")).succ("b"),
@@ -1348,6 +1348,36 @@ public class FieldSensitiveIFDSSolverTest {
 				normalStmt("h", flow(2, "1", readField("f"), "1")).succ("i"),
 				normalStmt("i", flow("1", readField("g"), "1")).succ("j"),
 				normalStmt("j", kill("1")).succ("k"));
+		
+		helper.runSolver(false, "a");
+	}
+	
+	@Test
+	public void loopAndReadMultipleFieldsAfterCalls() {
+		helper.method("main",
+				startPoints("a"),
+				normalStmt("a", flow("0", prependField("f"), "1")).succ("b"),
+				normalStmt("b", flow("1", "1")).succ("c1").succ("d"),
+				normalStmt("c1", flow("1", prependField("b"), "1")).succ("c2"),
+				normalStmt("c2", flow("1", prependField("a"), "1")).succ("b"),
+				callSite("d").calls("foo", flow("1", "1")));
+		
+		helper.method("foo",
+				startPoints("e"),
+				callSite("e").calls("bar", flow("1", "1")));
+				
+		helper.method("bar",
+				startPoints("f"),
+				normalStmt("f", flow(2, "1", "1")).succ("g1").succ("h"),
+				normalStmt("g1", flow(2, "1", readField("a"), "1")).succ("g2"),
+				normalStmt("g2", flow("1", readField("b"), "1")).succ("f"),
+				
+				normalStmt("h", flow(2, "1", readField("a"), "1")).succ("i"),
+				normalStmt("i", flow("1", readField("b"), "1")).succ("j"),
+				normalStmt("j", flow("1", readField("a"), "1")).succ("k"),
+				normalStmt("k", flow("1", readField("b"), "1")).succ("l"),
+				normalStmt("l", flow("1", readField("f"), "1")).succ("m"),
+				normalStmt("m", kill("1")).succ("n"));
 		
 		helper.runSolver(false, "a");
 	}
