@@ -918,8 +918,8 @@ public class FieldSensitiveIFDSSolverTest {
 				normalStmt("c", flow("2", prependField("z"), "2")).succ("d"),
 				callSite("d").calls("xyz", flow("2", "3")).retSite("i", kill("2")),
 				normalStmt("i", flow("4", readField("g"), "5")).succ("j"),
-				normalStmt("j", flow("5", readField("f"), "6")).succ("k"),
-				exitStmt("k").returns(over("b"), to("l")));
+				normalStmt("j", flow("5", readField("z"), "6")).succ("k"),
+				exitStmt("k").returns(over("b"), to("l"), kill("6")));
 		
 		helper.method("xyz",
 				startPoints("e"),
@@ -1275,6 +1275,30 @@ public class FieldSensitiveIFDSSolverTest {
 				normalStmt("f", flow("1", "1")).succ("g").succ("h"),
 				normalStmt("g", flow("1", readField("f"), "1")).succ("f"),
 				normalStmt("h", kill("1")).succ("i"));
+		
+		helper.method("foo",
+				startPoints("c"),
+				normalStmt("c", flow("1", "1")).succ("d"),
+				callSite("d").calls("foo", flow("1", "1")).retSite("e", flow("1", "1")),
+				normalStmt("e", flow(2, "1", prependField("f"), "1")).succ("ep"),
+				exitStmt("ep").returns(over("d"), to("e"), flow(2, "1", "1")).returns(over("b"), to("f"), flow(2, "1", "1")));
+		
+		helper.runSolver(false, "a");
+	}
+	
+	@Test
+	@Ignore("* recognition for calls")
+	public void loopReadAfterRecursiveCallWrite() {
+		helper.method("main",
+				startPoints("a"),
+				normalStmt("a", flow("0", overwriteField("f"), "1")).succ("b"),
+				callSite("b").calls("foo", flow("1", "1")).retSite("f", kill("1")),
+				normalStmt("f", flow("1", "1")).succ("g").succ("h"),
+				normalStmt("g", flow("1", readField("f"), "1")).succ("f"),
+				normalStmt("h", flow("1", readField("f"), "1")).succ("i"),
+				normalStmt("i", flow("1", readField("f"), "1")).succ("j"),
+				normalStmt("j", flow("1", readField("f"), "1")).succ("k"),
+				normalStmt("k", kill("1")).succ("l"));
 		
 		helper.method("foo",
 				startPoints("c"),

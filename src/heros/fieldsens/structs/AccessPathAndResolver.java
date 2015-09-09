@@ -46,10 +46,6 @@ public class AccessPathAndResolver<Field, Fact, Stmt, Method> {
 			return new AccessPathAndResolver<Field, Fact, Stmt, Method>(accPath, resolver, nesting);
 	}
 
-	public AccessPathAndResolver<Field, Fact, Stmt, Method> wrapWith(AccessPath<Field> accPath, Resolver<Field, Fact, Stmt, Method> resolver) {
-		return new AccessPathAndResolver<Field, Fact, Stmt, Method>(accPath, resolver, this);
-	}
-	
 	public void resolve(final Constraint<Field> constraint, final InterestCallback<Field, Fact, Stmt, Method> callback) {
 		if (isNullOrCallEdgeResolver(resolver)) {
 			resolveViaNesting(constraint, callback);
@@ -105,10 +101,18 @@ public class AccessPathAndResolver<Field, Fact, Stmt, Method> {
 		if (nesting == null)
 			return this;
 
-		if (this.nesting == null)
-			return new AccessPathAndResolver<Field, Fact, Stmt, Method>(accessPath, resolver, nesting);
-		else
-			return new AccessPathAndResolver<Field, Fact, Stmt, Method>(accessPath, resolver, this.nesting.appendToLast(nesting));
+		if (this.nesting == null) {
+			if(isNullOrCallEdgeResolver(resolver))
+				return nesting.withAccessPath(accessPath.append(nesting.accessPath));
+			else
+				return new AccessPathAndResolver<Field, Fact, Stmt, Method>(accessPath, resolver, nesting);
+		}
+		else {
+			if(isNullOrCallEdgeResolver(resolver))
+				return this.nesting.withAccessPath(accessPath.append(this.nesting.accessPath)).appendToLast(nesting);
+			else
+				return new AccessPathAndResolver<Field, Fact, Stmt, Method>(accessPath, resolver, this.nesting.appendToLast(nesting));
+		}
 	}
 
 	@Override

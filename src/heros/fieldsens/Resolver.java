@@ -49,14 +49,14 @@ public abstract class Resolver<Field, Fact, Stmt, Method> {
 
 	protected void lock() {
 		recursionLock = true;
-		if(parent != null)
-			parent.lock();
+//		if(parent != null)
+//			parent.lock();
 	}
 	
 	protected void unlock() {
 		recursionLock = false;
-		if(parent != null)
-			parent.unlock();
+//		if(parent != null)
+//			parent.unlock();
 	}
 
 	public abstract void resolve(Constraint<Field> constraint, InterestCallback<Field, Fact, Stmt, Method> callback);
