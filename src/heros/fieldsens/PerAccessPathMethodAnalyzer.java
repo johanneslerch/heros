@@ -45,12 +45,14 @@ public class PerAccessPathMethodAnalyzer<Field, Fact, Stmt, Method> {
 	private DefaultValueMap<FactAtStatement<Fact, Stmt>, ReturnSiteResolver<Field, Fact, Stmt, Method>> returnSiteResolvers = new DefaultValueMap<FactAtStatement<Fact, Stmt>, ReturnSiteResolver<Field,Fact,Stmt,Method>>() {
 		@Override
 		protected ReturnSiteResolver<Field, Fact, Stmt, Method> createItem(FactAtStatement<Fact, Stmt> key) {
+			assert context.icfg.getMethodOf(key.stmt).equals(method);
 			return new ReturnSiteResolver<Field, Fact, Stmt, Method>(context.factHandler, PerAccessPathMethodAnalyzer.this, key.stmt, debugger);
 		}
 	};
 	private DefaultValueMap<FactAtStatement<Fact, Stmt>, ControlFlowJoinResolver<Field, Fact, Stmt, Method>> ctrFlowJoinResolvers = new DefaultValueMap<FactAtStatement<Fact, Stmt>, ControlFlowJoinResolver<Field,Fact,Stmt,Method>>() {
 		@Override
 		protected ControlFlowJoinResolver<Field, Fact, Stmt, Method> createItem(FactAtStatement<Fact, Stmt> key) {
+			assert context.icfg.getMethodOf(key.stmt).equals(method);
 			return new ControlFlowJoinResolver<Field, Fact, Stmt, Method>(context.factHandler, PerAccessPathMethodAnalyzer.this, key.stmt, debugger);
 		}
 	};
@@ -318,7 +320,8 @@ public class PerAccessPathMethodAnalyzer<Field, Fact, Stmt, Method> {
 
 	public void scheduleUnbalancedReturnEdgeTo(WrappedFactAtStatement<Field, Fact, Stmt, Method> fact) {
 		ReturnSiteResolver<Field,Fact,Stmt,Method> resolver = returnSiteResolvers.getOrCreate(fact.getAsFactAtStatement());
-		resolver.addIncoming(new WrappedFact<Field, Fact, Stmt, Method>(fact.getFact(), fact.getAccessPathAndResolver()));
+		resolver.addIncoming(new WrappedFact<Field, Fact, Stmt, Method>(fact.getFact(), fact.getAccessPathAndResolver().appendToLast(
+				new AccessPathAndResolver<Field, Fact, Stmt, Method>(AccessPath.<Field>empty(), callEdgeResolver))));
 	}
 	
 	private void scheduleReturnEdge(CallEdge<Field, Fact, Stmt, Method> incEdge, WrappedFact<Field, Fact, Stmt, Method> fact, Stmt returnSite) {

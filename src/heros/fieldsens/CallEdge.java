@@ -77,6 +77,8 @@ public class CallEdge<Field, Fact, Stmt, Method> {
 			@Override
 			public void interest(PerAccessPathMethodAnalyzer<Field, Fact, Stmt, Method> analyzer,
 					AccessPathAndResolver<Field, Fact, Stmt, Method> accPathResolver) {
+				assert analyzer.getMethod().equals(callerAnalyzer.getMethod());
+				assert accPathResolver.getLast().resolver.getAnalyzer().getMethod().equals(callerAnalyzer.getMethod());
 				
 				if(accPathResolver.resolver instanceof ZeroCallEdgeResolver) {
 					PerAccessPathMethodAnalyzer<Field, Fact, Stmt, Method> zeroAnalyzer = interestedAnalyzer.createWithZeroCallEdgeResolver();
