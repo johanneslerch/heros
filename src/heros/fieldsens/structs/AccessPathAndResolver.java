@@ -101,14 +101,16 @@ public class AccessPathAndResolver<Field, Fact, Stmt, Method> {
 		if (nesting == null)
 			return this;
 
-		if (this.nesting == null) {
+		if(this.resolver instanceof ZeroCallEdgeResolver)
+			return new AccessPathAndResolver<Field, Fact, Stmt, Method>(accessPath, nesting.getLast().resolver.getAnalyzer().createWithZeroCallEdgeResolver().getCallEdgeResolver());
+		else if (this.nesting == null) {
 			if(isNullOrCallEdgeResolver(resolver))
 				return nesting.withAccessPath(accessPath.append(nesting.accessPath));
 			else
 				return new AccessPathAndResolver<Field, Fact, Stmt, Method>(accessPath, resolver, nesting);
 		}
 		else {
-			if(isNullOrCallEdgeResolver(resolver))
+			 if(isNullOrCallEdgeResolver(resolver))
 				return this.nesting.withAccessPath(accessPath.append(this.nesting.accessPath)).appendToLast(nesting);
 			else
 				return new AccessPathAndResolver<Field, Fact, Stmt, Method>(accessPath, resolver, this.nesting.appendToLast(nesting));
