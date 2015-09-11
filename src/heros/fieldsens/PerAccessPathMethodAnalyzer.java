@@ -42,11 +42,11 @@ public class PerAccessPathMethodAnalyzer<Field, Fact, Stmt, Method> {
 	private List<WrappedFactAtStatement<Field, Fact, Stmt, Method>> summaries = Lists.newLinkedList();
 	private Context<Field, Fact, Stmt, Method> context;
 	private Method method;
-	private DefaultValueMap<FactAtStatement<Fact, Stmt>, ReturnSiteResolver<Field, Fact, Stmt, Method>> returnSiteResolvers = new DefaultValueMap<FactAtStatement<Fact, Stmt>, ReturnSiteResolver<Field,Fact,Stmt,Method>>() {
+	private DefaultValueMap<FactAtStatement<Fact, Stmt>, ReturnSiteHandling<Field, Fact, Stmt, Method>> returnSiteResolvers = new DefaultValueMap<FactAtStatement<Fact, Stmt>, ReturnSiteHandling<Field,Fact,Stmt,Method>>() {
 		@Override
-		protected ReturnSiteResolver<Field, Fact, Stmt, Method> createItem(FactAtStatement<Fact, Stmt> key) {
+		protected ReturnSiteHandling<Field, Fact, Stmt, Method> createItem(FactAtStatement<Fact, Stmt> key) {
 			assert context.icfg.getMethodOf(key.stmt).equals(method);
-			return new ReturnSiteResolver<Field, Fact, Stmt, Method>(context.factHandler, PerAccessPathMethodAnalyzer.this, key.stmt, debugger);
+			return new ReturnSiteHandling<Field, Fact, Stmt, Method>(key.fact, PerAccessPathMethodAnalyzer.this, key.stmt, debugger);
 		}
 	};
 	private DefaultValueMap<FactAtStatement<Fact, Stmt>, ControlFlowJoinResolver<Field, Fact, Stmt, Method>> ctrFlowJoinResolvers = new DefaultValueMap<FactAtStatement<Fact, Stmt>, ControlFlowJoinResolver<Field,Fact,Stmt,Method>>() {
@@ -319,17 +319,16 @@ public class PerAccessPathMethodAnalyzer<Field, Fact, Stmt, Method> {
 	}
 
 	public void scheduleUnbalancedReturnEdgeTo(WrappedFactAtStatement<Field, Fact, Stmt, Method> fact) {
-		ReturnSiteResolver<Field,Fact,Stmt,Method> resolver = returnSiteResolvers.getOrCreate(fact.getAsFactAtStatement());
-		resolver.addIncoming(new WrappedFact<Field, Fact, Stmt, Method>(fact.getFact(), fact.getAccessPathAndResolver().appendToLast(
-				new AccessPathAndResolver<Field, Fact, Stmt, Method>(AccessPath.<Field>empty(), callEdgeResolver))));
+		ReturnSiteHandling<Field, Fact, Stmt, Method> resolver = returnSiteResolvers.getOrCreate(fact.getAsFactAtStatement());
+		resolver.addIncomingEdge(fact.getAccessPathAndResolver(),
+				new AccessPathAndResolver<Field, Fact, Stmt, Method>(AccessPath.<Field>empty(), callEdgeResolver));
 	}
 	
-	private void scheduleReturnEdge(CallEdge<Field, Fact, Stmt, Method> incEdge, WrappedFact<Field, Fact, Stmt, Method> fact, Stmt returnSite) {
-		AccessPath<Field> remainingAccPath = accessPath.getDeltaToAsAccessPath(incEdge.getCalleeSourceFact().getAccessPathAndResolver().accessPath);
-		AccessPathAndResolver<Field, Fact, Stmt, Method> accPathResolver = fact.getAccessPathAndResolver().appendToLast(
-				incEdge.getCalleeSourceFact().getAccessPathAndResolver().withAccessPath(remainingAccPath));
-		ReturnSiteResolver<Field, Fact, Stmt, Method> resolver = incEdge.getCallerAnalyzer().returnSiteResolvers.getOrCreate(new FactAtStatement<Fact, Stmt>(fact.getFact(), returnSite));
-		resolver.addIncoming(new WrappedFact<Field, Fact, Stmt, Method>(fact.getFact(), accPathResolver));
+	private void scheduleReturnEdge(CallEdge<Field, Fact, Stmt, Method> callEdge, WrappedFact<Field, Fact, Stmt, Method> fact, Stmt returnSite) {
+		AccessPath<Field> remainingAccPath = accessPath.getDeltaToAsAccessPath(callEdge.getCalleeSourceFact().getAccessPathAndResolver().accessPath);
+		ReturnSiteHandling<Field, Fact, Stmt, Method> resolver = callEdge.getCallerAnalyzer().returnSiteResolvers.getOrCreate(new FactAtStatement<Fact, Stmt>(fact.getFact(), returnSite));
+		resolver.addIncomingEdge(fact.getAccessPathAndResolver(), 
+				callEdge.getCalleeSourceFact().getAccessPathAndResolver().withAccessPath(remainingAccPath));
 	}
 
 	void applySummaries(CallEdge<Field, Fact, Stmt, Method> incEdge) {

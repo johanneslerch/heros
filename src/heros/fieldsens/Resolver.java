@@ -10,10 +10,8 @@
  ******************************************************************************/
 package heros.fieldsens;
 
-import heros.fieldsens.AccessPath.Delta;
 import heros.fieldsens.FlowFunction.Constraint;
 import heros.fieldsens.structs.AccessPathAndResolver;
-import heros.solver.Pair;
 
 import java.util.List;
 import java.util.Set;
@@ -39,6 +37,15 @@ public abstract class Resolver<Field, Fact, Stmt, Method> {
 		return analyzer;
 	}
 	
+	public boolean isParentOf(Resolver<Field, Fact, Stmt, Method> resolver) {
+		if(resolver == this)
+			return true;
+		else if(resolver.parent != null)
+			return isParentOf(resolver.parent);
+		else
+			return false;
+	}
+	
 	protected boolean isLocked() {
 		if(recursionLock)
 			return true;
@@ -49,14 +56,14 @@ public abstract class Resolver<Field, Fact, Stmt, Method> {
 
 	protected void lock() {
 		recursionLock = true;
-//		if(parent != null)
-//			parent.lock();
+		if(parent != null)
+			parent.lock();
 	}
 	
 	protected void unlock() {
 		recursionLock = false;
-//		if(parent != null)
-//			parent.unlock();
+		if(parent != null)
+			parent.unlock();
 	}
 
 	public abstract void resolve(Constraint<Field> constraint, InterestCallback<Field, Fact, Stmt, Method> callback);

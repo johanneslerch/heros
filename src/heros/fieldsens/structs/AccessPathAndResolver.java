@@ -18,6 +18,7 @@ import heros.fieldsens.CallEdgeResolver;
 import heros.fieldsens.InterestCallback;
 import heros.fieldsens.PerAccessPathMethodAnalyzer;
 import heros.fieldsens.Resolver;
+import heros.fieldsens.ReturnSiteHandling;
 import heros.fieldsens.ZeroCallEdgeResolver;
 
 public class AccessPathAndResolver<Field, Fact, Stmt, Method> {
@@ -55,7 +56,8 @@ public class AccessPathAndResolver<Field, Fact, Stmt, Method> {
 				@Override
 				public void interest(PerAccessPathMethodAnalyzer<Field, Fact, Stmt, Method> analyzer,
 						AccessPathAndResolver<Field, Fact, Stmt, Method> accPathResolver) {
-					callback.interest(analyzer, accPathResolver.appendToLast(nesting));
+					AccessPathAndResolver<Field, Fact, Stmt, Method> appended = accPathResolver.appendToLast(nesting);
+					callback.interest(appended.getLast().resolver.getAnalyzer(), appended);
 				}
 
 				@Override
@@ -106,6 +108,8 @@ public class AccessPathAndResolver<Field, Fact, Stmt, Method> {
 		else if (this.nesting == null) {
 			if(isNullOrCallEdgeResolver(resolver))
 				return nesting.withAccessPath(accessPath.append(nesting.accessPath));
+			else if(resolver instanceof ReturnSiteHandling.CallSiteResolver && resolver==nesting.resolver)
+				return appendToLast(nesting.nesting);
 			else
 				return new AccessPathAndResolver<Field, Fact, Stmt, Method>(accessPath, resolver, nesting);
 		}

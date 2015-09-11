@@ -1287,7 +1287,6 @@ public class FieldSensitiveIFDSSolverTest {
 	}
 	
 	@Test
-	@Ignore("* recognition for calls")
 	public void loopReadAfterRecursiveCallWrite() {
 		helper.method("main",
 				startPoints("a"),
@@ -1295,10 +1294,11 @@ public class FieldSensitiveIFDSSolverTest {
 				callSite("b").calls("foo", flow("1", "1")).retSite("f", kill("1")),
 				normalStmt("f", flow("1", "1")).succ("g").succ("h"),
 				normalStmt("g", flow("1", readField("f"), "1")).succ("f"),
+				
 				normalStmt("h", flow("1", readField("f"), "1")).succ("i"),
-				normalStmt("i", flow("1", readField("f"), "1")).succ("j"),
-				normalStmt("j", flow("1", readField("f"), "1")).succ("k"),
-				normalStmt("k", kill("1")).succ("l"));
+				normalStmt("i", flow(2, "1", readField("f"), "1")).succ("j"),
+				normalStmt("j", flow(2, "1", readField("f"), "1")).succ("k"),
+				normalStmt("k", kill(2, "1")).succ("l"));
 		
 		helper.method("foo",
 				startPoints("c"),
@@ -1507,6 +1507,61 @@ public class FieldSensitiveIFDSSolverTest {
 				normalStmt("g", flow(2, "1", readField("g"), "1")).succ("h"),
 				normalStmt("h", kill("1")).succ("i"));
 		
+		helper.runSolver(false, "a");
+	}
+	
+	@Test
+	public void recursiveWriteBeforeAndAfterCall() {
+		helper.method("main",
+				startPoints("a"),
+				normalStmt("a", flow("0", overwriteField("f"), "1")).succ("b"),
+				normalStmt("b", flow("1", overwriteField("g"), "1")).succ("c"),
+				callSite("c").calls("foo", flow("1", "1")).retSite("f", kill("1")),
+				normalStmt("f", flow("1", readField("g"), "1")).succ("g").succ("js"),
+				normalStmt("g", flow(2, "1", readField("f"), "1")).succ("h"),
+				normalStmt("h", flow(2, "1", readField("f"), "1")).succ("i"),
+				normalStmt("i", kill(2, "1")).succ("j"),
+				normalStmt("js", flow("1", "1")).succ("js_inner1").succ("js_inner2").succ("g"),
+				normalStmt("js_inner1", flow("1", readField("f"), "1")).succ("js"),
+				normalStmt("js_inner2", flow("1", readField("g"), "1")).succ("js"));
+		
+		helper.method("foo",
+				startPoints("d"),
+				normalStmt("d", flow("1", "1")).succ("ep").succ("e"),
+				normalStmt("e", flow("1", prependField("f"), "1")).succ("cs"),
+				callSite("cs").calls("foo", flow("1", "1")).retSite("rs", kill("1")),
+				normalStmt("rs", flow("1", prependField("g"), "1")).succ("ep"),
+				exitStmt("ep").returns(over("cs"), to("rs"), flow(2, "1", "1")).returns(over("c"), to("f"), flow(2, "1", "1")));
+				
+		helper.runSolver(false, "a");
+	}
+	
+	@Test
+	public void recursiveWriteBeforeAndAfterCallIncludingAbstractionPoints() {
+		helper.method("main",
+				startPoints("a"),
+				normalStmt("a", flow("0", overwriteField("f"), "1")).succ("b"),
+				normalStmt("b", flow("1", overwriteField("g"), "1")).succ("c"),
+				callSite("c").calls("foo", flow("1", "1")).retSite("f", kill("1")),
+				normalStmt("f", flow("1", readField("g"), "1")).succ("g1").succ("js"),
+				normalStmt("g1", flow("1", readField("g"), "1")).succ("g2"),
+				normalStmt("g2", flow("1", readField("f"), "1")).succ("h"),
+				normalStmt("h", flow(2, "1", readField("f"), "1")).succ("i"),
+				normalStmt("i", kill(2, "1")).succ("j"),
+				normalStmt("js", flow("1", "1")).succ("js_inner1").succ("js_inner2").succ("g"),
+				normalStmt("js_inner1", flow("1", readField("f"), "1")).succ("js"),
+				normalStmt("js_inner2", flow("1", readField("g"), "1")).succ("js"));
+		
+		helper.method("foo",
+				startPoints("d"),
+				normalStmt("d", flow("1", "1")).succ("ep").succ("e"),
+				normalStmt("e", flow("1", prependField("f"), "1")).succ("ap1"),
+				normalStmt("ap1", flow("1", "1")).succ("ap1").succ("cs"),				
+				callSite("cs").calls("foo", flow("1", "1")).retSite("rs", kill("1")),
+				normalStmt("rs", flow("1", prependField("g"), "1")).succ("ap2"),
+				normalStmt("ap2", flow("1", "1")).succ("ap2").succ("ep"),
+				exitStmt("ep").returns(over("cs"), to("rs"), flow(2, "1", "1")).returns(over("c"), to("f"), flow(2, "1", "1")));
+				
 		helper.runSolver(false, "a");
 	}
 }
