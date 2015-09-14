@@ -90,7 +90,11 @@ public class PerAccessPathMethodAnalyzer<Field, Fact, Stmt, Method> {
 	}
 	
 	public PerAccessPathMethodAnalyzer<Field, Fact, Stmt, Method> createWithRepeatingResolver(Delta<Field> delta) {
-		return parent.repeatingAnalyzers.getOrCreate(delta);
+		return repeatingAnalyzers.getOrCreate(delta);
+	}
+	
+	PerAccessPathMethodAnalyzer<Field, Fact, Stmt, Method> getParent() {
+		return parent;
 	}
 	
 	public PerAccessPathMethodAnalyzer<Field, Fact, Stmt, Method> createWithZeroCallEdgeResolver() {

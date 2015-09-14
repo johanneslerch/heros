@@ -1383,11 +1383,11 @@ public class FieldSensitiveIFDSSolverTest {
 	}
 	
 	@Test
-	@Ignore("evaluate constraints on call edges if applying recursive return edges")
 	public void resolveViaReturnAndConsiderCallEdgeConstraints() {
 		helper.method("main",
 				startPoints("a"),
-				normalStmt("a", flow("0", overwriteField("f"), "1")).succ("b1"),
+				normalStmt("a", flow("0", overwriteField("f"), "1")).succ("b0"),
+				normalStmt("b0", flow("1", overwriteField("g"), "1")).succ("b1"),
 				normalStmt("b1", flow("1", prependField("f"), "2")).succ("b2"),
 				normalStmt("b2", flow("2", prependField("f"), "2")).succ("c"),
 				callSite("c").calls("foo", flow("2", "3")).retSite("h", kill("2")),
@@ -1401,7 +1401,33 @@ public class FieldSensitiveIFDSSolverTest {
 				normalStmt("e", flow("3", "3")).succ("ep").succ("f"),
 				callSite("f").calls("foo", flow("3", "3")).retSite("g", kill("3")),
 				normalStmt("g", flow("3", prependField("g"), "3")).succ("ep"),
-				exitStmt("ep").returns(over("c"), to("h"), flow("3", "4")).returns(over("f"), to("g"), flow("3", "3")));
+				exitStmt("ep").returns(over("c"), to("h"), flow(2, "3", "4")).returns(over("f"), to("g"), flow("3", "3")));
+		
+		helper.runSolver(false, "a");
+	}
+	
+	@Test
+	public void resolveViaReturnAndConsiderCallEdgeConstraints2() {
+		helper.method("main",
+				startPoints("a"),
+				normalStmt("a", flow("0", overwriteField("f"), "1")).succ("b0"),
+				normalStmt("b0", flow("1", overwriteField("g"), "1")).succ("b1"),
+				normalStmt("b1", flow("1", prependField("f"), "1")).succ("b2"),
+				normalStmt("b2", flow("1", prependField("f"), "2")).succ("b3"),
+				normalStmt("b3", flow("2", prependField("f"), "2")).succ("c"),
+				callSite("c").calls("foo", flow("2", "3")).retSite("h", kill("2")),
+				normalStmt("h", flow("4", readField("g"), "5")).succ("i"),
+				normalStmt("i", flow(2, "5", readField("g"), "5")).succ("j"),
+				normalStmt("j", flow("5", readField("g"), "5")).succ("k"),
+				normalStmt("k").succ("l"));
+		
+		helper.method("foo",
+				startPoints("d"),
+				normalStmt("d", flow("3", readField("f"), "3")).succ("e"),
+				normalStmt("e", flow("3", "3")).succ("ep").succ("f"),
+				callSite("f").calls("foo", flow("3", "3")).retSite("g", kill("3")),
+				normalStmt("g", flow(2, "3", prependField("g"), "3")).succ("ep"),
+				exitStmt("ep").returns(over("c"), to("h"), flow(3, "3", "4")).returns(over("f"), to("g"), flow(2, "3", "3")));
 		
 		helper.runSolver(false, "a");
 	}
@@ -1564,4 +1590,27 @@ public class FieldSensitiveIFDSSolverTest {
 				
 		helper.runSolver(false, "a");
 	}
+	
+	@Test
+	public void recursiveCallReadAndWrite() {
+		helper.method("main",
+				startPoints("a"),
+				normalStmt("a", flow("0", "1")).succ("b"),
+				normalStmt("b", flow("1", overwriteField("f"), "1")).succ("c"),
+				callSite("c").calls("foo", flow("1", "1")).retSite("g", kill("1")),
+				normalStmt("g", kill("1")).succ("h"));
+		
+		helper.method("foo",
+				startPoints("d"),
+				normalStmt("d", flow("1", "1")).succ("e").succ("f"),
+				normalStmt("e", flow("1", readField("f"), "1")).succ("f2"),
+				normalStmt("f", flow("1", prependField("f"), "1")).succ("f2"),
+				normalStmt("f2", flow(2, "1", "1")).succ("cs").succ("ep"),
+				callSite("cs").calls("foo", flow(2, "1", "1")).retSite("rs", kill(2, "1")),
+				normalStmt("rs", flow(2, "1", "1")).succ("ep"),
+				exitStmt("ep").returns(over("cs"), to("rs"), flow(4, "1", "1")).returns(over("c"), to("g"), flow(2, "1", "1")));
+		
+		helper.runSolver(false, "a");
+	}
+	
 }

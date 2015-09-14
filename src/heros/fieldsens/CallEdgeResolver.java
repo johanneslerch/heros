@@ -10,24 +10,14 @@
  ******************************************************************************/
 package heros.fieldsens;
 
-import java.util.Map;
-
 import heros.fieldsens.AccessPath.Delta;
+import heros.fieldsens.structs.AccessPathAndResolver;
 import heros.fieldsens.structs.WrappedFactAtStatement;
-import heros.utilities.DefaultValueMap;
 
 import com.google.common.collect.Lists;
 
 
 public class CallEdgeResolver<Field, Fact, Stmt, Method> extends ResolverTemplate<Field, Fact, Stmt, Method, CallEdge<Field, Fact, Stmt, Method>>  {
-
-	private CallEdgeResolver<Field, Fact, Stmt, Method> parent;
-	private DefaultValueMap<Delta<Field>, CallEdgeResolver<Field, Fact, Stmt, Method>> repeatingResolvers = new DefaultValueMap<Delta<Field>, CallEdgeResolver<Field, Fact, Stmt, Method>>() {
-		@Override
-		protected CallEdgeResolver<Field, Fact, Stmt, Method> createItem(Delta<Field> key) {
-			return analyzer.createWithRepeatingResolver(key).getCallEdgeResolver();
-		}
-	};
 
 	public CallEdgeResolver(PerAccessPathMethodAnalyzer<Field, Fact, Stmt, Method> analyzer, Debugger<Field, Fact, Stmt, Method> debugger) {
 		this(analyzer, debugger, null);
@@ -35,12 +25,25 @@ public class CallEdgeResolver<Field, Fact, Stmt, Method> extends ResolverTemplat
 	
 	public CallEdgeResolver(PerAccessPathMethodAnalyzer<Field, Fact, Stmt, Method> analyzer, Debugger<Field, Fact, Stmt, Method> debugger, CallEdgeResolver<Field, Fact, Stmt, Method> parent) {
 		super(analyzer, analyzer.getAccessPath(), parent, debugger);
-		this.parent = parent;
 	}
 
 	@Override
 	protected AccessPath<Field> getAccessPathOf(CallEdge<Field, Fact, Stmt, Method> inc) {
 		return inc.getCalleeSourceFact().getAccessPathAndResolver().accessPath;
+	}
+	
+	@SuppressWarnings({ "rawtypes", "unchecked" })
+	@Override
+	protected void interestByIncoming(CallEdge<Field, Fact, Stmt, Method> inc) {
+		AccessPathAndResolver<Field, Fact, Stmt, Method> incAccPathRes = inc.getCalleeSourceFact().getAccessPathAndResolver();
+		if(!resolvedAccessPath.isEmpty() && incAccPathRes.resolver.isParentOf(this)) {
+			Delta repeatDelta = ((CallEdgeResolver)incAccPathRes.resolver).resolvedAccessPath.getDeltaTo(resolvedAccessPath);
+			PerAccessPathMethodAnalyzer<Field,Fact,Stmt,Method> repeatingAnalyzer = incAccPathRes.resolver.analyzer.createWithRepeatingResolver(repeatDelta);
+			AccessPath<Field> accPath = resolvedAccessPath.getDeltaToAsAccessPath(incAccPathRes.accessPath);
+			interest(new AccessPathAndResolver<Field, Fact, Stmt, Method>(accPath, repeatingAnalyzer.getCallEdgeResolver()));
+		}
+		else
+			super.interestByIncoming(inc);
 	}
 	
 	@Override

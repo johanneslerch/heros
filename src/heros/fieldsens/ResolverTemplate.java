@@ -64,12 +64,7 @@ public abstract class ResolverTemplate<Field, Fact, Stmt, Method, Incoming>  ext
 			processIncomingGuaranteedPrefix(inc);
 		}
 		else if(getAccessPathOf(inc).isPrefixOf(resolvedAccessPath).atLeast(PrefixTestResult.POTENTIAL_PREFIX)) {
-//			assert !isLocked();
-			if(isLocked())
-				return;
-			lock();
 			processIncomingPotentialPrefix(inc);
-			unlock();
 		}
 	}
 
@@ -96,6 +91,8 @@ public abstract class ResolverTemplate<Field, Fact, Stmt, Method, Incoming>  ext
 			if(constraint.canBeAppliedTo(resolvedAccessPath) && !isLocked()) {
 				AccessPath<Field> newAccPath = constraint.applyToAccessPath(resolvedAccessPath);
 				ResolverTemplate<Field,Fact,Stmt,Method,Incoming> nestedResolver = getOrCreateNestedResolver(newAccPath);
+				if(nestedResolver == this)
+					return;
 				assert nestedResolver.resolvedAccessPath.equals(constraint.applyToAccessPath(resolvedAccessPath));
 				nestedResolver.registerCallback(callback);
 			}
