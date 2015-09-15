@@ -19,12 +19,15 @@ import com.google.common.collect.Lists;
 
 public class CallEdgeResolver<Field, Fact, Stmt, Method> extends ResolverTemplate<Field, Fact, Stmt, Method, CallEdge<Field, Fact, Stmt, Method>>  {
 
+	protected final PerAccessPathMethodAnalyzer<Field, Fact, Stmt, Method> analyzer;
+
 	public CallEdgeResolver(PerAccessPathMethodAnalyzer<Field, Fact, Stmt, Method> analyzer, Debugger<Field, Fact, Stmt, Method> debugger) {
 		this(analyzer, debugger, null);
 	}
 	
 	public CallEdgeResolver(PerAccessPathMethodAnalyzer<Field, Fact, Stmt, Method> analyzer, Debugger<Field, Fact, Stmt, Method> debugger, CallEdgeResolver<Field, Fact, Stmt, Method> parent) {
-		super(analyzer, analyzer.getAccessPath(), parent, debugger);
+		super(analyzer.getAccessPath(), parent, debugger);
+		this.analyzer = analyzer;
 	}
 
 	@Override
@@ -32,19 +35,28 @@ public class CallEdgeResolver<Field, Fact, Stmt, Method> extends ResolverTemplat
 		return inc.getCalleeSourceFact().getAccessPathAndResolver().accessPath;
 	}
 	
-	@SuppressWarnings({ "rawtypes", "unchecked" })
-	@Override
-	protected void interestByIncoming(CallEdge<Field, Fact, Stmt, Method> inc) {
-		AccessPathAndResolver<Field, Fact, Stmt, Method> incAccPathRes = inc.getCalleeSourceFact().getAccessPathAndResolver();
-		if(!resolvedAccessPath.isEmpty() && incAccPathRes.resolver.isParentOf(this)) {
-			Delta repeatDelta = ((CallEdgeResolver)incAccPathRes.resolver).resolvedAccessPath.getDeltaTo(resolvedAccessPath);
-			PerAccessPathMethodAnalyzer<Field,Fact,Stmt,Method> repeatingAnalyzer = incAccPathRes.resolver.analyzer.createWithRepeatingResolver(repeatDelta);
-			AccessPath<Field> accPath = resolvedAccessPath.getDeltaToAsAccessPath(incAccPathRes.accessPath);
-			interest(new AccessPathAndResolver<Field, Fact, Stmt, Method>(accPath, repeatingAnalyzer.getCallEdgeResolver()));
-		}
-		else
-			super.interestByIncoming(inc);
+	public PerAccessPathMethodAnalyzer<Field, Fact, Stmt, Method> getAnalyzer() {
+		return analyzer;
 	}
+	
+	@Override
+	protected PerAccessPathMethodAnalyzer<Field, Fact, Stmt, Method> getAnalyzer(CallEdge<Field, Fact, Stmt, Method> inc) {
+		return analyzer;
+	}
+	
+//	@SuppressWarnings({ "rawtypes", "unchecked" })
+//	@Override
+//	protected void interestByIncoming(CallEdge<Field, Fact, Stmt, Method> inc) {
+//		AccessPathAndResolver<Field, Fact, Stmt, Method> incAccPathRes = inc.getCalleeSourceFact().getAccessPathAndResolver();
+//		if(!resolvedAccessPath.isEmpty() && incAccPathRes.resolver != this && incAccPathRes.resolver.isParentOf(this)) {
+//			Delta repeatDelta = ((CallEdgeResolver)incAccPathRes.resolver).resolvedAccessPath.getDeltaTo(resolvedAccessPath);
+//			PerAccessPathMethodAnalyzer<Field,Fact,Stmt,Method> repeatingAnalyzer = incAccPathRes.resolver.analyzer.createWithRepeatingResolver(repeatDelta);
+//			AccessPath<Field> accPath = resolvedAccessPath.getDeltaToAsAccessPath(incAccPathRes.accessPath);
+//			interest(new AccessPathAndResolver<Field, Fact, Stmt, Method>(accPath, repeatingAnalyzer.getCallEdgeResolver()));
+//		}
+//		else
+//			super.interestByIncoming(inc);
+//	}
 	
 	@Override
 	protected void processIncomingGuaranteedPrefix(CallEdge<Field, Fact, Stmt, Method> inc) {
@@ -62,7 +74,7 @@ public class CallEdgeResolver<Field, Fact, Stmt, Method> extends ResolverTemplat
 	}
 	
 	public void applySummaries(WrappedFactAtStatement<Field, Fact, Stmt, Method> factAtStmt) {
-		for(CallEdge<Field, Fact, Stmt, Method> incEdge : Lists.newLinkedList(incomingEdges)) {
+		for(CallEdge<Field, Fact, Stmt, Method> incEdge : Lists.newLinkedList(incomingEdges.values())) {
 			analyzer.applySummary(incEdge, factAtStmt);
 		}
 	}

@@ -40,6 +40,16 @@ public class AccessPath<T> {
 		this.accesses = accesses;
 		this.exclusions = exclusions;
 	}
+	
+	public boolean hasSuffix(Delta<T> suffix) {
+		if(accesses.length < suffix.accesses.length)
+			return false;
+		for(int i=0; i<suffix.accesses.length; i++) {
+			if(!accesses[accesses.length-suffix.accesses.length+i].equals(suffix.accesses[i]))
+				return false;
+		}
+		return true;
+	}
 
 	public boolean isAccessInExclusions(T fieldReference) {
 		return exclusions.contains(fieldReference);

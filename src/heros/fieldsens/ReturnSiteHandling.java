@@ -10,7 +10,11 @@
  ******************************************************************************/
 package heros.fieldsens;
 
+import java.util.Set;
+import java.util.Map.Entry;
+
 import com.google.common.collect.Lists;
+import com.google.common.collect.Sets;
 
 import heros.fieldsens.AccessPath.Delta;
 import heros.fieldsens.structs.AccessPathAndResolver;
@@ -20,56 +24,70 @@ import heros.fieldsens.structs.WrappedFactAtStatement;
 
 public class ReturnSiteHandling<Field, Fact, Stmt, Method> {
 
-	private PerAccessPathMethodAnalyzer<Field, Fact, Stmt, Method> analyzer;
 	private Stmt returnSite;
 	private ReturnSiteHandling<Field, Fact, Stmt, Method>.CallSiteResolver callSiteResolver;
 	private ReturnSiteHandling<Field, Fact, Stmt, Method>.ReturnSiteResolver returnSiteResolver;
 	private boolean isRecursionPossible = false;
+	private Set<PerAccessPathMethodAnalyzer<Field, Fact, Stmt, Method>> propagated = Sets.newHashSet();
+	private ContextLogger<Method> logger;
+	private Fact fact;
 
-	public ReturnSiteHandling(Fact fact, PerAccessPathMethodAnalyzer<Field, Fact, Stmt, Method> analyzer, Stmt returnSite, Debugger<Field, Fact, Stmt, Method> debugger) {
-		this.analyzer = analyzer;
+	public ReturnSiteHandling(Fact fact, Stmt returnSite, Debugger<Field, Fact, Stmt, Method> debugger, ContextLogger<Method> logger) {
+		this.fact = fact;
+		this.logger = logger;
 		this.returnSite = returnSite;
 		
-		this.callSiteResolver = new CallSiteResolver(analyzer, AccessPath.<Field>empty(), null, debugger);
-		this.returnSiteResolver = new ReturnSiteResolver(analyzer, AccessPath.<Field>empty(), null, debugger);
-		
-		AccessPathAndResolver<Field, Fact, Stmt, Method> composition = new AccessPathAndResolver<Field, Fact, Stmt, Method>(AccessPath.<Field>empty(), returnSiteResolver).appendToLast(
-				new AccessPathAndResolver<Field, Fact, Stmt, Method>(AccessPath.<Field>empty(), callSiteResolver));
-		
-		analyzer.scheduleEdgeTo(new WrappedFactAtStatement<Field, Fact, Stmt, Method>(returnSite, 
-				new WrappedFact<Field, Fact, Stmt, Method>(fact, composition)));
+		this.callSiteResolver = new CallSiteResolver(AccessPath.<Field>empty(), null, debugger);
+		this.returnSiteResolver = new ReturnSiteResolver(AccessPath.<Field>empty(), null, debugger);
 	}
 
 	private void setRecursionIsPossible() {
 		if(!isRecursionPossible) {
 			isRecursionPossible = true;
-			for(AccessPathAndResolver<Field, Fact, Stmt, Method> inc : Lists.newLinkedList(callSiteResolver.incomingEdges)) {
-				callSiteResolver.addIncoming(inc.appendToLast(new AccessPathAndResolver<Field, Fact, Stmt, Method>(AccessPath.<Field>empty(), callSiteResolver)));
+			for(Entry<Resolver<Field, Fact, Stmt, Method>, AccessPathAndResolver<Field, Fact, Stmt, Method>> inc : Lists.newLinkedList(callSiteResolver.incomingEdges.entries())) {
+				callSiteResolver.addIncoming(inc.getValue().appendToLast(new AccessPathAndResolver<Field, Fact, Stmt, Method>(
+						inc.getValue().getAnalyzer(), AccessPath.<Field>empty(), callSiteResolver)),
+						inc.getKey());
 			}
 		}
 	}
 	
-	public void addIncomingEdge(AccessPathAndResolver<Field, Fact, Stmt, Method> returnEdge, AccessPathAndResolver<Field, Fact, Stmt, Method> callEdge) {
+	public void addIncomingEdge(AccessPathAndResolver<Field, Fact, Stmt, Method> returnEdge, AccessPathAndResolver<Field, Fact, Stmt, Method> callEdge,
+			Resolver<Field, Fact, Stmt, Method> transitiveCallResolver) {
+		if(propagated.add(callEdge.getAnalyzer())) {
+			AccessPathAndResolver<Field, Fact, Stmt, Method> composition = new AccessPathAndResolver<Field, Fact, Stmt, Method>(callEdge.getAnalyzer(), AccessPath.<Field>empty(), returnSiteResolver).appendToLast(
+					new AccessPathAndResolver<Field, Fact, Stmt, Method>(callEdge.getAnalyzer(), AccessPath.<Field>empty(), callSiteResolver));
+			
+			callEdge.getAnalyzer().scheduleEdgeTo(new WrappedFactAtStatement<Field, Fact, Stmt, Method>(returnSite, 
+					new WrappedFact<Field, Fact, Stmt, Method>(fact, composition)));
+		}
+		
 		if(returnEdge.getLast().resolver.equals(callSiteResolver))
 			setRecursionIsPossible();
 		
-		returnSiteResolver.addIncoming(returnEdge);
-		callSiteResolver.addIncoming(callEdge);
+		returnSiteResolver.addIncoming(returnEdge, null);
+		callSiteResolver.addIncoming(callEdge, transitiveCallResolver);
 		if(isRecursionPossible)
-			callSiteResolver.addIncoming(callEdge.appendToLast(new AccessPathAndResolver<Field, Fact, Stmt, Method>(AccessPath.<Field>empty(), callSiteResolver)));
+			callSiteResolver.addIncoming(callEdge.appendToLast(
+					new AccessPathAndResolver<Field, Fact, Stmt, Method>(callEdge.getAnalyzer(), AccessPath.<Field>empty(), callSiteResolver)), transitiveCallResolver);
 	}
 	
 	public class CallSiteResolver extends ResolverTemplate<Field, Fact, Stmt, Method, AccessPathAndResolver<Field, Fact, Stmt, Method>> {
 
-		public CallSiteResolver(PerAccessPathMethodAnalyzer<Field, Fact, Stmt, Method> analyzer, AccessPath<Field> resolvedAccessPath,
+		public CallSiteResolver(AccessPath<Field> resolvedAccessPath,
 				ResolverTemplate<Field, Fact, Stmt, Method, AccessPathAndResolver<Field, Fact, Stmt, Method>> parent,
 				Debugger<Field, Fact, Stmt, Method> debugger) {
-			super(analyzer, resolvedAccessPath, parent, debugger);
+			super(resolvedAccessPath, parent, debugger);
 		}
 
 		@Override
 		protected AccessPath<Field> getAccessPathOf(AccessPathAndResolver<Field, Fact, Stmt, Method> inc) {
 			return inc.accessPath;
+		}
+		
+		@Override
+		protected PerAccessPathMethodAnalyzer<Field, Fact, Stmt, Method> getAnalyzer(AccessPathAndResolver<Field, Fact, Stmt, Method> inc) {
+			return inc.getAnalyzer();
 		}
 
 		@Override
@@ -78,8 +96,8 @@ public class ReturnSiteHandling<Field, Fact, Stmt, Method> {
 			inc.resolve(new DeltaConstraint<Field>(delta), new InterestCallback<Field, Fact, Stmt, Method>() {
 				@Override
 				public void interest(PerAccessPathMethodAnalyzer<Field, Fact, Stmt, Method> analyzer,
-						AccessPathAndResolver<Field, Fact, Stmt, Method> accPathResolver) {
-					CallSiteResolver.this.interest(accPathResolver);
+						AccessPathAndResolver<Field, Fact, Stmt, Method> accPathResolver, Resolver<Field, Fact, Stmt, Method> transitiveResolver) {
+					CallSiteResolver.this.interest(accPathResolver, transitiveResolver);
 				}
 
 				@Override
@@ -90,12 +108,12 @@ public class ReturnSiteHandling<Field, Fact, Stmt, Method> {
 		}
 		
 		@Override
-		protected void interestByIncoming(AccessPathAndResolver<Field, Fact, Stmt, Method> inc) {
+		protected void interestByIncoming(AccessPathAndResolver<Field, Fact, Stmt, Method> inc, Resolver<Field, Fact, Stmt, Method> transitiveResolver) {
 			if(resolvedAccessPath.isEmpty())
-				interest(new AccessPathAndResolver<Field, Fact, Stmt, Method>(AccessPath.<Field>empty(), this));
+				interest(new AccessPathAndResolver<Field, Fact, Stmt, Method>(inc.getAnalyzer(), AccessPath.<Field>empty(), this), null);
 			else {
 				AccessPath<Field> delta = resolvedAccessPath.getDeltaToAsAccessPath(inc.accessPath);
-				interest(inc.withAccessPath(delta));
+				interest(inc.withAccessPath(delta), transitiveResolver);
 			}
 		}
 
@@ -106,31 +124,36 @@ public class ReturnSiteHandling<Field, Fact, Stmt, Method> {
 		@Override
 		protected ResolverTemplate<Field, Fact, Stmt, Method, AccessPathAndResolver<Field, Fact, Stmt, Method>> createNestedResolver(
 				AccessPath<Field> newAccPath) {
-			return new CallSiteResolver(analyzer, newAccPath, this, debugger);
+			return new CallSiteResolver(newAccPath, this, debugger);
 		}
 
 		@Override
 		protected void log(String message) {
-			analyzer.log("Return Site "+toString()+": "+message);			
+			logger.log("Return Site "+toString()+": "+message);			
 		}
 		
 		@Override
 		public String toString() {
-			return "<"+resolvedAccessPath+":call("+returnSite+" in "+analyzer.getMethod()+")>";
+			return "<"+resolvedAccessPath+":call("+returnSite+" in "+logger.getMethod()+")>";
 		}
 	}
 	
 	private class ReturnSiteResolver extends ResolverTemplate<Field, Fact, Stmt, Method, AccessPathAndResolver<Field, Fact, Stmt, Method>> {
 
-		public ReturnSiteResolver(PerAccessPathMethodAnalyzer<Field, Fact, Stmt, Method> analyzer, AccessPath<Field> resolvedAccessPath,
+		public ReturnSiteResolver(AccessPath<Field> resolvedAccessPath,
 				ResolverTemplate<Field, Fact, Stmt, Method, AccessPathAndResolver<Field, Fact, Stmt, Method>> parent,
 				Debugger<Field, Fact, Stmt, Method> debugger) {
-			super(analyzer, resolvedAccessPath, parent, debugger);
+			super( resolvedAccessPath, parent, debugger);
 		}
 
 		@Override
 		protected AccessPath<Field> getAccessPathOf(AccessPathAndResolver<Field, Fact, Stmt, Method> inc) {
 			return inc.accessPath;
+		}
+		
+		@Override
+		protected PerAccessPathMethodAnalyzer<Field, Fact, Stmt, Method> getAnalyzer(AccessPathAndResolver<Field, Fact, Stmt, Method> inc) {
+			return inc.getAnalyzer();
 		}
 
 		@Override
@@ -139,10 +162,10 @@ public class ReturnSiteHandling<Field, Fact, Stmt, Method> {
 			inc.resolve(new DeltaConstraint<Field>(delta), new InterestCallback<Field, Fact, Stmt, Method>() {
 				@Override
 				public void interest(PerAccessPathMethodAnalyzer<Field, Fact, Stmt, Method> analyzer,
-						AccessPathAndResolver<Field, Fact, Stmt, Method> accPathResolver) {
+						AccessPathAndResolver<Field, Fact, Stmt, Method> accPathResolver, Resolver<Field, Fact, Stmt, Method> transitiveResolver) {
 					if(accPathResolver.resolver.isParentOf(ReturnSiteResolver.this))
 						setRecursionIsPossible();
-					ReturnSiteResolver.this.interest(accPathResolver);
+					ReturnSiteResolver.this.interest(accPathResolver, transitiveResolver);
 				}
 
 				@Override
@@ -153,12 +176,12 @@ public class ReturnSiteHandling<Field, Fact, Stmt, Method> {
 		}
 		
 		@Override
-		protected void interestByIncoming(AccessPathAndResolver<Field, Fact, Stmt, Method> inc) {
+		protected void interestByIncoming(AccessPathAndResolver<Field, Fact, Stmt, Method> inc, Resolver<Field, Fact, Stmt, Method> transitiveResolver) {
 			if(resolvedAccessPath.isEmpty())
-				interest(new AccessPathAndResolver<Field, Fact, Stmt, Method>(AccessPath.<Field>empty(), this));
+				interest(new AccessPathAndResolver<Field, Fact, Stmt, Method>(inc.getAnalyzer(), AccessPath.<Field>empty(), this), null);
 			else {
 				AccessPath<Field> delta = resolvedAccessPath.getDeltaToAsAccessPath(inc.accessPath);
-				interest(inc.withAccessPath(delta));
+				interest(inc.withAccessPath(delta), transitiveResolver);
 			}
 		}
 
@@ -169,17 +192,17 @@ public class ReturnSiteHandling<Field, Fact, Stmt, Method> {
 		@Override
 		protected ResolverTemplate<Field, Fact, Stmt, Method, AccessPathAndResolver<Field, Fact, Stmt, Method>> createNestedResolver(
 				AccessPath<Field> newAccPath) {
-			return new ReturnSiteResolver(analyzer, newAccPath, this, debugger);
+			return new ReturnSiteResolver(newAccPath, this, debugger);
 		}
 
 		@Override
 		protected void log(String message) {
-			analyzer.log("Return Site "+toString()+": "+message);			
+			logger.log("Return Site "+toString()+": "+message);			
 		}
 		
 		@Override
 		public String toString() {
-			return "<"+resolvedAccessPath+":return("+returnSite+" in "+analyzer.getMethod()+")>";
+			return "<"+resolvedAccessPath+":return("+returnSite+" in "+logger.getMethod()+")>";
 		}
 	}
 }

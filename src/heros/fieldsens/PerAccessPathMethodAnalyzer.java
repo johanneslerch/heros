@@ -46,27 +46,27 @@ public class PerAccessPathMethodAnalyzer<Field, Fact, Stmt, Method> {
 		@Override
 		protected ReturnSiteHandling<Field, Fact, Stmt, Method> createItem(FactAtStatement<Fact, Stmt> key) {
 			assert context.icfg.getMethodOf(key.stmt).equals(method);
-			return new ReturnSiteHandling<Field, Fact, Stmt, Method>(key.fact, PerAccessPathMethodAnalyzer.this, key.stmt, debugger);
+			return new ReturnSiteHandling<Field, Fact, Stmt, Method>(key.fact, key.stmt, debugger, getLogger());
 		}
 	};
 	private DefaultValueMap<FactAtStatement<Fact, Stmt>, ControlFlowJoinResolver<Field, Fact, Stmt, Method>> ctrFlowJoinResolvers = new DefaultValueMap<FactAtStatement<Fact, Stmt>, ControlFlowJoinResolver<Field,Fact,Stmt,Method>>() {
 		@Override
 		protected ControlFlowJoinResolver<Field, Fact, Stmt, Method> createItem(FactAtStatement<Fact, Stmt> key) {
 			assert context.icfg.getMethodOf(key.stmt).equals(method);
-			return new ControlFlowJoinResolver<Field, Fact, Stmt, Method>(context.factHandler, PerAccessPathMethodAnalyzer.this, key.stmt, debugger);
+			return new ControlFlowJoinResolver<Field, Fact, Stmt, Method>(context.factHandler, key.stmt, debugger, getLogger());
 		}
 	};
 	private CallEdgeResolver<Field, Fact, Stmt, Method> callEdgeResolver;
 	private PerAccessPathMethodAnalyzer<Field, Fact, Stmt, Method> parent;
 	private Debugger<Field, Fact, Stmt, Method> debugger;
-	private DefaultValueMap<Delta<Field>, PerAccessPathMethodAnalyzer<Field, Fact, Stmt, Method>> repeatingAnalyzers = new DefaultValueMap<Delta<Field>, PerAccessPathMethodAnalyzer<Field, Fact, Stmt, Method>>() {
-		@Override
-		protected PerAccessPathMethodAnalyzer<Field, Fact, Stmt, Method> createItem(Delta<Field> key) {
-			PerAccessPathMethodAnalyzer<Field, Fact, Stmt, Method> result = new PerAccessPathMethodAnalyzer<Field, Fact, Stmt, Method>(method, sourceFact, context, debugger, accessPath, key, PerAccessPathMethodAnalyzer.this);
-			result.callEdgeResolver = new RepeatedFieldCallEdgeResolver<Field, Fact, Stmt, Method>(result, debugger, callEdgeResolver, key);
-			return result;
-		}
-	};
+//	private DefaultValueMap<Delta<Field>, PerAccessPathMethodAnalyzer<Field, Fact, Stmt, Method>> repeatingAnalyzers = new DefaultValueMap<Delta<Field>, PerAccessPathMethodAnalyzer<Field, Fact, Stmt, Method>>() {
+//		@Override
+//		protected PerAccessPathMethodAnalyzer<Field, Fact, Stmt, Method> createItem(Delta<Field> key) {
+//			PerAccessPathMethodAnalyzer<Field, Fact, Stmt, Method> result = new PerAccessPathMethodAnalyzer<Field, Fact, Stmt, Method>(method, sourceFact, context, debugger, accessPath, key, PerAccessPathMethodAnalyzer.this);
+//			result.callEdgeResolver = new RepeatedFieldCallEdgeResolver<Field, Fact, Stmt, Method>(result, debugger, callEdgeResolver, key);
+//			return result;
+//		}
+//	};
 	private Delta<Field> repeatedDelta;
 
 	public PerAccessPathMethodAnalyzer(Method method, Fact sourceFact, Context<Field, Fact, Stmt, Method> context, Debugger<Field, Fact, Stmt, Method> debugger) {
@@ -87,11 +87,19 @@ public class PerAccessPathMethodAnalyzer<Field, Fact, Stmt, Method> {
 		this.sourceFact = sourceFact;
 		this.accessPath = accPath;
 		this.context = context;
+		if(parent != null) {
+			this.ctrFlowJoinResolvers = parent.ctrFlowJoinResolvers;
+			this.returnSiteResolvers = parent.returnSiteResolvers;
+		}
 	}
 	
-	public PerAccessPathMethodAnalyzer<Field, Fact, Stmt, Method> createWithRepeatingResolver(Delta<Field> delta) {
-		return repeatingAnalyzers.getOrCreate(delta);
-	}
+//	public PerAccessPathMethodAnalyzer<Field, Fact, Stmt, Method> createWithRepeatingResolver(Delta<Field> delta) {
+//		assert delta.accesses.length > 0;
+//		if(accessPath.hasSuffix(delta))
+//			return parent.createWithRepeatingResolver(delta);
+//		else
+//			return repeatingAnalyzers.getOrCreate(delta);
+//	}
 	
 	PerAccessPathMethodAnalyzer<Field, Fact, Stmt, Method> getParent() {
 		return parent;
@@ -112,7 +120,7 @@ public class PerAccessPathMethodAnalyzer<Field, Fact, Stmt, Method> {
 	}
 	
 	WrappedFact<Field, Fact, Stmt, Method> wrappedSource() {
-		return new WrappedFact<Field, Fact, Stmt, Method>(sourceFact, new AccessPathAndResolver<Field, Fact, Stmt, Method>(accessPath, callEdgeResolver));
+		return new WrappedFact<Field, Fact, Stmt, Method>(sourceFact, new AccessPathAndResolver<Field, Fact, Stmt, Method>(this, accessPath, callEdgeResolver));
 	}
 	
 	public AccessPath<Field> getAccessPath() {
@@ -124,7 +132,7 @@ public class PerAccessPathMethodAnalyzer<Field, Fact, Stmt, Method> {
 	}
 
 	private void bootstrapAtMethodStartPoints() {
-		callEdgeResolver.interest(new AccessPathAndResolver<Field, Fact, Stmt, Method>(AccessPath.<Field>empty(), callEdgeResolver));
+		callEdgeResolver.interest(new AccessPathAndResolver<Field, Fact, Stmt, Method>(this, AccessPath.<Field>empty(), callEdgeResolver), null);
 		for(Stmt startPoint : context.icfg.getStartPointsOf(method)) {
 			WrappedFactAtStatement<Field, Fact, Stmt, Method> target = new WrappedFactAtStatement<Field, Fact, Stmt, Method>(startPoint, wrappedSource());
 			if(!reachableStatements.containsKey(target))
@@ -217,7 +225,7 @@ public class PerAccessPathMethodAnalyzer<Field, Fact, Stmt, Method> {
 	
 	private void processCallToReturnEdge(WrappedFactAtStatement<Field, Fact, Stmt, Method> factAtStmt) {
 		if(isLoopStart(factAtStmt.getStatement())) {
-			ctrFlowJoinResolvers.getOrCreate(factAtStmt.getAsFactAtStatement()).addIncoming(factAtStmt.getWrappedFact());
+			ctrFlowJoinResolvers.getOrCreate(factAtStmt.getAsFactAtStatement()).addIncoming(factAtStmt.getWrappedFact(), null);
 		}
 		else {
 			processNonJoiningCallToReturnFlow(factAtStmt);
@@ -239,7 +247,7 @@ public class PerAccessPathMethodAnalyzer<Field, Fact, Stmt, Method> {
 
 	private void processNormalFlow(WrappedFactAtStatement<Field,Fact, Stmt, Method> factAtStmt) {
 		if(isLoopStart(factAtStmt.getStatement())) {
-			ctrFlowJoinResolvers.getOrCreate(factAtStmt.getAsFactAtStatement()).addIncoming(factAtStmt.getWrappedFact());
+			ctrFlowJoinResolvers.getOrCreate(factAtStmt.getAsFactAtStatement()).addIncoming(factAtStmt.getWrappedFact(), null);
 		}
 		else {
 			processNormalNonJoiningFlow(factAtStmt);
@@ -281,9 +289,14 @@ public class PerAccessPathMethodAnalyzer<Field, Fact, Stmt, Method> {
 				scheduleEdgeTo(successors, targetFact.getFact());
 			else {
 				targetFact.getFact().getAccessPathAndResolver().resolve(targetFact.getConstraint(), new InterestCallback<Field, Fact, Stmt, Method>() {
+					Set<AccessPathAndResolver<Field, Fact, Stmt, Method>> propagated = Sets.newHashSet();
+					
 					@Override
 					public void interest(PerAccessPathMethodAnalyzer<Field, Fact, Stmt, Method> analyzer,
-							AccessPathAndResolver<Field, Fact, Stmt, Method> accPathResolver) {
+							AccessPathAndResolver<Field, Fact, Stmt, Method> accPathResolver, Resolver<Field, Fact, Stmt, Method> transitiveResolver) {
+						if(!propagated.add(accPathResolver))
+							return;
+						
 						if(isZeroSource())
 							analyzer = PerAccessPathMethodAnalyzer.this;
 						analyzer.scheduleEdgeTo(successors, new WrappedFact<Field, Fact, Stmt, Method>(
@@ -300,12 +313,12 @@ public class PerAccessPathMethodAnalyzer<Field, Fact, Stmt, Method> {
 		}
 	}
 	
-	public void addIncomingEdge(CallEdge<Field, Fact, Stmt, Method> incEdge) {
+	public void addIncomingEdge(CallEdge<Field, Fact, Stmt, Method> incEdge, Resolver<Field, Fact, Stmt, Method> transitiveResolver) {
 		if(isBootStrapped()) {
 			context.factHandler.merge(sourceFact, incEdge.getCalleeSourceFact().getFact());
 		} else 
 			bootstrapAtMethodStartPoints();
-		callEdgeResolver.addIncoming(incEdge);
+		callEdgeResolver.addIncoming(incEdge, transitiveResolver);
 	}
 
 	void applySummary(CallEdge<Field, Fact, Stmt, Method> incEdge, WrappedFactAtStatement<Field, Fact, Stmt, Method> exitFact) {
@@ -325,14 +338,14 @@ public class PerAccessPathMethodAnalyzer<Field, Fact, Stmt, Method> {
 	public void scheduleUnbalancedReturnEdgeTo(WrappedFactAtStatement<Field, Fact, Stmt, Method> fact) {
 		ReturnSiteHandling<Field, Fact, Stmt, Method> resolver = returnSiteResolvers.getOrCreate(fact.getAsFactAtStatement());
 		resolver.addIncomingEdge(fact.getAccessPathAndResolver(),
-				new AccessPathAndResolver<Field, Fact, Stmt, Method>(AccessPath.<Field>empty(), callEdgeResolver));
+				new AccessPathAndResolver<Field, Fact, Stmt, Method>(this, AccessPath.<Field>empty(), callEdgeResolver), null);
 	}
 	
 	private void scheduleReturnEdge(CallEdge<Field, Fact, Stmt, Method> callEdge, WrappedFact<Field, Fact, Stmt, Method> fact, Stmt returnSite) {
 		AccessPath<Field> remainingAccPath = accessPath.getDeltaToAsAccessPath(callEdge.getCalleeSourceFact().getAccessPathAndResolver().accessPath);
 		ReturnSiteHandling<Field, Fact, Stmt, Method> resolver = callEdge.getCallerAnalyzer().returnSiteResolvers.getOrCreate(new FactAtStatement<Fact, Stmt>(fact.getFact(), returnSite));
 		resolver.addIncomingEdge(fact.getAccessPathAndResolver(), 
-				callEdge.getCalleeSourceFact().getAccessPathAndResolver().withAccessPath(remainingAccPath));
+				callEdge.getCalleeSourceFact().getAccessPathAndResolver().withAccessPath(remainingAccPath), null);
 	}
 
 	void applySummaries(CallEdge<Field, Fact, Stmt, Method> incEdge) {
@@ -382,6 +395,21 @@ public class PerAccessPathMethodAnalyzer<Field, Fact, Stmt, Method> {
 
 	public Method getMethod() {
 		return method;
+	}
+	
+	private ContextLogger<Method> getLogger() {
+		return new ContextLogger<Method>() {
+
+			@Override
+			public void log(String message) {
+				PerAccessPathMethodAnalyzer.this.log(message);
+			}
+
+			@Override
+			public Method getMethod() {
+				return method;
+			}
+		};
 	}
 	
 //	public void debugReachables() {

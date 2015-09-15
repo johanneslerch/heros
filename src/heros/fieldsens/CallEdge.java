@@ -76,31 +76,31 @@ public class CallEdge<Field, Fact, Stmt, Method> {
 			
 			@Override
 			public void interest(PerAccessPathMethodAnalyzer<Field, Fact, Stmt, Method> analyzer,
-					AccessPathAndResolver<Field, Fact, Stmt, Method> accPathResolver) {
+					AccessPathAndResolver<Field, Fact, Stmt, Method> accPathResolver, Resolver<Field, Fact, Stmt, Method> transitiveResolver) {
 				assert analyzer.getMethod().equals(callerAnalyzer.getMethod());
-				assert accPathResolver.getLast().resolver.getAnalyzer().getMethod().equals(callerAnalyzer.getMethod());
+				assert accPathResolver.getAnalyzer().getMethod().equals(callerAnalyzer.getMethod());
 				
 				if(accPathResolver.resolver instanceof ZeroCallEdgeResolver) {
 					PerAccessPathMethodAnalyzer<Field, Fact, Stmt, Method> zeroAnalyzer = interestedAnalyzer.createWithZeroCallEdgeResolver();
-					zeroAnalyzer.getCallEdgeResolver().incomingEdges.add(createNewCallEdge(analyzer, accPathResolver, delta));
-					interestedAnalyzer.getCallEdgeResolver().interest(new AccessPathAndResolver<Field, Fact, Stmt, Method>(AccessPath.<Field>empty(), zeroAnalyzer.getCallEdgeResolver()));
+					zeroAnalyzer.getCallEdgeResolver().incomingEdges.put(null, createNewCallEdge(analyzer, accPathResolver, delta));
+					interestedAnalyzer.getCallEdgeResolver().interest(
+							new AccessPathAndResolver<Field, Fact, Stmt, Method>(interestedAnalyzer, AccessPath.<Field>empty(), zeroAnalyzer.getCallEdgeResolver()),
+							null);
 				}
-				else if(factAtCallSite.getWrappedFact().getAccessPathAndResolver().resolver.equals(accPathResolver.resolver) ||
-						accPathResolver.resolver instanceof RepeatedFieldCallEdgeResolver) {
-					//interest provided by loop/recursion
-					PerAccessPathMethodAnalyzer<Field, Fact, Stmt, Method> repeatingAnalyzer = interestedAnalyzer.getParent().createWithRepeatingResolver(delta);
-					repeatingAnalyzer.getCallEdgeResolver().incomingEdges.add(createNewCallEdge(analyzer, 
-							accPathResolver.withAccessPath(AccessPath.<Field>empty()), Delta.<Field>empty()));
-					repeatingAnalyzer.getCallEdgeResolver().interest(new AccessPathAndResolver<Field, Fact, Stmt, Method>(
-							accPathResolver.accessPath, repeatingAnalyzer.getCallEdgeResolver()));
-					interestedAnalyzer.getCallEdgeResolver().interest(new AccessPathAndResolver<Field, Fact, Stmt, Method>(
-							accPathResolver.accessPath, repeatingAnalyzer.getCallEdgeResolver()));
-				}
-//				else if(accPathResolver.resolver.isParentOf(interestedAnalyzer.getCallEdgeResolver())) {
-//					interestedAnalyzer.getCallEdgeResolver().interest(accPathResolver);
-//				} 
+//				else if(factAtCallSite.getWrappedFact().getAccessPathAndResolver().resolver.equals(accPathResolver.resolver) ||
+//						accPathResolver.resolver instanceof RepeatedFieldCallEdgeResolver) {
+//					//interest provided by loop/recursion
+//					PerAccessPathMethodAnalyzer<Field, Fact, Stmt, Method> repeatingAnalyzer = interestedAnalyzer.getParent().createWithRepeatingResolver(delta);
+//					repeatingAnalyzer.getCallEdgeResolver().incomingEdges.add(createNewCallEdge(analyzer, 
+//							accPathResolver.withAccessPath(AccessPath.<Field>empty()), Delta.<Field>empty()));
+//					repeatingAnalyzer.getCallEdgeResolver().interest(new AccessPathAndResolver<Field, Fact, Stmt, Method>(
+//							accPathResolver.accessPath, repeatingAnalyzer.getCallEdgeResolver()));
+//					interestedAnalyzer.getCallEdgeResolver().interest(new AccessPathAndResolver<Field, Fact, Stmt, Method>(
+//							accPathResolver.accessPath, repeatingAnalyzer.getCallEdgeResolver()));
+//				}
 				else {
-					interestedAnalyzer.addIncomingEdge(createNewCallEdge(analyzer, accPathResolver, delta));
+					interestedAnalyzer.addIncomingEdge(createNewCallEdge(analyzer, accPathResolver, delta), 
+							transitiveResolver == null ? accPathResolver.resolver : transitiveResolver);
 				}
 			}
 			
