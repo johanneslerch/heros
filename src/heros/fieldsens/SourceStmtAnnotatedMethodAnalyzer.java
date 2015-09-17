@@ -43,7 +43,7 @@ public class SourceStmtAnnotatedMethodAnalyzer<Field, Fact, Stmt, Method>
 		WrappedFact<Field, Fact, Stmt, Method> calleeSourceFact = incEdge.getCalleeSourceFact();
 		Key<Fact, Stmt> key = new Key<Fact, Stmt>(calleeSourceFact.getFact(), null);
 		PerAccessPathMethodAnalyzer<Field, Fact, Stmt, Method> analyzer = perSourceAnalyzer.getOrCreate(key);
-		analyzer.addIncomingEdge(incEdge, null);		
+		analyzer.addIncomingEdge(incEdge);		
 	}
 
 	@Override

@@ -76,16 +76,16 @@ public class CallEdge<Field, Fact, Stmt, Method> {
 			
 			@Override
 			public void interest(PerAccessPathMethodAnalyzer<Field, Fact, Stmt, Method> analyzer,
-					AccessPathAndResolver<Field, Fact, Stmt, Method> accPathResolver, Resolver<Field, Fact, Stmt, Method> transitiveResolver) {
+					AccessPathAndResolver<Field, Fact, Stmt, Method> accPathResolver) {
 				assert analyzer.getMethod().equals(callerAnalyzer.getMethod());
 				assert accPathResolver.getAnalyzer().getMethod().equals(callerAnalyzer.getMethod());
 				
 				if(accPathResolver.resolver instanceof ZeroCallEdgeResolver) {
 					PerAccessPathMethodAnalyzer<Field, Fact, Stmt, Method> zeroAnalyzer = interestedAnalyzer.createWithZeroCallEdgeResolver();
-					zeroAnalyzer.getCallEdgeResolver().incomingEdges.put(null, createNewCallEdge(analyzer, accPathResolver, delta));
+					CallEdge<Field, Fact, Stmt, Method> newCallEdge = createNewCallEdge(analyzer, accPathResolver, delta);
+					zeroAnalyzer.getCallEdgeResolver().incomingEdges.put(null, newCallEdge);
 					interestedAnalyzer.getCallEdgeResolver().interest(
-							new AccessPathAndResolver<Field, Fact, Stmt, Method>(interestedAnalyzer, AccessPath.<Field>empty(), zeroAnalyzer.getCallEdgeResolver()),
-							null);
+							new AccessPathAndResolver<Field, Fact, Stmt, Method>(zeroAnalyzer, AccessPath.<Field>empty(), zeroAnalyzer.getCallEdgeResolver()));
 				}
 //				else if(factAtCallSite.getWrappedFact().getAccessPathAndResolver().resolver.equals(accPathResolver.resolver) ||
 //						accPathResolver.resolver instanceof RepeatedFieldCallEdgeResolver) {
@@ -99,8 +99,7 @@ public class CallEdge<Field, Fact, Stmt, Method> {
 //							accPathResolver.accessPath, repeatingAnalyzer.getCallEdgeResolver()));
 //				}
 				else {
-					interestedAnalyzer.addIncomingEdge(createNewCallEdge(analyzer, accPathResolver, delta), 
-							transitiveResolver == null ? accPathResolver.resolver : transitiveResolver);
+					interestedAnalyzer.addIncomingEdge(createNewCallEdge(analyzer, accPathResolver, delta));
 				}
 			}
 			

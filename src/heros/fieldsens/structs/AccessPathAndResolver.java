@@ -62,10 +62,9 @@ public class AccessPathAndResolver<Field, Fact, Stmt, Method> {
 
 				@Override
 				public void interest(PerAccessPathMethodAnalyzer<Field, Fact, Stmt, Method> analyzer,
-						AccessPathAndResolver<Field, Fact, Stmt, Method> accPathResolver, Resolver<Field, Fact, Stmt, Method> transitiveResolver) {
-					assert transitiveResolver == null;
+						AccessPathAndResolver<Field, Fact, Stmt, Method> accPathResolver) {
 					AccessPathAndResolver<Field, Fact, Stmt, Method> appended = accPathResolver.appendToLast(nesting);
-					callback.interest(appended.getAnalyzer(), appended, null);
+					callback.interest(appended.getAnalyzer(), appended);
 				}
 
 				@Override
@@ -83,7 +82,7 @@ public class AccessPathAndResolver<Field, Fact, Stmt, Method> {
 			AccessPath<Field> toBeResolved = constraint.applyToAccessPath(AccessPath.<Field> empty());
 			if (toBeResolved.isPrefixOf(nesting.accessPath) == PrefixTestResult.GUARANTEED_PREFIX) {
 				AccessPath<Field> remainingAccPath = toBeResolved.getDeltaToAsAccessPath(nesting.accessPath);
-				callback.interest(nesting.getAnalyzer(), nesting.withAccessPath(remainingAccPath), null);
+				callback.interest(nesting.getAnalyzer(), nesting.withAccessPath(remainingAccPath));
 			} else if (nesting.accessPath.isPrefixOf(toBeResolved).atLeast(PrefixTestResult.POTENTIAL_PREFIX)) {
 				Delta<Field> delta = nesting.accessPath.getDeltaTo(toBeResolved);
 				nesting.resolve(new DeltaConstraint<Field>(delta), callback);

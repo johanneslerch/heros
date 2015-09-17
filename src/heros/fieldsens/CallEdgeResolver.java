@@ -10,16 +10,21 @@
  ******************************************************************************/
 package heros.fieldsens;
 
+import java.util.HashSet;
+import java.util.Set;
+
 import heros.fieldsens.AccessPath.Delta;
 import heros.fieldsens.structs.AccessPathAndResolver;
 import heros.fieldsens.structs.WrappedFactAtStatement;
 
 import com.google.common.collect.Lists;
+import com.google.common.collect.Sets;
 
 
 public class CallEdgeResolver<Field, Fact, Stmt, Method> extends ResolverTemplate<Field, Fact, Stmt, Method, CallEdge<Field, Fact, Stmt, Method>>  {
 
 	protected final PerAccessPathMethodAnalyzer<Field, Fact, Stmt, Method> analyzer;
+	private Set<CallEdge<Field, Fact, Stmt, Method>> dismissedCallEdges = Sets.newHashSet();
 
 	public CallEdgeResolver(PerAccessPathMethodAnalyzer<Field, Fact, Stmt, Method> analyzer, Debugger<Field, Fact, Stmt, Method> debugger) {
 		this(analyzer, debugger, null);
@@ -59,6 +64,37 @@ public class CallEdgeResolver<Field, Fact, Stmt, Method> extends ResolverTemplat
 //	}
 	
 	@Override
+	protected boolean addSameTransitiveResolver() {
+		return true;
+	}
+	
+	@Override
+	protected void registerTransitiveResolverCallback(CallEdge<Field, Fact, Stmt, Method> inc,
+			final TransitiveResolverCallback<Field, Fact, Stmt, Method> callback) {
+		final Resolver<Field, Fact, Stmt, Method> incResolver = inc.getCalleeSourceFact().getAccessPathAndResolver().resolver;
+		incResolver.registerTransitiveResolverCallback(new TransitiveResolverCallback<Field, Fact, Stmt, Method>() {
+			@Override
+			public void resolvedByIncomingAccessPath() {
+				callback.resolvedBy(incResolver);
+			}
+
+			@Override
+			public void resolvedBy(Resolver<Field, Fact, Stmt, Method> resolver) {
+				callback.resolvedBy(resolver);
+			}
+		});
+	}
+	
+	@Override
+	protected void dismissByTransitiveResolver(CallEdge<Field, Fact, Stmt, Method> inc, Resolver<Field, Fact, Stmt, Method> resolver) {
+		super.dismissByTransitiveResolver(inc, resolver);
+		if(!incomingEdges.containsValue(inc)) {
+			analyzer.applySummaries(inc);
+			dismissedCallEdges.add(inc);
+		}
+	}
+	
+	@Override
 	protected void processIncomingGuaranteedPrefix(CallEdge<Field, Fact, Stmt, Method> inc) {
 		analyzer.applySummaries(inc);
 	}
@@ -74,7 +110,9 @@ public class CallEdgeResolver<Field, Fact, Stmt, Method> extends ResolverTemplat
 	}
 	
 	public void applySummaries(WrappedFactAtStatement<Field, Fact, Stmt, Method> factAtStmt) {
-		for(CallEdge<Field, Fact, Stmt, Method> incEdge : Lists.newLinkedList(incomingEdges.values())) {
+		HashSet<CallEdge<Field, Fact, Stmt, Method>> incEdges = Sets.newHashSet(incomingEdges.values());
+		incEdges.addAll(dismissedCallEdges);
+		for(CallEdge<Field, Fact, Stmt, Method> incEdge : incEdges) {
 			analyzer.applySummary(incEdge, factAtStmt);
 		}
 	}

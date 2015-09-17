@@ -15,16 +15,18 @@ import heros.fieldsens.structs.AccessPathAndResolver;
 
 import java.util.List;
 import java.util.Map.Entry;
+import java.util.Set;
 
 import com.google.common.collect.HashMultimap;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Multimap;
+import com.google.common.collect.Sets;
 
 public abstract class Resolver<Field, Fact, Stmt, Method> {
 
 	private boolean recursionLock = false;
 	private Resolver<Field, Fact, Stmt, Method> parent;
-	private Multimap<Resolver<Field, Fact, Stmt, Method>, AccessPathAndResolver<Field, Fact, Stmt, Method>> interest = HashMultimap.create();
+	private Set<AccessPathAndResolver<Field, Fact, Stmt, Method>> interest = Sets.newHashSet();
 	private List<InterestCallback<Field, Fact, Stmt, Method>> interestCallbacks = Lists.newLinkedList();
 	private boolean canBeResolvedEmpty = false;
 	
@@ -57,18 +59,17 @@ public abstract class Resolver<Field, Fact, Stmt, Method> {
 		recursionLock = false;
 	}
 
+	public abstract void registerTransitiveResolverCallback(TransitiveResolverCallback<Field, Fact, Stmt, Method> callback);
+	
 	public abstract void resolve(Constraint<Field> constraint, InterestCallback<Field, Fact, Stmt, Method> callback);
 	
-	public void interest(AccessPathAndResolver<Field, Fact, Stmt, Method> accPathResolver, Resolver<Field, Fact, Stmt, Method> transitiveResolver) {
-		if(transitiveResolver != null && interest.containsKey(transitiveResolver))
-			return;
-		
-		if(!interest.put(transitiveResolver, accPathResolver))
+	public void interest(AccessPathAndResolver<Field, Fact, Stmt, Method> accPathResolver) {
+		if(!interest.add(accPathResolver))
 			return;
 
-		log("Interest given by: "+accPathResolver+" (transitive resolver: "+transitiveResolver+")");
+		log("Interest given by: "+accPathResolver);
 		for(InterestCallback<Field, Fact, Stmt, Method> callback : Lists.newLinkedList(interestCallbacks)) {
-			callback.interest(accPathResolver.getAnalyzer(), accPathResolver, transitiveResolver);
+			callback.interest(accPathResolver.getAnalyzer(), accPathResolver);
 		}
 	}
 	
@@ -88,8 +89,8 @@ public abstract class Resolver<Field, Fact, Stmt, Method> {
 
 	protected void registerCallback(InterestCallback<Field, Fact, Stmt, Method> callback) {
 		if(!interest.isEmpty()) {
-			for(Entry<Resolver<Field, Fact, Stmt, Method>, AccessPathAndResolver<Field, Fact, Stmt, Method>> entry : Lists.newLinkedList(interest.entries()))
-				callback.interest(entry.getValue().getAnalyzer(), entry.getValue(), entry.getKey());
+			for(AccessPathAndResolver<Field, Fact, Stmt, Method> entry : Lists.newLinkedList(interest))
+				callback.interest(entry.getAnalyzer(), entry);
 		}
 		interestCallbacks.add(callback);
 

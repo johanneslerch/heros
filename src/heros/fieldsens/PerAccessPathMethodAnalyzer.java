@@ -132,7 +132,7 @@ public class PerAccessPathMethodAnalyzer<Field, Fact, Stmt, Method> {
 	}
 
 	private void bootstrapAtMethodStartPoints() {
-		callEdgeResolver.interest(new AccessPathAndResolver<Field, Fact, Stmt, Method>(this, AccessPath.<Field>empty(), callEdgeResolver), null);
+		callEdgeResolver.interest(new AccessPathAndResolver<Field, Fact, Stmt, Method>(this, AccessPath.<Field>empty(), callEdgeResolver));
 		for(Stmt startPoint : context.icfg.getStartPointsOf(method)) {
 			WrappedFactAtStatement<Field, Fact, Stmt, Method> target = new WrappedFactAtStatement<Field, Fact, Stmt, Method>(startPoint, wrappedSource());
 			if(!reachableStatements.containsKey(target))
@@ -222,10 +222,10 @@ public class PerAccessPathMethodAnalyzer<Field, Fact, Stmt, Method> {
 			}
 		}
 	}
-	
+
 	private void processCallToReturnEdge(WrappedFactAtStatement<Field, Fact, Stmt, Method> factAtStmt) {
 		if(isLoopStart(factAtStmt.getStatement())) {
-			ctrFlowJoinResolvers.getOrCreate(factAtStmt.getAsFactAtStatement()).addIncoming(factAtStmt.getWrappedFact(), null);
+			ctrFlowJoinResolvers.getOrCreate(factAtStmt.getAsFactAtStatement()).addIncoming(factAtStmt.getWrappedFact());
 		}
 		else {
 			processNonJoiningCallToReturnFlow(factAtStmt);
@@ -247,7 +247,7 @@ public class PerAccessPathMethodAnalyzer<Field, Fact, Stmt, Method> {
 
 	private void processNormalFlow(WrappedFactAtStatement<Field,Fact, Stmt, Method> factAtStmt) {
 		if(isLoopStart(factAtStmt.getStatement())) {
-			ctrFlowJoinResolvers.getOrCreate(factAtStmt.getAsFactAtStatement()).addIncoming(factAtStmt.getWrappedFact(), null);
+			ctrFlowJoinResolvers.getOrCreate(factAtStmt.getAsFactAtStatement()).addIncoming(factAtStmt.getWrappedFact());
 		}
 		else {
 			processNormalNonJoiningFlow(factAtStmt);
@@ -289,14 +289,10 @@ public class PerAccessPathMethodAnalyzer<Field, Fact, Stmt, Method> {
 				scheduleEdgeTo(successors, targetFact.getFact());
 			else {
 				targetFact.getFact().getAccessPathAndResolver().resolve(targetFact.getConstraint(), new InterestCallback<Field, Fact, Stmt, Method>() {
-					Set<AccessPathAndResolver<Field, Fact, Stmt, Method>> propagated = Sets.newHashSet();
 					
 					@Override
 					public void interest(PerAccessPathMethodAnalyzer<Field, Fact, Stmt, Method> analyzer,
-							AccessPathAndResolver<Field, Fact, Stmt, Method> accPathResolver, Resolver<Field, Fact, Stmt, Method> transitiveResolver) {
-						if(!propagated.add(accPathResolver))
-							return;
-						
+							AccessPathAndResolver<Field, Fact, Stmt, Method> accPathResolver) {
 						if(isZeroSource())
 							analyzer = PerAccessPathMethodAnalyzer.this;
 						analyzer.scheduleEdgeTo(successors, new WrappedFact<Field, Fact, Stmt, Method>(
@@ -313,12 +309,12 @@ public class PerAccessPathMethodAnalyzer<Field, Fact, Stmt, Method> {
 		}
 	}
 	
-	public void addIncomingEdge(CallEdge<Field, Fact, Stmt, Method> incEdge, Resolver<Field, Fact, Stmt, Method> transitiveResolver) {
+	public void addIncomingEdge(CallEdge<Field, Fact, Stmt, Method> incEdge) {
 		if(isBootStrapped()) {
 			context.factHandler.merge(sourceFact, incEdge.getCalleeSourceFact().getFact());
 		} else 
 			bootstrapAtMethodStartPoints();
-		callEdgeResolver.addIncoming(incEdge, transitiveResolver);
+		callEdgeResolver.addIncoming(incEdge);
 	}
 
 	void applySummary(CallEdge<Field, Fact, Stmt, Method> incEdge, WrappedFactAtStatement<Field, Fact, Stmt, Method> exitFact) {

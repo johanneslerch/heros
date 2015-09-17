@@ -396,15 +396,15 @@ public class FieldSensitiveIFDSSolverTest {
 	public void reuseSummaryForRecursiveCall() {
 		helper.method("foo",
 				startPoints("a"),
-				callSite("a").calls("bar", flow("0", "1")).retSite("b", flow("0")),
+				callSite("a").calls("bar", flow("0", "1")).retSite("b", kill("0")),
 				normalStmt("b", flow("2", "3")).succ("c"));
 		
 		helper.method("bar",
 				startPoints("g"),
 				normalStmt("g", flow("1", "1")).succ("i").succ("h"),
-				callSite("i").calls("bar", flow("1", "1")).retSite("h", flow("1")),
-				exitStmt("h").returns(over("a"), to("b"), flow("1"), flow("2" ,"2"))
-							.returns(over("i"), to("h"), flow("1","2"), flow("2", "2")));
+				callSite("i").calls("bar", flow("1", "1")).retSite("h", kill("1")),
+				exitStmt("h").returns(over("a"), to("b"), kill("1"), flow("2" ,"2"))
+							.returns(over("i"), to("h"), flow("1", "2"), flow("2", "2")));
 				
 		helper.runSolver(false, "a");
 	}
@@ -822,6 +822,7 @@ public class FieldSensitiveIFDSSolverTest {
 	}
 	
 	@Test
+	@Ignore("requires context-free grammar")
 	public void includeResolversInCallDeltas3() {
 		helper.method("main",
 				startPoints("m_a"),
@@ -1343,9 +1344,9 @@ public class FieldSensitiveIFDSSolverTest {
 				
 		helper.method("bar",
 				startPoints("f"),
-				normalStmt("f", flow(2, "1", "1")).succ("g").succ("h"),
-				normalStmt("g", flow(2, "1", readField("f"), "1")).succ("f"),
-				normalStmt("h", flow(2, "1", readField("f"), "1")).succ("i"),
+				normalStmt("f", flow("1", "1")).succ("g").succ("h"),
+				normalStmt("g", flow("1", readField("f"), "1")).succ("f"),
+				normalStmt("h", flow("1", readField("f"), "1")).succ("i"),
 				normalStmt("i", flow("1", readField("g"), "1")).succ("j"),
 				normalStmt("j", kill("1")).succ("k"));
 		
@@ -1368,11 +1369,11 @@ public class FieldSensitiveIFDSSolverTest {
 				
 		helper.method("bar",
 				startPoints("f"),
-				normalStmt("f", flow(2, "1", "1")).succ("g1").succ("h"),
-				normalStmt("g1", flow(2, "1", readField("a"), "1")).succ("g2"),
+				normalStmt("f", flow("1", "1")).succ("g1").succ("h"),
+				normalStmt("g1", flow("1", readField("a"), "1")).succ("g2"),
 				normalStmt("g2", flow("1", readField("b"), "1")).succ("f"),
 				
-				normalStmt("h", flow(2, "1", readField("a"), "1")).succ("i"),
+				normalStmt("h", flow("1", readField("a"), "1")).succ("i"),
 				normalStmt("i", flow("1", readField("b"), "1")).succ("j"),
 				normalStmt("j", flow("1", readField("a"), "1")).succ("k"),
 				normalStmt("k", flow("1", readField("b"), "1")).succ("l"),
@@ -1417,9 +1418,9 @@ public class FieldSensitiveIFDSSolverTest {
 				normalStmt("b3", flow("2", prependField("f"), "2")).succ("c"),
 				callSite("c").calls("foo", flow("2", "3")).retSite("h", kill("2")),
 				normalStmt("h", flow("4", readField("g"), "5")).succ("i"),
-				normalStmt("i", flow(2, "5", readField("g"), "5")).succ("j"),
+				normalStmt("i", flow("5", readField("g"), "5")).succ("j"),
 				normalStmt("j", flow("5", readField("g"), "5")).succ("k"),
-				normalStmt("k").succ("l"));
+				normalStmt("k", kill("5") /*over-approximation*/).succ("l"));
 		
 		helper.method("foo",
 				startPoints("d"),
@@ -1507,11 +1508,11 @@ public class FieldSensitiveIFDSSolverTest {
 		helper.method("foo",
 				startPoints("d"),
 				normalStmt("d", flow("1", "1")).succ("js2"),
-				normalStmt("js2", flow(2, "1", "1")).succ("e").succ("f"),
-				normalStmt("e", flow(2, "1", readField("f"), "1")).succ("js2")/*,
-				normalStmt("f", flow(2, "1", readField("f"), "1")).succ("g"),
+				normalStmt("js2", flow("1", "1")).succ("e").succ("f"),
+				normalStmt("e", flow("1", readField("f"), "1")).succ("js2"),
+				normalStmt("f", flow("1", readField("f"), "1")).succ("g"),
 				normalStmt("g", flow("1", readField("g"), "1")).succ("h"),
-				normalStmt("h", kill("1")).succ("i")*/);
+				normalStmt("h", kill("1")).succ("i"));
 		
 		helper.runSolver(false, "a");
 	}
@@ -1607,14 +1608,43 @@ public class FieldSensitiveIFDSSolverTest {
 				normalStmt("f", flow("1", prependField("f"), "1")).succ("f2"),
 				normalStmt("f2", flow(2, "1", "1")).succ("cs").succ("ep"),
 				callSite("cs").calls("foo", flow(2, "1", "1")).retSite("rs", kill(2, "1")),
-				normalStmt("rs", flow(2, "1", "1")).succ("ep"),
-				exitStmt("ep").returns(over("cs"), to("rs"), flow(4, "1", "1")).returns(over("c"), to("g"), flow(2, "1", "1")));
+				normalStmt("rs", flow(3, "1", "1")).succ("ep"),
+				exitStmt("ep").returns(over("cs"), to("rs"), flow(9, "1", "1")).returns(over("c"), to("g"), flow(2, "1", "1")));
 		
 		helper.runSolver(false, "a");
 	}
 	
 	@Test
 	public void mutualRecursiveCallReadAndWrite() {
+		helper.method("main",
+				startPoints("a"),
+				normalStmt("a", flow("0", prependField("h"), "1")).succ("b"),
+				callSite("b").calls("foo", flow("1", "1")).retSite("g", kill("1")));
+		
+		helper.method("foo",
+				startPoints("c"),
+				normalStmt("c", flow("1", "1")).succ("d").succ("cs1").succ("ep1"),
+				normalStmt("d", flow("1", prependField("x"), "1")).succ("cs1").succ("ep1"),
+				callSite("cs1").calls("foo", flow(2, "1", "1")).calls("bar", flow(2, "1", "1")).retSite("rs1", kill(2, "1")),
+				normalStmt("rs1", flow(2, "1", "1")).succ("ep1"),
+				exitStmt("ep1").returns(over("b"), to("g"), flow(3, "1", "1"))
+								.returns(over("cs1"), to("rs1"), flow(8, "1", "1"))
+								.returns(over("cs2"), to("rs2"), flow(6, "1", "1")));
+		
+		helper.method("bar",
+				startPoints("e"),
+				normalStmt("e", flow("1", "1")).succ("f").succ("cs2").succ("ep2"),
+				normalStmt("f", flow("1", readField("x"), "1")).succ("cs2").succ("ep2"),
+				callSite("cs2").calls("foo", flow(2, "1", "1")).calls("bar", flow(2, "1", "1")).retSite("rs2", kill(2, "1")),
+				normalStmt("rs2", flow(2, "1", "1")).succ("ep2"),
+				exitStmt("ep2").returns(over("cs1"), to("rs1"), flow(8, "1", "1"))
+								.returns(over("cs2"), to("rs2"), flow(4, "1", "1")));
+	
+		helper.runSolver(false, "a");
+	}
+	
+	@Test
+	public void mutualRecursiveCallReadAndWriteMultipleFields() {
 		helper.method("main",
 				startPoints("a"),
 				normalStmt("a", flow("0", "1")).succ("b"),
@@ -1626,26 +1656,54 @@ public class FieldSensitiveIFDSSolverTest {
 				startPoints("d"),
 				normalStmt("d", flow("1", "1")).succ("e").succ("f").succ("f2"),
 				normalStmt("e", flow("1", readField("f"), "1")).succ("f").succ("f2"),
-				normalStmt("f", flow("1", prependField("f"), "1")).succ("f2"),
-				normalStmt("f2", flow(40, "1", "1")).succ("cs").succ("ep"),
-				callSite("cs").calls("foo1", flow(40, "1", "1")).calls("foo2", flow(40, "1", "1")).retSite("rs", kill(40, "1")),
-				normalStmt("rs", flow(40, "1", "1")).succ("ep"),
-				exitStmt("ep").returns(over("cs"), to("rs"), flow(40, "1", "1"))
-							.returns(over("cs2"), to("rs2"), flow(40, "1", "1"))
-							.returns(over("c"), to("g"), flow(40, "1", "1")));
+				normalStmt("f", flow(2, "1", prependField("f"), "1")).succ("f2"),
+				normalStmt("f2", flow(4, "1", "1")).succ("cs").succ("ep"),
+				callSite("cs").calls("foo1", flow(4, "1", "1")).calls("foo2", flow(4, "1", "1")).retSite("rs", kill(4, "1")),
+				normalStmt("rs", flow(3, "1", "1")).succ("ep"),
+				exitStmt("ep").returns(over("cs"), to("rs"), flow(28, "1", "1"))
+							.returns(over("cs2"), to("rs2"), flow(27, "1", "1"))
+							.returns(over("c"), to("g"), flow(3, "1", "1")));
 		
 		helper.method("foo2",
 				startPoints("h"),
 				normalStmt("h", flow("1", "1")).succ("i").succ("j").succ("k"),
 				normalStmt("i", flow("1", readField("g"), "1")).succ("j").succ("k"),
-				normalStmt("j", flow("1", prependField("g"), "1")).succ("k"),
-				normalStmt("k", flow(3, "1", "1")).succ("cs2").succ("ep2"),
-				callSite("cs2").calls("foo1", flow(40, "1", "1")).calls("foo2", flow(40, "1", "1")).retSite("rs2", kill(40, "1")),
-				normalStmt("rs2", flow(40, "1", "1")).succ("ep2"),
-				exitStmt("ep2").returns(over("cs"), to("rs"), flow(40, "1", "1"))
-							.returns(over("cs2"), to("rs2"), flow(40, "1", "1"))
-							.returns(over("c"), to("g"), flow(40, "1", "1")));
+				normalStmt("j", flow(2, "1", prependField("g"), "1")).succ("k"),
+				normalStmt("k", flow(4, "1", "1")).succ("cs2").succ("ep2"),
+				callSite("cs2").calls("foo1", flow(4, "1", "1")).calls("foo2", flow(4, "1", "1")).retSite("rs2", kill(4, "1")),
+				normalStmt("rs2", flow(5, "1", "1")).succ("ep2"),
+				exitStmt("ep2").returns(over("cs"), to("rs"), flow(22, "1", "1"))
+							.returns(over("cs2"), to("rs2"), flow(37, "1", "1")));
 		
+		helper.runSolver(false, "a");
+	}
+	
+	@Test
+	public void mutualRecursiveReturnReadAndWrite() {
+		helper.method("main",
+				startPoints("a"),
+				normalStmt("a", flow("0", prependField("h"), "1")).succ("b"),
+				callSite("b").calls("foo", flow("1", "1")).retSite("g", kill("1")));
+		
+		helper.method("foo",
+				startPoints("c"),
+				normalStmt("c", flow("1", "1")).succ("cs1").succ("ep1"),
+				callSite("cs1").calls("foo", flow(2, "1", "1")).calls("bar", flow(2, "1", "1")).retSite("rs1", kill(2, "1")),
+				normalStmt("rs1", flow(2, "1", "1")).succ("d").succ("ep1"),
+				normalStmt("d", flow("1", prependField("x"), "1")).succ("ep1"),
+				exitStmt("ep1").returns(over("b"), to("g"), flow(3, "1", "1"))
+								.returns(over("cs1"), to("rs1"), flow(8, "1", "1"))
+								.returns(over("cs2"), to("rs2"), flow(6, "1", "1")));
+
+		helper.method("bar",
+				startPoints("e"),
+				normalStmt("e", flow("1", "1")).succ("cs2").succ("ep2"),
+				callSite("cs2").calls("foo", flow(2, "1", "1")).calls("bar", flow(2, "1", "1")).retSite("rs2", kill(2, "1")),
+				normalStmt("rs2", flow(2, "1", "1")).succ("f").succ("ep2"),
+				normalStmt("f", flow("1", readField("x"), "1")).succ("ep2"),
+				exitStmt("ep2").returns(over("cs1"), to("rs1"), flow(8, "1", "1"))
+								.returns(over("cs2"), to("rs2"), flow(4, "1", "1")));
+	
 		helper.runSolver(false, "a");
 	}
 }

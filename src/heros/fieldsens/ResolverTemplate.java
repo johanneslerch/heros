@@ -10,6 +10,8 @@
  ******************************************************************************/
 package heros.fieldsens;
 
+import java.util.Collection;
+import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
@@ -31,6 +33,7 @@ public abstract class ResolverTemplate<Field, Fact, Stmt, Method, Incoming>  ext
 	protected Multimap<Resolver<Field, Fact, Stmt, Method>, Incoming> incomingEdges = HashMultimap.create();
 	private Map<AccessPath<Field>, ResolverTemplate<Field, Fact, Stmt, Method, Incoming>> nestedResolvers = Maps.newHashMap();
 	private Map<AccessPath<Field>, ResolverTemplate<Field, Fact, Stmt, Method, Incoming>> allResolversInExclHierarchy;
+	private List<TransitiveResolverCallback<Field, Fact, Stmt, Method>> transitiveResolverCallbacks = Lists.newLinkedList();
 	protected AccessPath<Field> resolvedAccessPath;
 	protected Debugger<Field, Fact, Stmt, Method> debugger;
 
@@ -53,36 +56,83 @@ public abstract class ResolverTemplate<Field, Fact, Stmt, Method, Incoming>  ext
 	
 	protected abstract PerAccessPathMethodAnalyzer<Field, Fact, Stmt, Method> getAnalyzer(Incoming inc); 
 	
-	public void addIncoming(Incoming inc, Resolver<Field, Fact, Stmt, Method> transitiveResolver) {
-		if(resolvedAccessPath.isPrefixOf(getAccessPathOf(inc)) == PrefixTestResult.GUARANTEED_PREFIX) {
-			if(transitiveResolver != null && incomingEdges.containsKey(transitiveResolver))
-				return;
-			
-			if(!incomingEdges.put(transitiveResolver, inc))
-				return;
-			log("Incoming Edge: "+inc+" (transitive resolver: "+transitiveResolver+")");
-					
-			interestByIncoming(inc, transitiveResolver);
-			
-			for(ResolverTemplate<Field, Fact, Stmt, Method, Incoming> nestedResolver : Lists.newLinkedList(nestedResolvers.values())) {
-				nestedResolver.addIncoming(inc, transitiveResolver);
-			}
-			
-			processIncomingGuaranteedPrefix(inc);
+	protected abstract void registerTransitiveResolverCallback(Incoming inc, TransitiveResolverCallback<Field, Fact, Stmt, Method> callback);
+	
+	@Override
+	public void registerTransitiveResolverCallback(TransitiveResolverCallback<Field, Fact, Stmt, Method> callback) {
+		transitiveResolverCallbacks.add(callback);
+		for(Resolver<Field, Fact, Stmt, Method> transRes : Lists.newLinkedList(incomingEdges.keySet())) {
+			if(transRes == null)
+				callback.resolvedByIncomingAccessPath();
+			else
+				callback.resolvedBy(transRes);
 		}
-		else if(getAccessPathOf(inc).isPrefixOf(resolvedAccessPath).atLeast(PrefixTestResult.POTENTIAL_PREFIX)) {
+	}
+	
+	protected abstract boolean addSameTransitiveResolver();
+	
+	public void addIncoming(final Incoming inc) {
+		AccessPath<Field> incAccPath = getAccessPathOf(inc);
+		if(incAccPath.equals(resolvedAccessPath)) {
+			registerTransitiveResolverCallback(inc, new TransitiveResolverCallback<Field, Fact, Stmt, Method>() {
+				@Override
+				public void resolvedByIncomingAccessPath() {
+					addIncomingGuaranteedPrefix(inc, null);
+				}
+				
+				@Override
+				public void resolvedBy(Resolver<Field, Fact, Stmt, Method> resolver) {
+					if(incomingEdges.containsKey(resolver))
+						dismissByTransitiveResolver(inc, resolver);
+					else
+						addIncomingGuaranteedPrefix(inc, resolver);
+				}
+			});
+		} else if(resolvedAccessPath.isPrefixOf(incAccPath) == PrefixTestResult.GUARANTEED_PREFIX) {
+			addIncomingGuaranteedPrefix(inc, null);
+		}
+		else if(incAccPath.isPrefixOf(resolvedAccessPath).atLeast(PrefixTestResult.POTENTIAL_PREFIX)) {
 			processIncomingPotentialPrefix(inc);
 		}
 	}
 	
-	protected void interestByIncoming(Incoming inc, Resolver<Field, Fact, Stmt, Method> transitiveResolver) {
+	protected void dismissByTransitiveResolver(Incoming inc, Resolver<Field, Fact, Stmt, Method> resolver) {
+		log("Dismissed Incoming Edge "+inc+" because we already saw the same transitive resolver: "+resolver);		
+	}
+
+	private void addIncomingGuaranteedPrefix(Incoming inc, Resolver<Field, Fact, Stmt, Method> transitiveResolver) {
+		boolean isNewTransitiveResolver = incomingEdges.containsKey(transitiveResolver);
+		
+		if(!incomingEdges.put(transitiveResolver, inc))
+			return;
+		log("Incoming Edge: "+inc+ "(transitive resolver: "+transitiveResolver+")");
+		
+		interestByIncoming(inc);
+		
+		for(ResolverTemplate<Field, Fact, Stmt, Method, Incoming> nestedResolver : Lists.newLinkedList(nestedResolvers.values())) {
+			nestedResolver.addIncoming(inc);
+		}
+		
+		processIncomingGuaranteedPrefix(inc);
+		
+		if(isNewTransitiveResolver) {
+			for(TransitiveResolverCallback<Field, Fact, Stmt, Method> callback : Lists.newLinkedList(transitiveResolverCallbacks)) {
+				if(transitiveResolver == null)
+					callback.resolvedByIncomingAccessPath();
+				else
+					callback.resolvedBy(transitiveResolver);
+			}
+		}
+	}
+
+	protected void interestByIncoming(Incoming inc) {
 		if(getAccessPathOf(inc).equals(resolvedAccessPath) || resolvedAccessPath.getExclusions().size() < 1) {
-			interest(new AccessPathAndResolver<Field, Fact, Stmt, Method>(getAnalyzer(inc), AccessPath.<Field>empty(), this), transitiveResolver);
+			interest(new AccessPathAndResolver<Field, Fact, Stmt, Method>(getAnalyzer(inc), AccessPath.<Field>empty(), this));
 		}
 		else {
 			AccessPath<Field> deltaTo = resolvedAccessPath.getDeltaToAsAccessPath(getAccessPathOf(inc));
 			ResolverTemplate<Field,Fact,Stmt,Method,Incoming> nestedResolver = getOrCreateNestedResolver(getAccessPathOf(inc));
-			interest(new AccessPathAndResolver<Field, Fact, Stmt, Method>(getAnalyzer(inc), deltaTo, nestedResolver), null);
+			interest(new AccessPathAndResolver<Field, Fact, Stmt, Method>(nestedResolver.getAnalyzer(inc), deltaTo, nestedResolver));
 		}
 	}
 	
@@ -120,7 +170,7 @@ public abstract class ResolverTemplate<Field, Fact, Stmt, Method, Incoming>  ext
 					allResolversInExclHierarchy.put(newAccPath, nestedResolver);
 				nestedResolvers.put(newAccPath, nestedResolver);
 				for(Entry<Resolver<Field, Fact, Stmt, Method>, Incoming> inc : Lists.newLinkedList(incomingEdges.entries())) {
-					nestedResolver.addIncoming(inc.getValue(), inc.getKey());
+					nestedResolver.addIncoming(inc.getValue());
 				}
 				return nestedResolver;
 			}

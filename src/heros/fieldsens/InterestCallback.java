@@ -16,8 +16,7 @@ import heros.fieldsens.structs.AccessPathAndResolver;
 public interface InterestCallback<Field, Fact, Stmt, Method> {
 
 	void interest(PerAccessPathMethodAnalyzer<Field, Fact, Stmt, Method> analyzer,
-			AccessPathAndResolver<Field, Fact, Stmt, Method> accPathResolver,
-			Resolver<Field, Fact, Stmt, Method> transitiveResolver);
+			AccessPathAndResolver<Field, Fact, Stmt, Method> accPathResolver);
 	
 	void canBeResolvedEmpty();
 }

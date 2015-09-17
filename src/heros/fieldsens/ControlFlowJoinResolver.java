@@ -56,6 +56,17 @@ public class ControlFlowJoinResolver<Field, Fact, Stmt, Method> extends Resolver
 		return inc.getAccessPathAndResolver().getAnalyzer();
 	}
 
+	@Override
+	protected boolean addSameTransitiveResolver() {
+		return false;
+	}
+	
+	@Override
+	protected void registerTransitiveResolverCallback(WrappedFact<Field, Fact, Stmt, Method> inc,
+			TransitiveResolverCallback<Field, Fact, Stmt, Method> callback) {
+		inc.getAccessPathAndResolver().resolver.registerTransitiveResolverCallback(callback);
+	}
+	
 	protected void processIncomingGuaranteedPrefix(heros.fieldsens.structs.WrappedFact<Field,Fact,Stmt,Method> fact) {
 		PerAccessPathMethodAnalyzer<Field, Fact, Stmt, Method> analyzer = fact.getAccessPathAndResolver().getAnalyzer();
 		if(!propagated.add(analyzer)) {
@@ -70,12 +81,12 @@ public class ControlFlowJoinResolver<Field, Fact, Stmt, Method> extends Resolver
 	};
 	
 	@Override
-	protected void interestByIncoming(WrappedFact<Field, Fact, Stmt, Method> inc, Resolver<Field, Fact, Stmt, Method> transitiveResolver) {
+	protected void interestByIncoming(WrappedFact<Field, Fact, Stmt, Method> inc) {
 		if(resolvedAccessPath.isEmpty())
-			interest(new AccessPathAndResolver<Field, Fact, Stmt, Method>(inc.getAccessPathAndResolver().getAnalyzer(), AccessPath.<Field>empty(), this), null);
+			interest(new AccessPathAndResolver<Field, Fact, Stmt, Method>(inc.getAccessPathAndResolver().getAnalyzer(), AccessPath.<Field>empty(), this));
 		else {
 			AccessPath<Field> delta = resolvedAccessPath.getDeltaToAsAccessPath(inc.getAccessPathAndResolver().accessPath);
-			interest(inc.getAccessPathAndResolver().withAccessPath(delta), transitiveResolver);
+			interest(inc.getAccessPathAndResolver().withAccessPath(delta));
 		}
 	}
 
@@ -85,9 +96,8 @@ public class ControlFlowJoinResolver<Field, Fact, Stmt, Method> extends Resolver
 		fact.getAccessPathAndResolver().resolve(new DeltaConstraint<Field>(delta), new InterestCallback<Field, Fact, Stmt, Method>() {
 			@Override
 			public void interest(PerAccessPathMethodAnalyzer<Field, Fact, Stmt, Method> analyzer,
-					AccessPathAndResolver<Field, Fact, Stmt, Method> accPathResolver,
-					Resolver<Field, Fact, Stmt, Method> transitiveResolver) {
-				ControlFlowJoinResolver.this.interest(accPathResolver, transitiveResolver);
+					AccessPathAndResolver<Field, Fact, Stmt, Method> accPathResolver) {
+				ControlFlowJoinResolver.this.interest(accPathResolver);
 			}
 
 			@Override
