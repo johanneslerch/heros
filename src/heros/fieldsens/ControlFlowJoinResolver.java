@@ -57,6 +57,11 @@ public class ControlFlowJoinResolver<Field, Fact, Stmt, Method> extends Resolver
 	}
 
 	@Override
+	protected Resolver<Field, Fact, Stmt, Method> getResolver(WrappedFact<Field, Fact, Stmt, Method> inc) {
+		return inc.getAccessPathAndResolver().resolver;
+	}
+	
+	@Override
 	protected boolean addSameTransitiveResolver() {
 		return false;
 	}

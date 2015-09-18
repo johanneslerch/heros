@@ -71,6 +71,8 @@ public abstract class ResolverTemplate<Field, Fact, Stmt, Method, Incoming>  ext
 	
 	protected abstract boolean addSameTransitiveResolver();
 	
+	protected abstract Resolver<Field, Fact, Stmt, Method> getResolver(Incoming inc);
+	
 	public void addIncoming(final Incoming inc) {
 		AccessPath<Field> incAccPath = getAccessPathOf(inc);
 		if(incAccPath.equals(resolvedAccessPath)) {
@@ -148,8 +150,9 @@ public abstract class ResolverTemplate<Field, Fact, Stmt, Method, Incoming>  ext
 			if(constraint.canBeAppliedTo(resolvedAccessPath) && !isLocked()) {
 				AccessPath<Field> newAccPath = constraint.applyToAccessPath(resolvedAccessPath);
 				ResolverTemplate<Field,Fact,Stmt,Method,Incoming> nestedResolver = getOrCreateNestedResolver(newAccPath);
-				if(nestedResolver == this)
+				if(nestedResolver == this) {
 					return;
+				}
 				assert nestedResolver.resolvedAccessPath.equals(constraint.applyToAccessPath(resolvedAccessPath));
 				nestedResolver.registerCallback(callback);
 			}

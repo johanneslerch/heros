@@ -36,6 +36,11 @@ public class CallEdgeResolver<Field, Fact, Stmt, Method> extends ResolverTemplat
 	}
 
 	@Override
+	protected Resolver<Field, Fact, Stmt, Method> getResolver(CallEdge<Field, Fact, Stmt, Method> inc) {
+		return inc.getCalleeSourceFact().getAccessPathAndResolver().resolver;
+	}
+	
+	@Override
 	protected AccessPath<Field> getAccessPathOf(CallEdge<Field, Fact, Stmt, Method> inc) {
 		return inc.getCalleeSourceFact().getAccessPathAndResolver().accessPath;
 	}

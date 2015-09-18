@@ -46,7 +46,7 @@ public class PerAccessPathMethodAnalyzer<Field, Fact, Stmt, Method> {
 		@Override
 		protected ReturnSiteHandling<Field, Fact, Stmt, Method> createItem(FactAtStatement<Fact, Stmt> key) {
 			assert context.icfg.getMethodOf(key.stmt).equals(method);
-			return new ReturnSiteHandling<Field, Fact, Stmt, Method>(key.fact, key.stmt, debugger, getLogger());
+			return new ReturnSiteHandling<Field, Fact, Stmt, Method>(PerAccessPathMethodAnalyzer.this, key.fact, key.stmt, debugger, getLogger());
 		}
 	};
 	private DefaultValueMap<FactAtStatement<Fact, Stmt>, ControlFlowJoinResolver<Field, Fact, Stmt, Method>> ctrFlowJoinResolvers = new DefaultValueMap<FactAtStatement<Fact, Stmt>, ControlFlowJoinResolver<Field,Fact,Stmt,Method>>() {
@@ -59,14 +59,6 @@ public class PerAccessPathMethodAnalyzer<Field, Fact, Stmt, Method> {
 	private CallEdgeResolver<Field, Fact, Stmt, Method> callEdgeResolver;
 	private PerAccessPathMethodAnalyzer<Field, Fact, Stmt, Method> parent;
 	private Debugger<Field, Fact, Stmt, Method> debugger;
-//	private DefaultValueMap<Delta<Field>, PerAccessPathMethodAnalyzer<Field, Fact, Stmt, Method>> repeatingAnalyzers = new DefaultValueMap<Delta<Field>, PerAccessPathMethodAnalyzer<Field, Fact, Stmt, Method>>() {
-//		@Override
-//		protected PerAccessPathMethodAnalyzer<Field, Fact, Stmt, Method> createItem(Delta<Field> key) {
-//			PerAccessPathMethodAnalyzer<Field, Fact, Stmt, Method> result = new PerAccessPathMethodAnalyzer<Field, Fact, Stmt, Method>(method, sourceFact, context, debugger, accessPath, key, PerAccessPathMethodAnalyzer.this);
-//			result.callEdgeResolver = new RepeatedFieldCallEdgeResolver<Field, Fact, Stmt, Method>(result, debugger, callEdgeResolver, key);
-//			return result;
-//		}
-//	};
 	private Delta<Field> repeatedDelta;
 
 	public PerAccessPathMethodAnalyzer(Method method, Fact sourceFact, Context<Field, Fact, Stmt, Method> context, Debugger<Field, Fact, Stmt, Method> debugger) {
@@ -89,17 +81,8 @@ public class PerAccessPathMethodAnalyzer<Field, Fact, Stmt, Method> {
 		this.context = context;
 		if(parent != null) {
 			this.ctrFlowJoinResolvers = parent.ctrFlowJoinResolvers;
-			this.returnSiteResolvers = parent.returnSiteResolvers;
 		}
 	}
-	
-//	public PerAccessPathMethodAnalyzer<Field, Fact, Stmt, Method> createWithRepeatingResolver(Delta<Field> delta) {
-//		assert delta.accesses.length > 0;
-//		if(accessPath.hasSuffix(delta))
-//			return parent.createWithRepeatingResolver(delta);
-//		else
-//			return repeatingAnalyzers.getOrCreate(delta);
-//	}
 	
 	PerAccessPathMethodAnalyzer<Field, Fact, Stmt, Method> getParent() {
 		return parent;

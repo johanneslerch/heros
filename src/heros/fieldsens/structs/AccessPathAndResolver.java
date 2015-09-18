@@ -10,6 +10,8 @@
  ******************************************************************************/
 package heros.fieldsens.structs;
 
+import com.google.common.base.Predicate;
+
 import heros.fieldsens.AccessPath;
 import heros.fieldsens.AccessPath.Delta;
 import heros.fieldsens.AccessPath.PrefixTestResult;
@@ -105,6 +107,15 @@ public class AccessPathAndResolver<Field, Fact, Stmt, Method> {
 		else
 			return nesting.getLast();
 	}
+	
+	public AccessPathAndResolver<Field, Fact, Stmt, Method> removeLast() {
+		if(nesting == null)
+			throw new IllegalStateException();
+		if(nesting.nesting == null)
+			return new AccessPathAndResolver<Field, Fact, Stmt, Method>(analyzer, accessPath, resolver);
+		else
+			return new AccessPathAndResolver<Field, Fact, Stmt, Method>(analyzer, accessPath, resolver, nesting.removeLast());
+	}
 
 	public AccessPathAndResolver<Field, Fact, Stmt, Method> appendToLast(AccessPathAndResolver<Field, Fact, Stmt, Method> nesting) {
 		if (nesting == null)
@@ -128,6 +139,24 @@ public class AccessPathAndResolver<Field, Fact, Stmt, Method> {
 				return new AccessPathAndResolver<Field, Fact, Stmt, Method>(analyzer, accessPath, resolver, this.nesting.appendToLast(nesting));
 		}
 	}
+
+	public boolean exists(Predicate<AccessPathAndResolver<Field, Fact, Stmt, Method>> predicate) {
+		if(predicate.apply(this))
+			return true;
+		else if(nesting == null)
+			return false;
+		else
+			return nesting.exists(predicate);			
+	}
+	
+	public AccessPathAndResolver<Field, Fact, Stmt, Method> removeStartingWith(Predicate<AccessPathAndResolver<Field, Fact, Stmt, Method>> predicate) {
+		if(nesting == null)
+			return this;
+		if(predicate.apply(nesting))
+			return new AccessPathAndResolver<Field, Fact, Stmt, Method>(analyzer, accessPath, resolver);
+		return new AccessPathAndResolver<Field, Fact, Stmt, Method>(analyzer, accessPath, resolver, nesting.removeStartingWith(predicate));
+	}
+	
 
 	@Override
 	public int hashCode() {
@@ -173,5 +202,4 @@ public class AccessPathAndResolver<Field, Fact, Stmt, Method> {
 			result+= " :: "+nesting;
 		return result;
 	}
-
 }
