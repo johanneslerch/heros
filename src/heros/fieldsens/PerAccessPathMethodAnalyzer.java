@@ -134,6 +134,7 @@ public class PerAccessPathMethodAnalyzer<Field, Fact, Stmt, Method> {
 	}
 
 	void scheduleEdgeTo(WrappedFactAtStatement<Field, Fact, Stmt, Method> factAtStmt) {
+		assert factAtStmt.getAccessPathAndResolver().getAnalyzer().method.equals(method);
 		assert context.icfg.getMethodOf(factAtStmt.getStatement()).equals(method);
 		if (reachableStatements.containsKey(factAtStmt)) {
 			log("Merging "+factAtStmt);

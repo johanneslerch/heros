@@ -122,7 +122,7 @@ public class AccessPathAndResolver<Field, Fact, Stmt, Method> {
 			return this;
 
 		if(this.resolver instanceof ZeroCallEdgeResolver) {
-			PerAccessPathMethodAnalyzer<Field, Fact, Stmt, Method> zeroAnalyzer = nesting.analyzer.createWithZeroCallEdgeResolver();
+			PerAccessPathMethodAnalyzer<Field, Fact, Stmt, Method> zeroAnalyzer = nesting.getAnalyzer().createWithZeroCallEdgeResolver();
 			return new AccessPathAndResolver<Field, Fact, Stmt, Method>(zeroAnalyzer, accessPath, zeroAnalyzer.getCallEdgeResolver());
 		} else if (this.nesting == null) {
 			if(isNullOrCallEdgeResolver(resolver))

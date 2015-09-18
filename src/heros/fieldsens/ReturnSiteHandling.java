@@ -111,7 +111,8 @@ public class ReturnSiteHandling<Field, Fact, Stmt, Method> {
 		@Override
 		protected void registerTransitiveResolverCallback(AccessPathAndResolver<Field, Fact, Stmt, Method> inc,
 				TransitiveResolverCallback<Field, Fact, Stmt, Method> callback) {
-			inc.resolver.registerTransitiveResolverCallback(callback);
+//			inc.resolver.registerTransitiveResolverCallback(callback);
+			callback.resolvedByIncomingAccessPath();
 		}
 
 		@Override
@@ -193,7 +194,8 @@ public class ReturnSiteHandling<Field, Fact, Stmt, Method> {
 		@Override
 		protected void registerTransitiveResolverCallback(AccessPathAndResolver<Field, Fact, Stmt, Method> inc,
 				TransitiveResolverCallback<Field, Fact, Stmt, Method> callback) {
-			inc.resolver.registerTransitiveResolverCallback(callback);
+//			inc.resolver.registerTransitiveResolverCallback(callback);
+			callback.resolvedByIncomingAccessPath();
 		}
 
 		@Override
