@@ -47,44 +47,21 @@ public class CallEdgeResolver<Field, Fact, Stmt, Method> extends ResolverTemplat
 		return analyzer;
 	}
 	
-//	@SuppressWarnings({ "rawtypes", "unchecked" })
-//	@Override
-//	protected void interestByIncoming(CallEdge<Field, Fact, Stmt, Method> inc) {
-//		AccessPathAndResolver<Field, Fact, Stmt, Method> incAccPathRes = inc.getCalleeSourceFact().getAccessPathAndResolver();
-//		if(!resolvedAccessPath.isEmpty() && incAccPathRes.resolver != this && incAccPathRes.resolver.isParentOf(this)) {
-//			Delta repeatDelta = ((CallEdgeResolver)incAccPathRes.resolver).resolvedAccessPath.getDeltaTo(resolvedAccessPath);
-//			PerAccessPathMethodAnalyzer<Field,Fact,Stmt,Method> repeatingAnalyzer = incAccPathRes.resolver.analyzer.createWithRepeatingResolver(repeatDelta);
-//			AccessPath<Field> accPath = resolvedAccessPath.getDeltaToAsAccessPath(incAccPathRes.accessPath);
-//			interest(new AccessPathAndResolver<Field, Fact, Stmt, Method>(accPath, repeatingAnalyzer.getCallEdgeResolver()));
-//		}
-//		else
-//			super.interestByIncoming(inc);
-//	}
-	
-	@Override
-	protected boolean addSameTransitiveResolver() {
-		return true;
-	}
-	
 	@Override
 	protected void registerTransitiveResolverCallback(CallEdge<Field, Fact, Stmt, Method> inc,
-			final TransitiveResolverCallback<Field, Fact, Stmt, Method> callback) {
-		if(resolvedAccessPath.isEmpty())
-			callback.resolvedByIncomingAccessPath();
-		else {
-			final Resolver<Field, Fact, Stmt, Method> incResolver = inc.getCalleeSourceFact().getAccessPathAndResolver().resolver;
-			incResolver.registerTransitiveResolverCallback(new TransitiveResolverCallback<Field, Fact, Stmt, Method>() {
-				@Override
-				public void resolvedByIncomingAccessPath() {
-					callback.resolvedBy(incResolver);
-				}
-	
-				@Override
-				public void resolvedBy(Resolver<Field, Fact, Stmt, Method> resolver) {
-					callback.resolvedBy(resolver);
-				}
-			});
-		}
+		final TransitiveResolverCallback<Field, Fact, Stmt, Method> callback) {
+		final Resolver<Field, Fact, Stmt, Method> incResolver = inc.getCalleeSourceFact().getAccessPathAndResolver().resolver;
+		incResolver.registerTransitiveResolverCallback(new TransitiveResolverCallback<Field, Fact, Stmt, Method>() {
+			@Override
+			public void resolvedByIncomingAccessPath() {
+				callback.resolvedBy(incResolver);
+			}
+
+			@Override
+			public void resolvedBy(Resolver<Field, Fact, Stmt, Method> resolver) {
+				callback.resolvedBy(resolver);
+			}
+		});
 	}
 	
 	@Override

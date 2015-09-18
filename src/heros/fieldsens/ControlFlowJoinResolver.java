@@ -62,11 +62,6 @@ public class ControlFlowJoinResolver<Field, Fact, Stmt, Method> extends Resolver
 	}
 	
 	@Override
-	protected boolean addSameTransitiveResolver() {
-		return false;
-	}
-	
-	@Override
 	protected void registerTransitiveResolverCallback(WrappedFact<Field, Fact, Stmt, Method> inc,
 			TransitiveResolverCallback<Field, Fact, Stmt, Method> callback) {
 		inc.getAccessPathAndResolver().resolver.registerTransitiveResolverCallback(callback);

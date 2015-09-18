@@ -49,35 +49,31 @@ public class ReturnSiteHandling<Field, Fact, Stmt, Method> {
 		if(!isRecursionPossible) {
 			isRecursionPossible = true;
 			for(Entry<Resolver<Field, Fact, Stmt, Method>, AccessPathAndResolver<Field, Fact, Stmt, Method>> inc : Lists.newLinkedList(callSiteResolver.incomingEdges.entries())) {
-				callSiteResolver.addIncoming(inc.getValue().appendToLast(new AccessPathAndResolver<Field, Fact, Stmt, Method>(
-						analyzer, AccessPath.<Field>empty(), callSiteResolver)));
+				if(!(inc.getValue().resolver instanceof ReturnSiteHandling.CallSiteResolver))
+					callSiteResolver.addIncoming(inc.getValue().appendToLast(new AccessPathAndResolver<Field, Fact, Stmt, Method>(
+							analyzer, AccessPath.<Field>empty(), callSiteResolver)));
 			}
 		}
 	}
 	
 	public void addIncomingEdge(AccessPathAndResolver<Field, Fact, Stmt, Method> returnEdge, AccessPathAndResolver<Field, Fact, Stmt, Method> callEdge,
 			Resolver<Field, Fact, Stmt, Method> transitiveCallResolver) {
-		if (returnEdge.exists(new Predicate<AccessPathAndResolver<Field, Fact, Stmt, Method>>() {
-			@Override
-			public boolean apply(AccessPathAndResolver<Field, Fact, Stmt, Method> input) {
-				return input.resolver.equals(callSiteResolver);
-			}
-		})) {
+		
+		if(returnEdge.resolver == returnSiteResolver) 
 			setRecursionIsPossible();
-			AccessPathAndResolver<Field, Fact, Stmt, Method> strippedReturnEdge = returnEdge
-					.removeStartingWith(new Predicate<AccessPathAndResolver<Field, Fact, Stmt, Method>>() {
-						@Override
-						public boolean apply(AccessPathAndResolver<Field, Fact, Stmt, Method> input) {
-							return input.resolver.equals(callSiteResolver);
-						}
-					});
-			returnSiteResolver.addIncoming(strippedReturnEdge);
-		} else
-			returnSiteResolver.addIncoming(returnEdge);
-		callSiteResolver.addIncoming(callEdge);
-		if(isRecursionPossible)
+		if(returnEdge.hasNesting())
+			callSiteResolver.addIncoming(returnEdge.getNesting());
+
+		returnSiteResolver.addIncoming(returnEdge.withoutNesting());
+		
+		if(callEdge.resolver == callSiteResolver) {
+			setRecursionIsPossible();
+		}
+		else if(isRecursionPossible) 
 			callSiteResolver.addIncoming(callEdge.appendToLast(
 					new AccessPathAndResolver<Field, Fact, Stmt, Method>(analyzer, AccessPath.<Field>empty(), callSiteResolver)));
+		
+		callSiteResolver.addIncoming(callEdge);
 	}
 	
 	public class CallSiteResolver extends ResolverTemplate<Field, Fact, Stmt, Method, AccessPathAndResolver<Field, Fact, Stmt, Method>> {
@@ -99,11 +95,6 @@ public class ReturnSiteHandling<Field, Fact, Stmt, Method> {
 		}
 		
 		@Override
-		protected boolean addSameTransitiveResolver() {
-			return false;
-		}
-		
-		@Override
 		protected PerAccessPathMethodAnalyzer<Field, Fact, Stmt, Method> getAnalyzer(AccessPathAndResolver<Field, Fact, Stmt, Method> inc) {
 			return analyzer;
 		}
@@ -111,8 +102,8 @@ public class ReturnSiteHandling<Field, Fact, Stmt, Method> {
 		@Override
 		protected void registerTransitiveResolverCallback(AccessPathAndResolver<Field, Fact, Stmt, Method> inc,
 				TransitiveResolverCallback<Field, Fact, Stmt, Method> callback) {
-//			inc.resolver.registerTransitiveResolverCallback(callback);
-			callback.resolvedByIncomingAccessPath();
+			inc.resolver.registerTransitiveResolverCallback(callback);
+//			callback.resolvedByIncomingAccessPath();
 		}
 
 		@Override
@@ -122,7 +113,14 @@ public class ReturnSiteHandling<Field, Fact, Stmt, Method> {
 				@Override
 				public void interest(PerAccessPathMethodAnalyzer<Field, Fact, Stmt, Method> analyzer,
 						AccessPathAndResolver<Field, Fact, Stmt, Method> accPathResolver) {
-					CallSiteResolver.this.interest(accPathResolver);
+					if(accPathResolver.resolver instanceof ReturnSiteHandling.CallSiteResolver)
+						CallSiteResolver.this.interest(new AccessPathAndResolver<Field, Fact, Stmt, Method>(
+								ReturnSiteHandling.this.analyzer, accPathResolver.accessPath, CallSiteResolver.this.parent));
+					else if(!accPathResolver.hasNesting() && ReturnSiteHandling.this.analyzer.getCallEdgeResolver().isParentOf(accPathResolver.getAnalyzer().getCallEdgeResolver()))
+						CallSiteResolver.this.interest(accPathResolver);
+					else 
+						CallSiteResolver.this.interest(accPathResolver.withoutNesting().appendToLast(new AccessPathAndResolver<Field, Fact, Stmt, Method>(
+								ReturnSiteHandling.this.analyzer, accPathResolver.hasNesting() ? accPathResolver.getNesting().accessPath : AccessPath.<Field>empty(), CallSiteResolver.this.parent)));
 				}
 
 				@Override
@@ -172,11 +170,6 @@ public class ReturnSiteHandling<Field, Fact, Stmt, Method> {
 		}
 
 		@Override
-		protected boolean addSameTransitiveResolver() {
-			return false;
-		}
-		
-		@Override
 		protected Resolver<Field, Fact, Stmt, Method> getResolver(AccessPathAndResolver<Field, Fact, Stmt, Method> inc) {
 			return inc.resolver;
 		}
@@ -194,8 +187,8 @@ public class ReturnSiteHandling<Field, Fact, Stmt, Method> {
 		@Override
 		protected void registerTransitiveResolverCallback(AccessPathAndResolver<Field, Fact, Stmt, Method> inc,
 				TransitiveResolverCallback<Field, Fact, Stmt, Method> callback) {
-//			inc.resolver.registerTransitiveResolverCallback(callback);
-			callback.resolvedByIncomingAccessPath();
+			inc.resolver.registerTransitiveResolverCallback(callback);
+//			callback.resolvedByIncomingAccessPath();
 		}
 
 		@Override
@@ -205,23 +198,17 @@ public class ReturnSiteHandling<Field, Fact, Stmt, Method> {
 				@Override
 				public void interest(PerAccessPathMethodAnalyzer<Field, Fact, Stmt, Method> analyzer,
 						AccessPathAndResolver<Field, Fact, Stmt, Method> accPathResolver) {
-					if(accPathResolver.resolver.isParentOf(ReturnSiteResolver.this))
-						setRecursionIsPossible();
 					
-					if(accPathResolver != accPathResolver.getLast()) {
-						if(accPathResolver.getLast().resolver.equals(callSiteResolver))
-							ReturnSiteResolver.this.interest(accPathResolver.removeLast());
-						else if(accPathResolver.getLast().resolver instanceof ReturnSiteHandling.CallSiteResolver) {
-							ReturnSiteResolver.this.interest(accPathResolver.removeLast());
-							callSiteResolver.addIncoming(accPathResolver.getLast().appendToLast(
-									new AccessPathAndResolver<Field, Fact, Stmt, Method>(
-											ReturnSiteHandling.this.analyzer, AccessPath.<Field>empty(), callSiteResolver)));
-						}
-						else
-							ReturnSiteResolver.this.interest(accPathResolver);
+					if(accPathResolver.resolver.isParentOf(ReturnSiteResolver.this)) {
+						setRecursionIsPossible();
 					}
-					else
-						ReturnSiteResolver.this.interest(accPathResolver);
+				
+					if(accPathResolver.hasNesting()) {
+						callSiteResolver.addIncoming(accPathResolver.getNesting());
+						if(accPathResolver.getNesting().resolver == callSiteResolver)
+							setRecursionIsPossible();
+					}
+					ReturnSiteResolver.this.interest(accPathResolver.withoutNesting());
 				}
 
 				@Override

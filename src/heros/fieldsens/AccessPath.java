@@ -39,6 +39,7 @@ public class AccessPath<T> {
 	AccessPath(T[] accesses, Set<T> exclusions) {
 		this.accesses = accesses;
 		this.exclusions = exclusions;
+//		assert accesses.length <= 4;
 	}
 	
 	public boolean hasSuffix(Delta<T> suffix) {

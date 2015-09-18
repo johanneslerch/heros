@@ -43,6 +43,15 @@ public class AccessPathAndResolver<Field, Fact, Stmt, Method> {
 		this.accessPath = accessPath;
 		this.resolver = resolver;
 		this.nesting = nesting;
+		
+		assert depth() <= 2;
+	}
+	
+	private int depth() {
+		if(nesting == null)
+			return 1;
+		else
+			return 1+nesting.depth();
 	}
 
 	public AccessPathAndResolver<Field, Fact, Stmt, Method> withAccessPath(AccessPath<Field> accPath) {
@@ -61,7 +70,6 @@ public class AccessPathAndResolver<Field, Fact, Stmt, Method> {
 			resolveViaNesting(constraint, callback);
 		} else {
 			resolver.resolve(constraint, new InterestCallback<Field, Fact, Stmt, Method>() {
-
 				@Override
 				public void interest(PerAccessPathMethodAnalyzer<Field, Fact, Stmt, Method> analyzer,
 						AccessPathAndResolver<Field, Fact, Stmt, Method> accPathResolver) {
@@ -125,17 +133,17 @@ public class AccessPathAndResolver<Field, Fact, Stmt, Method> {
 			PerAccessPathMethodAnalyzer<Field, Fact, Stmt, Method> zeroAnalyzer = nesting.getAnalyzer().createWithZeroCallEdgeResolver();
 			return new AccessPathAndResolver<Field, Fact, Stmt, Method>(zeroAnalyzer, accessPath, zeroAnalyzer.getCallEdgeResolver());
 		} else if (this.nesting == null) {
-			if(isNullOrCallEdgeResolver(resolver))
+			/*if(isNullOrCallEdgeResolver(resolver))
 				return nesting.withAccessPath(accessPath.append(nesting.accessPath));
-			else if(resolver instanceof ReturnSiteHandling.CallSiteResolver && resolver==nesting.resolver)
+			else*/ if(resolver instanceof ReturnSiteHandling.CallSiteResolver && resolver==nesting.resolver)
 				return appendToLast(nesting.nesting);
 			else
 				return new AccessPathAndResolver<Field, Fact, Stmt, Method>(analyzer, accessPath, resolver, nesting);
 		}
 		else {
-			 if(isNullOrCallEdgeResolver(resolver))
+			 /*if(isNullOrCallEdgeResolver(resolver))
 				return this.nesting.withAccessPath(accessPath.append(this.nesting.accessPath)).appendToLast(nesting);
-			else
+			else*/
 				return new AccessPathAndResolver<Field, Fact, Stmt, Method>(analyzer, accessPath, resolver, this.nesting.appendToLast(nesting));
 		}
 	}
@@ -201,5 +209,20 @@ public class AccessPathAndResolver<Field, Fact, Stmt, Method> {
 		if(nesting != null)
 			result+= " :: "+nesting;
 		return result;
+	}
+
+	public boolean hasNesting() {
+		return nesting != null;
+	}
+
+	public AccessPathAndResolver<Field, Fact, Stmt, Method> getNesting() {
+		return nesting;
+	}
+
+	public AccessPathAndResolver<Field, Fact, Stmt, Method> withoutNesting() {
+		if(nesting == null)
+			return this;
+		else
+			return new AccessPathAndResolver<Field, Fact, Stmt, Method>(analyzer, accessPath, resolver);
 	}
 }

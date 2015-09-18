@@ -69,10 +69,20 @@ public abstract class ResolverTemplate<Field, Fact, Stmt, Method, Incoming>  ext
 		}
 	}
 	
-	protected abstract boolean addSameTransitiveResolver();
-	
 	protected abstract Resolver<Field, Fact, Stmt, Method> getResolver(Incoming inc);
 	
+	private boolean shouldDismiss(Incoming inc, Resolver<Field, Fact, Stmt, Method> transitiveResolver) {
+		if(incomingEdges.containsKey(transitiveResolver)) {
+			for(Incoming existingInc : incomingEdges.get(transitiveResolver)) {
+				if(getResolver(existingInc).isParentOf(getResolver(inc)))
+					return true;
+				else if(getResolver(inc).isParentOf(getResolver(existingInc)))
+					System.out.println();
+			}
+		}
+		return false;
+	}
+
 	public void addIncoming(final Incoming inc) {
 		AccessPath<Field> incAccPath = getAccessPathOf(inc);
 		if(incAccPath.equals(resolvedAccessPath)) {
@@ -84,7 +94,7 @@ public abstract class ResolverTemplate<Field, Fact, Stmt, Method, Incoming>  ext
 				
 				@Override
 				public void resolvedBy(Resolver<Field, Fact, Stmt, Method> resolver) {
-					if(incomingEdges.containsKey(resolver))
+					if(shouldDismiss(inc, resolver))
 						dismissByTransitiveResolver(inc, resolver);
 					else
 						addIncomingGuaranteedPrefix(inc, resolver);
@@ -94,12 +104,14 @@ public abstract class ResolverTemplate<Field, Fact, Stmt, Method, Incoming>  ext
 			addIncomingGuaranteedPrefix(inc, null);
 		}
 		else if(incAccPath.isPrefixOf(resolvedAccessPath).atLeast(PrefixTestResult.POTENTIAL_PREFIX)) {
+//			lock();
 			processIncomingPotentialPrefix(inc);
+//			unlock();
 		}
 	}
 	
 	protected void dismissByTransitiveResolver(Incoming inc, Resolver<Field, Fact, Stmt, Method> resolver) {
-		log("Dismissed Incoming Edge "+inc+" because we already saw the same transitive resolver: "+resolver);		
+//		log("Dismissed Incoming Edge "+inc+" because we already saw the same transitive resolver: "+resolver);		
 	}
 
 	private void addIncomingGuaranteedPrefix(Incoming inc, Resolver<Field, Fact, Stmt, Method> transitiveResolver) {
@@ -109,6 +121,7 @@ public abstract class ResolverTemplate<Field, Fact, Stmt, Method, Incoming>  ext
 			return;
 		log("Incoming Edge: "+inc+ "(transitive resolver: "+transitiveResolver+")");
 		
+		System.out.println("TransRes: "+transitiveResolver+" for "+resolvedAccessPath);
 		interestByIncoming(inc);
 		
 		for(ResolverTemplate<Field, Fact, Stmt, Method, Incoming> nestedResolver : Lists.newLinkedList(nestedResolvers.values())) {
@@ -147,7 +160,7 @@ public abstract class ResolverTemplate<Field, Fact, Stmt, Method, Incoming>  ext
 		if(!isLocked()) {
 			log("Resolve: "+constraint);
 			debugger.askedToResolve(this, constraint);
-			if(constraint.canBeAppliedTo(resolvedAccessPath) && !isLocked()) {
+			if(constraint.canBeAppliedTo(resolvedAccessPath)) {
 				AccessPath<Field> newAccPath = constraint.applyToAccessPath(resolvedAccessPath);
 				ResolverTemplate<Field,Fact,Stmt,Method,Incoming> nestedResolver = getOrCreateNestedResolver(newAccPath);
 				if(nestedResolver == this) {

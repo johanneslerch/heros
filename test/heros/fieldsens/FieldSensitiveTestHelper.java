@@ -66,6 +66,7 @@ public class FieldSensitiveTestHelper {
 	private Map<Statement, TestMethod> stmt2method = Maps.newHashMap();
 	private Multiset<ExpectedFlowFunction> remainingFlowFunctions = HashMultiset.create();
 	private TestDebugger<String, TestFact, Statement, TestMethod> debugger;
+	private Multiset<String> unexpectedUsages = HashMultiset.create();
 
 	public FieldSensitiveTestHelper(TestDebugger<String, TestFact, Statement, TestMethod> debugger) {
 		this.debugger = debugger;
@@ -354,6 +355,7 @@ public class FieldSensitiveTestHelper {
 	public void assertAllFlowFunctionsUsed() {
 		assertTrue("These Flow Functions were expected, but never used: \n" + Joiner.on(",\n").join(remainingFlowFunctions),
 				remainingFlowFunctions.isEmpty());
+		assertTrue("These Flow Functions were not expected, but used: \n "+Joiner.on(",\n").join(unexpectedUsages), unexpectedUsages.isEmpty());
 	}
 
 	private void addOrVerifyStmt2Method(Statement stmt, TestMethod m) {
@@ -487,14 +489,13 @@ public class FieldSensitiveTestHelper {
 						boolean found = false;
 						for (ExpectedFlowFunction<TestFact> ff : edge.flowFunctions) {
 							if (ff.source.equals(source)) {
-								if (remainingFlowFunctions.remove(ff)) {
-									for(TestFact target : ff.targets) {
-										result.add(ff.apply(target, accPathHandler));
-									}
-									found = true;
-								} else {
-									throw new AssertionError(String.format("Flow Function '%s' was used multiple times on edge '%s'", ff, edge));
+								if (!remainingFlowFunctions.remove(ff)) {
+									unexpectedUsages.add(String.format("Flow Function '%s' was used multiple times on edge '%s'", ff, edge));
 								}
+								for(TestFact target : ff.targets) {
+									result.add(ff.apply(target, accPathHandler));
+								}
+								found = true;
 							}
 						}
 						if(found)

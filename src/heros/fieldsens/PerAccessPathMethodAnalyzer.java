@@ -56,6 +56,13 @@ public class PerAccessPathMethodAnalyzer<Field, Fact, Stmt, Method> {
 			return new ControlFlowJoinResolver<Field, Fact, Stmt, Method>(context.factHandler, key.stmt, debugger, getLogger());
 		}
 	};
+	private DefaultValueMap<FactAtStatement<Fact, Stmt>, CallSiteResolver<Field, Fact, Stmt, Method>> callSiteResolvers = new DefaultValueMap<FactAtStatement<Fact, Stmt>, CallSiteResolver<Field,Fact,Stmt,Method>>() {
+		@Override
+		protected CallSiteResolver<Field, Fact, Stmt, Method> createItem(FactAtStatement<Fact, Stmt> key) {
+			assert context.icfg.getMethodOf(key.stmt).equals(method);
+			return new CallSiteResolver<Field, Fact, Stmt, Method>(context.factHandler, key.stmt, debugger, getLogger());
+		}
+	};
 	private CallEdgeResolver<Field, Fact, Stmt, Method> callEdgeResolver;
 	private PerAccessPathMethodAnalyzer<Field, Fact, Stmt, Method> parent;
 	private Debugger<Field, Fact, Stmt, Method> debugger;
@@ -160,6 +167,17 @@ public class PerAccessPathMethodAnalyzer<Field, Fact, Stmt, Method> {
 	}
 
 	void processCall(WrappedFactAtStatement<Field,Fact, Stmt, Method> factAtStmt) {
+		if(context.icfg.getCalleesOfCallAt(factAtStmt.getStatement()).size() > 1) {
+			CallSiteResolver<Field,Fact,Stmt,Method> resolver = callSiteResolvers.getOrCreate(factAtStmt.getAsFactAtStatement());
+			resolver.addIncoming(factAtStmt.getWrappedFact());
+		}
+		else
+			processCallWithoutAbstractionPoint(factAtStmt);
+		
+		processCallToReturnEdge(factAtStmt);
+	}
+	
+	void processCallWithoutAbstractionPoint(WrappedFactAtStatement<Field, Fact, Stmt, Method> factAtStmt) {
 		Collection<Method> calledMethods = context.icfg.getCalleesOfCallAt(factAtStmt.getStatement());
 		for (Method calledMethod : calledMethods) {
 			FlowFunction<Field, Fact, Stmt, Method> flowFunction = context.flowFunctions.getCallFlowFunction(factAtStmt.getStatement(), calledMethod);
@@ -172,8 +190,6 @@ public class PerAccessPathMethodAnalyzer<Field, Fact, Stmt, Method> {
 						factAtStmt, targetFact.getFact()));
 			}
 		}
-		
-		processCallToReturnEdge(factAtStmt);
 	}
 
 	void processExit(WrappedFactAtStatement<Field, Fact, Stmt, Method> factAtStmt) {

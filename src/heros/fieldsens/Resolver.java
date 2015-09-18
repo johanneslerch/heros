@@ -25,7 +25,7 @@ import com.google.common.collect.Sets;
 public abstract class Resolver<Field, Fact, Stmt, Method> {
 
 	private boolean recursionLock = false;
-	private Resolver<Field, Fact, Stmt, Method> parent;
+	protected Resolver<Field, Fact, Stmt, Method> parent;
 	private Set<AccessPathAndResolver<Field, Fact, Stmt, Method>> interest = Sets.newHashSet();
 	private List<InterestCallback<Field, Fact, Stmt, Method>> interestCallbacks = Lists.newLinkedList();
 	private boolean canBeResolvedEmpty = false;
@@ -64,14 +64,18 @@ public abstract class Resolver<Field, Fact, Stmt, Method> {
 	
 	public abstract void resolve(Constraint<Field> constraint, InterestCallback<Field, Fact, Stmt, Method> callback);
 	
+//	boolean interestLock = false;
 	public void interest(AccessPathAndResolver<Field, Fact, Stmt, Method> accPathResolver) {
-		if(!interest.add(accPathResolver))
+		if(/*interestLock || */!interest.add(accPathResolver))
 			return;
 
 		log("Interest given by: "+accPathResolver);
+		
+//		interestLock = true;
 		for(InterestCallback<Field, Fact, Stmt, Method> callback : Lists.newLinkedList(interestCallbacks)) {
 			callback.interest(accPathResolver.getAnalyzer(), accPathResolver);
 		}
+//		interestLock = false;
 	}
 	
 	protected void canBeResolvedEmpty() {
