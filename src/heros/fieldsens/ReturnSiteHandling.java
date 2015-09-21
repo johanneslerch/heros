@@ -157,7 +157,7 @@ public class ReturnSiteHandling<Field, Fact, Stmt, Method> {
 		
 		@Override
 		public String toString() {
-			return "<"+resolvedAccessPath+":call("+returnSite+" in "+logger.getMethod()+")>";
+			return "<["+analyzer.getCallEdgeResolver()+"]"+resolvedAccessPath+":call("+returnSite+" in "+logger.getMethod()+")>";
 		}
 	}
 	
@@ -245,7 +245,7 @@ public class ReturnSiteHandling<Field, Fact, Stmt, Method> {
 		
 		@Override
 		public String toString() {
-			return "<"+resolvedAccessPath+":return("+returnSite+" in "+logger.getMethod()+")>";
+			return "<["+analyzer.getCallEdgeResolver()+"]"+resolvedAccessPath+":return("+returnSite+" in "+logger.getMethod()+")>";
 		}
 	}
 }

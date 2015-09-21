@@ -88,6 +88,7 @@ public class PerAccessPathMethodAnalyzer<Field, Fact, Stmt, Method> {
 		this.context = context;
 		if(parent != null) {
 			this.ctrFlowJoinResolvers = parent.ctrFlowJoinResolvers;
+			this.callSiteResolvers = parent.callSiteResolvers;
 		}
 	}
 	

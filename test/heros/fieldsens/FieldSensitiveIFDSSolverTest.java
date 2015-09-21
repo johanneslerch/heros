@@ -1629,10 +1629,10 @@ public class FieldSensitiveIFDSSolverTest {
 				startPoints("c"),
 				normalStmt("c", flow("1", "1")).succ("d").succ("cs1").succ("ep1"),
 				normalStmt("d", flow("1", prependField("x"), "1")).succ("cs1").succ("ep1"),
-				callSite("cs1").calls("foo", flow(2, "1", "1")).calls("bar", flow(2, "1", "1")).retSite("rs1", kill(2, "1")),
+				callSite("cs1").calls("foo", flow("1", "1")).calls("bar", flow("1", "1")).retSite("rs1", kill(2, "1")),
 				normalStmt("rs1", flow(2, "1", "1")).succ("ep1"),
 				exitStmt("ep1").returns(over("b"), to("g"), flow(3, "1", "1"))
-								.returns(over("cs1"), to("rs1"), flow(7, "1", "1"))
+								.returns(over("cs1"), to("rs1"), flow(6, "1", "1"))
 								.returns(over("cs2"), to("rs2"), flow(6, "1", "1")));
 		
 		helper.method("bar",
@@ -1812,7 +1812,7 @@ public class FieldSensitiveIFDSSolverTest {
 		helper.runSolver(false, "a");
 	}
 	
-	@Test
+	@Test@Ignore
 	public void recursiveTest4() {
 		helper.method("main",
 				startPoints("a"),
@@ -1849,7 +1849,7 @@ public class FieldSensitiveIFDSSolverTest {
 		helper.runSolver(false, "a");
 	}
 	
-	@Test
+	@Test@Ignore
 	public void recursiveTest5() {
 		helper.method("main",
 				startPoints("a"),
