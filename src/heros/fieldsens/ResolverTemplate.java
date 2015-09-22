@@ -72,15 +72,16 @@ public abstract class ResolverTemplate<Field, Fact, Stmt, Method, Incoming>  ext
 	protected abstract Resolver<Field, Fact, Stmt, Method> getResolver(Incoming inc);
 	
 	private boolean shouldDismiss(Incoming inc, Resolver<Field, Fact, Stmt, Method> transitiveResolver) {
-		if(incomingEdges.containsKey(transitiveResolver)) {
-			for(Incoming existingInc : incomingEdges.get(transitiveResolver)) {
-				if(getResolver(existingInc).isParentOf(getResolver(inc)))
-					return true;
-				else if(getResolver(inc).isParentOf(getResolver(existingInc)))
-					System.out.println();
-			}
-		}
-		return false;
+		return transitiveResolver != null && incomingEdges.containsKey(transitiveResolver);
+//		if(incomingEdges.containsKey(transitiveResolver)) {
+//			for(Incoming existingInc : incomingEdges.get(transitiveResolver)) {
+//				if(getResolver(existingInc).isParentOf(getResolver(inc)))
+//					return true;
+//				else if(getResolver(inc).isParentOf(getResolver(existingInc)))
+//					System.out.println();
+//			}
+//		}
+//		return false;
 	}
 
 	public void addIncoming(final Incoming inc) {
@@ -119,9 +120,8 @@ public abstract class ResolverTemplate<Field, Fact, Stmt, Method, Incoming>  ext
 		
 		if(!incomingEdges.put(transitiveResolver, inc))
 			return;
-		log("Incoming Edge: "+inc+ "(transitive resolver: "+transitiveResolver+")");
+		log("Incoming Edge: "+inc+ " (transitive resolver: "+transitiveResolver+")");
 		
-		System.out.println("TransRes: "+transitiveResolver+" for "+resolvedAccessPath);
 		interestByIncoming(inc);
 		
 		for(ResolverTemplate<Field, Fact, Stmt, Method, Incoming> nestedResolver : Lists.newLinkedList(nestedResolvers.values())) {

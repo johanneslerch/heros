@@ -10,14 +10,18 @@
  ******************************************************************************/
 package heros.fieldsens;
 
+import java.util.Set;
+
 import heros.fieldsens.structs.WrappedFactAtStatement;
 
 import com.google.common.collect.Lists;
+import com.google.common.collect.Sets;
 
 
 public class CallEdgeResolver<Field, Fact, Stmt, Method> extends ResolverTemplate<Field, Fact, Stmt, Method, CallEdge<Field, Fact, Stmt, Method>>  {
 
 	protected final PerAccessPathMethodAnalyzer<Field, Fact, Stmt, Method> analyzer;
+	private final Set<CallEdge<Field, Fact, Stmt, Method>> dismissedEdges = Sets.newHashSet();
 
 	public CallEdgeResolver(PerAccessPathMethodAnalyzer<Field, Fact, Stmt, Method> analyzer, Debugger<Field, Fact, Stmt, Method> debugger) {
 		this(analyzer, debugger, null);
@@ -41,7 +45,7 @@ public class CallEdgeResolver<Field, Fact, Stmt, Method> extends ResolverTemplat
 	public PerAccessPathMethodAnalyzer<Field, Fact, Stmt, Method> getAnalyzer() {
 		return analyzer;
 	}
-	
+
 	@Override
 	protected PerAccessPathMethodAnalyzer<Field, Fact, Stmt, Method> getAnalyzer(CallEdge<Field, Fact, Stmt, Method> inc) {
 		return analyzer;
@@ -70,6 +74,14 @@ public class CallEdgeResolver<Field, Fact, Stmt, Method> extends ResolverTemplat
 	}
 	
 	@Override
+	protected void dismissByTransitiveResolver(CallEdge<Field, Fact, Stmt, Method> inc, Resolver<Field, Fact, Stmt, Method> resolver) {
+		if(dismissedEdges.add(inc) && !incomingEdges.containsValue(inc))
+			analyzer.applySummaries(inc);
+		//FIXME apply summaries of nested resolvers as well (if the incoming edge satisfies these)
+		super.dismissByTransitiveResolver(inc, resolver);
+	}
+	
+	@Override
 	protected void processIncomingPotentialPrefix(CallEdge<Field, Fact, Stmt, Method> inc) {
 		inc.registerInterestCallback(analyzer);
 	}
@@ -80,7 +92,9 @@ public class CallEdgeResolver<Field, Fact, Stmt, Method> extends ResolverTemplat
 	}
 	
 	public void applySummaries(WrappedFactAtStatement<Field, Fact, Stmt, Method> factAtStmt) {
-		for(CallEdge<Field, Fact, Stmt, Method> incEdge : Lists.newLinkedList(incomingEdges.values())) {
+		Set<CallEdge<Field, Fact, Stmt, Method>> edges = Sets.newHashSet(incomingEdges.values());
+		edges.addAll(dismissedEdges);
+		for(CallEdge<Field, Fact, Stmt, Method> incEdge : edges) {
 			analyzer.applySummary(incEdge, factAtStmt);
 		}
 	}

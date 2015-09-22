@@ -168,11 +168,11 @@ public class PerAccessPathMethodAnalyzer<Field, Fact, Stmt, Method> {
 	}
 
 	void processCall(WrappedFactAtStatement<Field,Fact, Stmt, Method> factAtStmt) {
-		if(context.icfg.getCalleesOfCallAt(factAtStmt.getStatement()).size() > 1) {
-			CallSiteResolver<Field,Fact,Stmt,Method> resolver = callSiteResolvers.getOrCreate(factAtStmt.getAsFactAtStatement());
-			resolver.addIncoming(factAtStmt.getWrappedFact());
-		}
-		else
+//		if(context.icfg.getCalleesOfCallAt(factAtStmt.getStatement()).size() > 1) {
+//			CallSiteResolver<Field,Fact,Stmt,Method> resolver = callSiteResolvers.getOrCreate(factAtStmt.getAsFactAtStatement());
+//			resolver.addIncoming(factAtStmt.getWrappedFact());
+//		}
+//		else
 			processCallWithoutAbstractionPoint(factAtStmt);
 		
 		processCallToReturnEdge(factAtStmt);

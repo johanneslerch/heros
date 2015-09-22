@@ -103,6 +103,7 @@ public class CallSiteResolver<Field, Fact, Stmt, Method> extends ResolverTemplat
 			factMergeHandler.merge(sourceFact, fact.getFact());
 		}
 		else {
+			sourceFact = fact.getFact();
 			analyzer.processCallWithoutAbstractionPoint(new WrappedFactAtStatement<Field, Fact, Stmt, Method>(callSite, 
 					new WrappedFact<Field, Fact, Stmt, Method>(fact.getFact(), new AccessPathAndResolver<Field, Fact, Stmt, Method>(
 							analyzer, AccessPath.<Field>empty(), this))));
