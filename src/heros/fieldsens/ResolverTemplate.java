@@ -116,19 +116,22 @@ public abstract class ResolverTemplate<Field, Fact, Stmt, Method, Incoming>  ext
 	}
 
 	private void addIncomingGuaranteedPrefix(Incoming inc, Resolver<Field, Fact, Stmt, Method> transitiveResolver) {
-		boolean isNewTransitiveResolver = incomingEdges.containsKey(transitiveResolver);
-		
+		boolean isNewTransitiveResolver = !incomingEdges.containsKey(transitiveResolver);
+		boolean isNewIncomingEdge = !incomingEdges.containsValue(inc);
 		if(!incomingEdges.put(transitiveResolver, inc))
 			return;
+		
 		log("Incoming Edge: "+inc+ " (transitive resolver: "+transitiveResolver+")");
 		
-		interestByIncoming(inc);
-		
-		for(ResolverTemplate<Field, Fact, Stmt, Method, Incoming> nestedResolver : Lists.newLinkedList(nestedResolvers.values())) {
-			nestedResolver.addIncoming(inc);
+		if(isNewIncomingEdge) {
+			interestByIncoming(inc);
+			
+			for(ResolverTemplate<Field, Fact, Stmt, Method, Incoming> nestedResolver : Lists.newLinkedList(nestedResolvers.values())) {
+				nestedResolver.addIncoming(inc);
+			}
+			
+			processIncomingGuaranteedPrefix(inc);
 		}
-		
-		processIncomingGuaranteedPrefix(inc);
 		
 		if(isNewTransitiveResolver) {
 			for(TransitiveResolverCallback<Field, Fact, Stmt, Method> callback : Lists.newLinkedList(transitiveResolverCallbacks)) {
