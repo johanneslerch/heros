@@ -113,7 +113,12 @@ public class ReturnSiteHandling<Field, Fact, Stmt, Method> {
 				@Override
 				public void interest(PerAccessPathMethodAnalyzer<Field, Fact, Stmt, Method> analyzer,
 						AccessPathAndResolver<Field, Fact, Stmt, Method> accPathResolver) {
-					if(accPathResolver.resolver instanceof ReturnSiteHandling.CallSiteResolver)
+					if(accPathResolver.resolver instanceof ZeroCallEdgeResolver) {
+						PerAccessPathMethodAnalyzer<Field, Fact, Stmt, Method> zeroAnalyzer = ReturnSiteHandling.this.analyzer.createWithZeroCallEdgeResolver();
+						CallSiteResolver.this.interest(new AccessPathAndResolver<Field, Fact, Stmt, Method>(
+								zeroAnalyzer, accPathResolver.accessPath, zeroAnalyzer.getCallEdgeResolver())); 
+					}
+					else if(accPathResolver.resolver instanceof ReturnSiteHandling.CallSiteResolver)
 						CallSiteResolver.this.interest(new AccessPathAndResolver<Field, Fact, Stmt, Method>(
 								ReturnSiteHandling.this.analyzer, accPathResolver.accessPath, CallSiteResolver.this.parent));
 					else if(!accPathResolver.hasNesting() && ReturnSiteHandling.this.analyzer.getCallEdgeResolver().isParentOf(accPathResolver.getAnalyzer().getCallEdgeResolver()))

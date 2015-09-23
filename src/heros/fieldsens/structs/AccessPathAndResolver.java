@@ -44,7 +44,7 @@ public class AccessPathAndResolver<Field, Fact, Stmt, Method> {
 		this.resolver = resolver;
 		this.nesting = nesting;
 		
-		assert depth() <= 2;
+		assert depth() <= 3;
 	}
 	
 	private int depth() {
