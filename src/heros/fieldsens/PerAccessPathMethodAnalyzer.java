@@ -67,6 +67,7 @@ public class PerAccessPathMethodAnalyzer<Field, Fact, Stmt, Method> {
 	private PerAccessPathMethodAnalyzer<Field, Fact, Stmt, Method> parent;
 	private Debugger<Field, Fact, Stmt, Method> debugger;
 	private Delta<Field> repeatedDelta;
+	private PerAccessPathMethodAnalyzer<Field, Fact, Stmt, Method> zeroVersion;
 
 	public PerAccessPathMethodAnalyzer(Method method, Fact sourceFact, Context<Field, Fact, Stmt, Method> context, Debugger<Field, Fact, Stmt, Method> debugger) {
 		this(method, sourceFact, context, debugger, new AccessPath<Field>(), null, null);
@@ -97,10 +98,12 @@ public class PerAccessPathMethodAnalyzer<Field, Fact, Stmt, Method> {
 	}
 	
 	public PerAccessPathMethodAnalyzer<Field, Fact, Stmt, Method> createWithZeroCallEdgeResolver() {
-		PerAccessPathMethodAnalyzer<Field, Fact, Stmt, Method> result = new PerAccessPathMethodAnalyzer<Field, Fact, Stmt, Method>(
-				method, sourceFact, context, debugger, accessPath, null, this);
-		result.callEdgeResolver = new ZeroCallEdgeResolver<Field, Fact, Stmt, Method>(result, context.zeroHandler, debugger);
-		return result;
+		if(zeroVersion == null) {
+			zeroVersion = new PerAccessPathMethodAnalyzer<Field, Fact, Stmt, Method>(
+					method, sourceFact, context, debugger, accessPath, null, this);
+			zeroVersion.callEdgeResolver = new ZeroCallEdgeResolver<Field, Fact, Stmt, Method>(zeroVersion, context.zeroHandler, debugger);
+		}
+		return zeroVersion;
 	}
 	
 	public PerAccessPathMethodAnalyzer<Field, Fact, Stmt, Method> createWithAccessPath(AccessPath<Field> accPath) {
