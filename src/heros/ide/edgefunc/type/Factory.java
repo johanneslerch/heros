@@ -8,7 +8,7 @@
  * Contributors:
  *     Johannes Lerch - initial API and implementation
  ******************************************************************************/
-package heros.ide.edgefunc.uppertype;
+package heros.ide.edgefunc.type;
 
 import heros.JoinLattice;
 import heros.ide.edgefunc.AbstractFactory;
@@ -16,65 +16,57 @@ import heros.ide.edgefunc.AllBottom;
 import heros.ide.edgefunc.AllTop;
 import heros.ide.edgefunc.EdgeFunction;
 
-public class Factory<T extends Type<T>> extends AbstractFactory<T> {
+public class Factory<T extends Type<T>> extends AbstractFactory<TypeBoundary<T>> {
 
-	private JoinLattice<T> lattice;
-	private AllTop<T> allTop;
-	private AllBottom<T> allBottom;
+	private JoinLattice<TypeBoundary<T>> lattice;
+	private AllTop<TypeBoundary<T>> allTop;
+	private AllBottom<TypeBoundary<T>> allBottom;
 
-	public Factory(JoinLattice<T> lattice) {
+	public Factory(JoinLattice<TypeBoundary<T>> lattice) {
 		this.lattice = lattice;
-		this.allTop = new AllTop<T>(lattice.topElement());
-		this.allBottom = new AllBottom<T>(lattice.bottomElement());
+		this.allTop = new AllTop<TypeBoundary<T>>(lattice.topElement());
+		this.allBottom = new AllBottom<TypeBoundary<T>>(lattice.bottomElement());
 	}
 	
 	@Override
-	public EdgeFunction<T> allTop() {
+	public EdgeFunction<TypeBoundary<T>> allTop() {
 		return allTop;
 	}
 
 	@Override
-	public JoinLattice<T> getLattice() {
+	public JoinLattice<TypeBoundary<T>> getLattice() {
 		return lattice;
 	}
 
-	public EdgeFunction<T> allBottom() {
+	public EdgeFunction<TypeBoundary<T>> allBottom() {
 		return allBottom;
 	}
 	
-	public EdgeFunction<T> any() {
+	public EdgeFunction<TypeBoundary<T>> any() {
 		return new AnyFunction<T>(this, null);
 	}
 	
-	public EdgeFunction<T> anyOrType(T type) {
-		return new AnyOrTypeFunction<T>(type, this, null);
-	}
-	
-	public EdgeFunction<T> init() {
+	public EdgeFunction<TypeBoundary<T>> init() {
 		return new InitialSeedFunction<T>(this, null);
 	}
 	
-	public EdgeFunction<T> pop() {
+	public EdgeFunction<TypeBoundary<T>> pop() {
 		return new PopFunction<T>(this, null);
 	}
 	
-	public EdgeFunction<T> push() {
+	public EdgeFunction<TypeBoundary<T>> push() {
 		return new PushFunction<T>(this, null);
 	}
 	
-	public EdgeFunction<T> type(T type) {
-		return new SetTypeFunction<T>(type, this, null);
-	}
-
-	public EdgeFunction<T> empty() {
+	public EdgeFunction<TypeBoundary<T>> empty() {
 		return new EnsureEmptyFunction<T>(this, null);
 	}
 
-	public EdgeFunction<T> upperBound(T type) {
-		return new UpperBoundFunction<T>(type, this, null);
+	public EdgeFunction<TypeBoundary<T>> upperBound(TypeBoundary<T> type) {
+		return new BoundFunction<T>(type, this, null);
 	}
 
-	public EdgeFunction<T> anyOrUpperBound(T type) {
-		return new AnyOrUpperBoundFunction<T>(type, this, null);
+	public EdgeFunction<TypeBoundary<T>> anyOrUpperBound(TypeBoundary<T> type) {
+		return new AnyOrBoundFunction<T>(type, this, null);
 	}
 }

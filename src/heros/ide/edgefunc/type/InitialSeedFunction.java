@@ -8,25 +8,25 @@
  * Contributors:
  *     Johannes Lerch - initial API and implementation
  ******************************************************************************/
-package heros.ide.edgefunc.uppertype;
+package heros.ide.edgefunc.type;
 
 import heros.ide.edgefunc.AbstractFactory;
 import heros.ide.edgefunc.ChainableEdgeFunction;
 import heros.ide.edgefunc.EdgeFunction;
 
-public class InitialSeedFunction<T extends Type<T>> extends ChainableEdgeFunction<T>{
+public class InitialSeedFunction<T extends Type<T>> extends ChainableEdgeFunction<TypeBoundary<T>>{
 
-	public InitialSeedFunction(AbstractFactory<T> factory, ChainableEdgeFunction<T> chainedFunction) {
+	public InitialSeedFunction(AbstractFactory<TypeBoundary<T>> factory, ChainableEdgeFunction<TypeBoundary<T>> chainedFunction) {
 		super(factory, chainedFunction);
 	}
 
 	@Override
-	public EdgeFunction<T> chain(ChainableEdgeFunction<T> f) {
+	public EdgeFunction<TypeBoundary<T>> chain(ChainableEdgeFunction<TypeBoundary<T>> f) {
 		throw new IllegalStateException();
 	}
 
 	@Override
-	protected T _computeTarget(T source) {
+	protected TypeBoundary<T> _computeTarget(TypeBoundary<T> source) {
 		return factory.getLattice().bottomElement();
 	}
 
@@ -36,7 +36,7 @@ public class InitialSeedFunction<T extends Type<T>> extends ChainableEdgeFunctio
 	}
 
 	@Override
-	protected EdgeFunction<T> _composeWith(ChainableEdgeFunction<T> chainableFunction) {
+	protected EdgeFunction<TypeBoundary<T>> _composeWith(ChainableEdgeFunction<TypeBoundary<T>> chainableFunction) {
 		if(chainableFunction instanceof EnsureEmptyFunction)
 			return this;
 		if(chainableFunction instanceof PopFunction)

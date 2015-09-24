@@ -8,32 +8,32 @@
  * Contributors:
  *     Johannes Lerch - initial API and implementation
  ******************************************************************************/
-package heros.ide.edgefunc.uppertype;
+package heros.ide.edgefunc.type;
 
 import heros.ide.edgefunc.AbstractFactory;
 import heros.ide.edgefunc.ChainableEdgeFunction;
 import heros.ide.edgefunc.EdgeFunction;
 
-public class AnyOrTypeFunction<T extends Type<T>> extends ChainableEdgeFunction<T> {
+public class AnyOrBoundFunction<T extends Type<T>> extends ChainableEdgeFunction<TypeBoundary<T>> {
 
-	private T type;
+	private TypeBoundary<T> typeBoundary;
 
-	public AnyOrTypeFunction(T type, AbstractFactory<T> factory, ChainableEdgeFunction<T> chainedFunction) {
+	public AnyOrBoundFunction(TypeBoundary<T> type, AbstractFactory<TypeBoundary<T>> factory, ChainableEdgeFunction<TypeBoundary<T>> chainedFunction) {
 		super(factory, chainedFunction);
-		this.type = type;
+		this.typeBoundary = type;
 	}
 
 	@Override
-	public EdgeFunction<T> chain(ChainableEdgeFunction<T> f) {
+	public EdgeFunction<TypeBoundary<T>> chain(ChainableEdgeFunction<TypeBoundary<T>> f) {
 		if(f instanceof InitialSeedFunction || f instanceof EnsureEmptyFunction)
-			return new AnyOrTypeFunction<T>(type, factory, f);
+			return new AnyOrBoundFunction<T>(typeBoundary, factory, f);
 		else
 			throw new IllegalStateException();
 	}
 
 	@Override
-	protected T _computeTarget(T source) {
-		return type;
+	protected TypeBoundary<T> _computeTarget(TypeBoundary<T> source) {
+		return typeBoundary;
 	}
 
 	@Override
@@ -42,38 +42,38 @@ public class AnyOrTypeFunction<T extends Type<T>> extends ChainableEdgeFunction<
 	}
 
 	@Override
-	protected EdgeFunction<T> _composeWith(ChainableEdgeFunction<T> chainableFunction) {
-		if(chainableFunction instanceof UpperBoundFunction) {
-			T otherType = ((UpperBoundFunction<T>) chainableFunction).getType();
-			return otherType.meet(type).equals(type) ? this : factory.allTop();
+	protected EdgeFunction<TypeBoundary<T>> _composeWith(ChainableEdgeFunction<TypeBoundary<T>> chainableFunction) {
+		if(chainableFunction instanceof BoundFunction) {
+			TypeBoundary<T> otherType = ((BoundFunction<T>) chainableFunction).getTypeBoundary();
+			if(typeBoundary.equals(otherType))
+				return this;
+			TypeBoundary<T> intersection = otherType.intersection(typeBoundary);
+			if(intersection.isEmpty())
+				return factory.allTop();
+			else
+				return new AnyOrBoundFunction<T>(intersection, factory, chainedFunction);
 		}
 		if(chainableFunction instanceof EnsureEmptyFunction)
 			return chainableFunction.chainIfNotNull(chainedFunction);
 		if(chainableFunction instanceof PopFunction)
 			return new AnyFunction<T>(factory, chainedFunction);
-		if(chainableFunction instanceof SetTypeFunction) {
-			if(((SetTypeFunction<T>) chainableFunction).getType().equals(type))
-				return this;
-			else
-				return factory.allTop();
-		}
 		return chainableFunction.chain(this);
 	}
 
 	@Override
 	public String toString() {
-		return "anyOrType("+type+")"+super.toString();
+		return "anyOrType("+typeBoundary+")"+super.toString();
 	}
 
-	public T getType() {
-		return type;
+	public TypeBoundary<T> getTypeBoundary() {
+		return typeBoundary;
 	}
 
 	@Override
 	public int hashCode() {
 		final int prime = 31;
 		int result = super.hashCode();
-		result = prime * result + ((type == null) ? 0 : type.hashCode());
+		result = prime * result + ((typeBoundary == null) ? 0 : typeBoundary.hashCode());
 		return result;
 	}
 
@@ -85,14 +85,14 @@ public class AnyOrTypeFunction<T extends Type<T>> extends ChainableEdgeFunction<
 			return false;
 		if (getClass() != obj.getClass())
 			return false;
-		AnyOrTypeFunction other = (AnyOrTypeFunction) obj;
-		if (type == null) {
-			if (other.type != null)
+		AnyOrBoundFunction other = (AnyOrBoundFunction) obj;
+		if (typeBoundary == null) {
+			if (other.typeBoundary != null)
 				return false;
-		} else if (!type.equals(other.type))
+		} else if (!typeBoundary.equals(other.typeBoundary))
 			return false;
 		return true;
-	}
+	}  
 	
 	
 }

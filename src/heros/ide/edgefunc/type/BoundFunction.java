@@ -8,29 +8,29 @@
  * Contributors:
  *     Johannes Lerch - initial API and implementation
  ******************************************************************************/
-package heros.ide.edgefunc.uppertype;
+package heros.ide.edgefunc.type;
 
 import heros.ide.edgefunc.AbstractFactory;
 import heros.ide.edgefunc.ChainableEdgeFunction;
 import heros.ide.edgefunc.EdgeFunction;
 
-public class UpperBoundFunction<T extends Type<T>> extends ChainableEdgeFunction<T> {
+public class BoundFunction<T extends Type<T>> extends ChainableEdgeFunction<TypeBoundary<T>> {
 
-	private T type;
+	private TypeBoundary<T> typeBoundary;
 
-	public UpperBoundFunction(T type, AbstractFactory<T> factory, ChainableEdgeFunction<T> chainedFunction) {
+	public BoundFunction(TypeBoundary<T> type, AbstractFactory<TypeBoundary<T>> factory, ChainableEdgeFunction<TypeBoundary<T>> chainedFunction) {
 		super(factory, chainedFunction);
-		this.type = type;
+		this.typeBoundary = type;
 	}
 
 	@Override
-	public EdgeFunction<T> chain(ChainableEdgeFunction<T> f) {
-		return new UpperBoundFunction<T>(type, factory, f);
+	public EdgeFunction<TypeBoundary<T>> chain(ChainableEdgeFunction<TypeBoundary<T>> f) {
+		return new BoundFunction<T>(typeBoundary, factory, f);
 	}
 
 	@Override
-	protected T _computeTarget(T source) {
-		return source.meet(type);
+	protected TypeBoundary<T> _computeTarget(TypeBoundary<T> source) {
+		return source.intersection(typeBoundary);
 	}
 
 	@Override
@@ -39,23 +39,16 @@ public class UpperBoundFunction<T extends Type<T>> extends ChainableEdgeFunction
 	}
 
 	@Override
-	protected EdgeFunction<T> _composeWith(ChainableEdgeFunction<T> chainableFunction) {
-		if(chainableFunction instanceof UpperBoundFunction) {
-			T otherType = ((UpperBoundFunction<T>) chainableFunction).type;
-			T meet = otherType.meet(type);
-			if(meet.equals(type))
+	protected EdgeFunction<TypeBoundary<T>> _composeWith(ChainableEdgeFunction<TypeBoundary<T>> chainableFunction) {
+		if(chainableFunction instanceof BoundFunction) {
+			TypeBoundary<T> otherTypeBoundary = ((BoundFunction<T>) chainableFunction).typeBoundary;
+			if(otherTypeBoundary.equals(typeBoundary))
 				return this;
-			else if(meet.equals(otherType))
-				return chainableFunction.chainIfNotNull(chainedFunction);
-			else
+			TypeBoundary<T> intersection = otherTypeBoundary.intersection(typeBoundary);
+			if(intersection.isEmpty())
 				return factory.allTop();
-		}
-		if(chainableFunction instanceof SetTypeFunction) {
-			T setType = ((SetTypeFunction<T>) chainableFunction).getType();
-			if(setType.meet(type).equals(setType))
-				return chainableFunction.chainIfNotNull(chainedFunction);
 			else
-				return factory.allTop();
+				return new BoundFunction<T>(intersection, factory, chainedFunction);
 		}
 		if(chainableFunction instanceof PopFunction && chainedFunction instanceof PushFunction)
 			return chainedFunction.chainedFunction();
@@ -65,18 +58,18 @@ public class UpperBoundFunction<T extends Type<T>> extends ChainableEdgeFunction
 
 	@Override
 	public String toString() {
-		return "upperBound("+type+")"+super.toString();
+		return "bound("+typeBoundary+")"+super.toString();
 	}
 
-	public T getType() {
-		return type;
+	public TypeBoundary<T> getTypeBoundary() {
+		return typeBoundary;
 	}
 
 	@Override
 	public int hashCode() {
 		final int prime = 31;
 		int result = super.hashCode();
-		result = prime * result + ((type == null) ? 0 : type.hashCode());
+		result = prime * result + ((typeBoundary == null) ? 0 : typeBoundary.hashCode());
 		return result;
 	}
 
@@ -88,11 +81,11 @@ public class UpperBoundFunction<T extends Type<T>> extends ChainableEdgeFunction
 			return false;
 		if (getClass() != obj.getClass())
 			return false;
-		UpperBoundFunction other = (UpperBoundFunction) obj;
-		if (type == null) {
-			if (other.type != null)
+		BoundFunction other = (BoundFunction) obj;
+		if (typeBoundary == null) {
+			if (other.typeBoundary != null)
 				return false;
-		} else if (!type.equals(other.type))
+		} else if (!typeBoundary.equals(other.typeBoundary))
 			return false;
 		return true;
 	}

@@ -8,20 +8,20 @@
  * Contributors:
  *     Johannes Lerch - initial API and implementation
  ******************************************************************************/
-package heros.ide.edgefunc.uppertype;
+package heros.ide.edgefunc.type;
 
 import heros.ide.edgefunc.AbstractFactory;
 import heros.ide.edgefunc.ChainableEdgeFunction;
 import heros.ide.edgefunc.EdgeFunction;
 
-public class AnyFunction<T extends Type<T>> extends ChainableEdgeFunction<T> {
+public class AnyFunction<T extends Type<T>> extends ChainableEdgeFunction<TypeBoundary<T>> {
 
-	public AnyFunction(AbstractFactory<T> factory, ChainableEdgeFunction<T> chainedFunction) {
+	public AnyFunction(AbstractFactory<TypeBoundary<T>> factory, ChainableEdgeFunction<TypeBoundary<T>> chainedFunction) {
 		super(factory, chainedFunction);
 	}
 
 	@Override
-	public EdgeFunction<T> chain(ChainableEdgeFunction<T> f) {
+	public EdgeFunction<TypeBoundary<T>> chain(ChainableEdgeFunction<TypeBoundary<T>> f) {
 		if(f instanceof InitialSeedFunction || f instanceof EnsureEmptyFunction)
 			return new AnyFunction<T>(factory, f);
 		else
@@ -29,7 +29,7 @@ public class AnyFunction<T extends Type<T>> extends ChainableEdgeFunction<T> {
 	}
 
 	@Override
-	protected T _computeTarget(T source) {
+	protected TypeBoundary<T> _computeTarget(TypeBoundary<T> source) {
 		return source;
 	}
 
@@ -39,16 +39,13 @@ public class AnyFunction<T extends Type<T>> extends ChainableEdgeFunction<T> {
 	}
 
 	@Override
-	protected EdgeFunction<T> _composeWith(ChainableEdgeFunction<T> chainableFunction) {
+	protected EdgeFunction<TypeBoundary<T>> _composeWith(ChainableEdgeFunction<TypeBoundary<T>> chainableFunction) {
 		if(chainableFunction instanceof EnsureEmptyFunction)
 			return chainableFunction.chainIfNotNull(chainedFunction);
 		if(chainableFunction instanceof PopFunction)
 			return this;
-		if(chainableFunction instanceof SetTypeFunction) {
-			return new AnyOrTypeFunction<T>(((SetTypeFunction<T>) chainableFunction).getType(), factory, chainedFunction);
-		}
-		if(chainableFunction instanceof UpperBoundFunction) {
-			return new AnyOrUpperBoundFunction<T>(((UpperBoundFunction<T>)chainableFunction).getType(), factory, chainedFunction);
+		if(chainableFunction instanceof BoundFunction) {
+			return new AnyOrBoundFunction<T>(((BoundFunction<T>)chainableFunction).getTypeBoundary(), factory, chainedFunction);
 		}			
 		
 		return chainableFunction.chain(this);
