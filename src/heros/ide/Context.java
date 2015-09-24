@@ -10,7 +10,6 @@
  ******************************************************************************/
 package heros.ide;
 
-import heros.FlowFunctions;
 import heros.InterproceduralCFG;
 import heros.JoinLattice;
 import heros.fieldsens.FactMergeHandler;
@@ -23,15 +22,13 @@ public abstract class Context<Fact, Stmt, Method, Value> {
 	public final Fact zeroValue;
 	public final boolean followReturnsPastSeeds;
 	public final FactMergeHandler<Fact> factHandler;
-	public final FlowFunctions<Stmt, Fact, Method> flowFunctions;
-	public final EdgeFunctions<Stmt, Fact, Method, Value> edgeFunctions;
+	public final FlowFunctions<Stmt, Fact, Method, Value> flowFunctions;
 	public final JoinLattice<Value> joinLattice;
 	
 	Context(IDETabulationProblem<Stmt, Fact, Method, Value, ? extends InterproceduralCFG<Stmt, Method>> tabulationProblem, 
 			Scheduler scheduler, FactMergeHandler<Fact> factHandler) {
 		this.icfg = tabulationProblem.interproceduralCFG();
 		this.flowFunctions = tabulationProblem.flowFunctions();
-		this.edgeFunctions = tabulationProblem.edgeFunctions();
 		this.joinLattice = tabulationProblem.joinLattice();
 		this.scheduler = scheduler;
 		this.zeroValue = tabulationProblem.zeroValue();

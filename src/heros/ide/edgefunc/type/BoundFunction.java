@@ -35,6 +35,14 @@ public class BoundFunction<T extends Type<T>> extends ChainableEdgeFunction<Type
 
 	@Override
 	protected boolean mayThisReturnTop() {
+		if(chainedFunction == null)
+			return true;
+		if(chainedFunction instanceof InitialSeedFunction)
+			return false;
+		if(chainedFunction instanceof EnsureEmptyFunction)
+			return false;
+		if(chainedFunction instanceof PushFunction)
+			return false;
 		return true;
 	}
 
@@ -52,6 +60,14 @@ public class BoundFunction<T extends Type<T>> extends ChainableEdgeFunction<Type
 		}
 		if(chainableFunction instanceof PopFunction && chainedFunction instanceof PushFunction)
 			return chainedFunction.chainedFunction();
+		if(chainableFunction instanceof EnsureEmptyFunction) {
+			if(chainedFunction instanceof InitialSeedFunction)
+				return chainedFunction;
+			if(chainedFunction instanceof PopFunction)
+				return chainableFunction.chain(chainedFunction);
+			if(chainedFunction instanceof EnsureEmptyFunction)
+				return chainedFunction;
+		}
 		
 		return chainableFunction.chain(this);
 	}

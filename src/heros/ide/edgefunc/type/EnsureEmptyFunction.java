@@ -41,6 +41,9 @@ public class EnsureEmptyFunction<T extends Type<T>> extends ChainableEdgeFunctio
 			return factory.allTop();
 		if(chainableFunction instanceof EnsureEmptyFunction)
 			return this;
+		if(chainableFunction instanceof BoundFunction) {
+			
+		}
 		
 		return chainableFunction.chain(this);
 	}

@@ -28,11 +28,12 @@ import com.google.common.collect.Sets;
 
 public class FunctionCompositionTest {
 
-	private Factory<TestType> factory = new Factory<TestType>(mock(JoinLattice.class));
 	
-	private TestType superType = new TestType("superType");
-	private TestType type = new TestType("type", superType);
-	private TestType subType = new TestType("subType", type);
+	private static TestType superType = new TestType("superType");
+	private static TestType type = new TestType("type", superType);
+	private static TestType subType = new TestType("subType", type);
+	private static TestType none = new TestType("none");
+	private Factory<TestType> factory = new Factory<TestType>(mock(JoinLattice.class), none, superType);
 	
 	private TypeBoundary<TestType> boundary = tb(subType, type);
 	
@@ -64,7 +65,7 @@ public class FunctionCompositionTest {
 	
 	@Test
 	public void anyBeforeUpperBound() {
-		assertEquals(factory.anyOrUpperBound(boundary), factory.any().composeWith(factory.upperBound(boundary)));
+		assertEquals(factory.anyOrUpperBound(boundary), factory.any().composeWith(factory.bound(boundary)));
 	}
 	
 	@Test(expected=IllegalStateException.class)
@@ -91,14 +92,14 @@ public class FunctionCompositionTest {
 	
 	@Test
 	public void anyOrUpperBoundBeforeUpperBoundMatch() {
-		assertEquals(factory.anyOrUpperBound(tb(type, type)), factory.anyOrUpperBound(tb(type, superType)).composeWith(factory.upperBound(tb(subType, type))));
-		assertEquals(factory.anyOrUpperBound(tb(type, type)), factory.anyOrUpperBound(tb(subType, type)).composeWith(factory.upperBound(tb(type, superType))));
+		assertEquals(factory.anyOrUpperBound(tb(type, type)), factory.anyOrUpperBound(tb(type, superType)).composeWith(factory.bound(tb(subType, type))));
+		assertEquals(factory.anyOrUpperBound(tb(type, type)), factory.anyOrUpperBound(tb(subType, type)).composeWith(factory.bound(tb(type, superType))));
 	}
 	
 	@Test
 	public void anyOrUpperBoundBeforeUpperBoundMismatch() {
-		assertEquals(factory.allTop(), factory.anyOrUpperBound(tb(type, superType)).composeWith(factory.upperBound(tb(subType, subType))));
-		assertEquals(factory.allTop(), factory.anyOrUpperBound(tb(subType, subType)).composeWith(factory.upperBound(tb(type, superType))));
+		assertEquals(factory.allTop(), factory.anyOrUpperBound(tb(type, superType)).composeWith(factory.bound(tb(subType, subType))));
+		assertEquals(factory.allTop(), factory.anyOrUpperBound(tb(subType, subType)).composeWith(factory.bound(tb(type, superType))));
 	}
 	
 	@Test
@@ -125,7 +126,7 @@ public class FunctionCompositionTest {
 	
 	@Test
 	public void emptyBeforeUpperBound() {
-		assertNoSimplification(factory.empty(), factory.upperBound(boundary));
+		assertNoSimplification(factory.empty(), factory.bound(boundary));
 	}
 	
 	@Test
@@ -150,39 +151,54 @@ public class FunctionCompositionTest {
 	
 	@Test
 	public void upperBoundBeforeEmpty() {
-		assertNoSimplificationKeepOrigin(factory.upperBound(boundary), factory.empty());
+		assertNoSimplificationKeepOrigin(factory.bound(boundary), factory.empty());
 	}
 	
 	@Test
 	public void upperBoundBeforePop() {
-		assertNoSimplificationKeepOrigin(factory.upperBound(boundary), factory.pop());
+		assertNoSimplificationKeepOrigin(factory.bound(boundary), factory.pop());
 	}
 	
 	@Test
 	public void upperBoundBeforePush() {
-		assertNoSimplificationKeepOrigin(factory.upperBound(boundary), factory.push());
+		assertNoSimplificationKeepOrigin(factory.bound(boundary), factory.push());
 	}
 	
 	@Test
 	public void upperBoundBeforeUpperBoundMatch() {
-		assertEquals(factory.upperBound(tb(subType, type)), factory.upperBound(tb(subType, type)).composeWith(factory.upperBound(tb(subType, superType))));
-		assertEquals(factory.upperBound(tb(type, type)), factory.upperBound(tb(type, superType)).composeWith(factory.upperBound(tb(subType, type))));
+		assertEquals(factory.bound(tb(subType, type)), factory.bound(tb(subType, type)).composeWith(factory.bound(tb(subType, superType))));
+		assertEquals(factory.bound(tb(type, type)), factory.bound(tb(type, superType)).composeWith(factory.bound(tb(subType, type))));
 	}
 	
 	@Test
 	public void upperBoundBeforeUpperBoundMismatch() {
-		assertEquals(factory.allTop(), factory.upperBound(tb(subType, subType)).composeWith(factory.upperBound(tb(type, superType))));
-		assertEquals(factory.allTop(), factory.upperBound(tb(type, superType)).composeWith(factory.upperBound(tb(subType, subType))));
+		assertEquals(factory.allTop(), factory.bound(tb(subType, subType)).composeWith(factory.bound(tb(type, superType))));
+		assertEquals(factory.allTop(), factory.bound(tb(type, superType)).composeWith(factory.bound(tb(subType, subType))));
 	}
 	
 	@Test
 	public void pushUpperBoundPop() {
-		assertEquals(factory.id(), factory.push().composeWith(factory.upperBound(boundary)).composeWith(factory.pop()));
+		assertEquals(factory.id(), factory.push().composeWith(factory.bound(boundary)).composeWith(factory.pop()));
 	}
 	
 	@Test
 	public void anyUpperBoundPop() {
-		assertEquals(factory.any(), factory.any().composeWith(factory.upperBound(boundary)).composeWith(factory.pop()));
+		assertEquals(factory.any(), factory.any().composeWith(factory.bound(boundary)).composeWith(factory.pop()));
+	}
+	
+	@Test
+	public void initBoundEmpty() {
+		assertEquals(factory.init(), factory.init().composeWith(factory.bound(boundary)).composeWith(factory.empty()));
+	}
+	
+	@Test
+	public void emptyBoundEmpty() {
+		assertEquals(factory.empty(), factory.empty().composeWith(factory.bound(boundary)).composeWith(factory.empty()));
+	}
+	
+	@Test
+	public void popBoundEmpty() {
+		assertEquals(factory.pop().composeWith(factory.empty()), factory.pop().composeWith(factory.bound(boundary)).composeWith(factory.empty()));
 	}
 
 	private static void assertNoSimplification(EdgeFunction<TypeBoundary<TestType>> first, EdgeFunction<TypeBoundary<TestType>> second) {
@@ -247,25 +263,21 @@ public class FunctionCompositionTest {
 
 		@Override
 		public TestType meet(TestType m) {
-			{
-				TestType current = this;
-				do {
-					if(current == m)
-						return this;
-					current = current.superType;
-				}while(current!=null);
-			}
-			
-			{
-				TestType current = m;
-				do {
-					if(current == this)
-						return m;
-					current = current.superType;
-				}while(current!=null);
-			}
-			
-			return new TestType("none");
+			if(isSubTypeOf(m))
+				return this;
+			else if(m.isSubTypeOf(this))
+				return m;
+			else
+				return none;
+		}
+		
+		@Override
+		public boolean isSubTypeOf(TestType other) {
+			if(this == other)
+				return true;
+			if(superType == null)
+				return false;
+			return superType.isSubTypeOf(other);
 		}
 		
 		@Override

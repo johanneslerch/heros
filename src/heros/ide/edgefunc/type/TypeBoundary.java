@@ -21,7 +21,7 @@ public class TypeBoundary<T extends Type<T>> implements Joinable<TypeBoundary<T>
 	public TypeBoundary(T lowerBound, T upperBound) {
 		this.lowerBound = lowerBound;
 		this.upperBound = upperBound;
-		isEmpty = !lowerBound.join(upperBound).equals(upperBound);
+		isEmpty = !lowerBound.isSubTypeOf(upperBound);
 	}
 
 	public T getLowerBound() {
@@ -80,4 +80,5 @@ public class TypeBoundary<T extends Type<T>> implements Joinable<TypeBoundary<T>
 			return false;
 		return true;
 	}
+
 }

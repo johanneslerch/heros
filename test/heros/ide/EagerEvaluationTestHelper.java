@@ -11,8 +11,6 @@
 package heros.ide;
 
 import static org.junit.Assert.assertTrue;
-import heros.FlowFunction;
-import heros.FlowFunctions;
 import heros.InterproceduralCFG;
 import heros.JoinLattice;
 import heros.fieldsens.AccessPathHandler;
@@ -23,6 +21,7 @@ import heros.ide.edgefunc.EdgeFunction;
 import heros.ide.edgefunc.fieldsens.AccessPathBundle;
 import heros.ide.edgefunc.fieldsens.Factory;
 import heros.ide.edgefunc.fieldsens.ReadFunction;
+import heros.solver.Pair;
 import heros.utilities.Edge;
 import heros.utilities.Edge.Call2ReturnEdge;
 import heros.utilities.Edge.CallEdge;
@@ -395,11 +394,11 @@ public class EagerEvaluationTestHelper {
 			return a.equals(b);
 	}
 
-	public FlowFunctions<Statement, TestFact, TestMethod> flowFunctions() {
-		return new FlowFunctions<Statement, TestFact, TestMethod>() {
+	public FlowFunctions<Statement, TestFact, TestMethod, AccessPathBundle<String>> flowFunctions() {
+		return new FlowFunctions<Statement, TestFact, TestMethod, AccessPathBundle<String>>() {
 
 			@Override
-			public FlowFunction<TestFact> getReturnFlowFunction(Statement callSite, TestMethod calleeMethod, Statement exitStmt, Statement returnSite) {
+			public FlowFunction<TestFact, AccessPathBundle<String>> getReturnFlowFunction(Statement callSite, TestMethod calleeMethod, Statement exitStmt, Statement returnSite) {
 				for (final ReturnEdge edge : returnEdges) {
 					if (nullAwareEquals(callSite, edge.callSite) && edge.calleeMethod.equals(calleeMethod)
 							&& edge.exitStmt.equals(exitStmt) && nullAwareEquals(edge.returnSite, returnSite)) {
@@ -411,7 +410,7 @@ public class EagerEvaluationTestHelper {
 			}
 
 			@Override
-			public FlowFunction<TestFact> getNormalFlowFunction(final Statement curr, Statement succ) {
+			public FlowFunction<TestFact, AccessPathBundle<String>> getNormalFlowFunction(final Statement curr, Statement succ) {
 				for (final NormalEdge edge : normalEdges) {
 					if (edge.unit.equals(curr)) {
 						return createFlowFunction(edge);
@@ -421,7 +420,7 @@ public class EagerEvaluationTestHelper {
 			}
 
 			@Override
-			public FlowFunction<TestFact> getCallToReturnFlowFunction(Statement callSite, Statement returnSite) {
+			public FlowFunction<TestFact, AccessPathBundle<String>> getCallToReturnFlowFunction(Statement callSite, Statement returnSite) {
 				for (final Call2ReturnEdge edge : call2retEdges) {
 					if (edge.callSite.equals(callSite) && edge.returnSite.equals(returnSite)) {
 						return createFlowFunction(edge);
@@ -431,7 +430,7 @@ public class EagerEvaluationTestHelper {
 			}
 
 			@Override
-			public FlowFunction<TestFact> getCallFlowFunction(Statement callStmt, TestMethod destinationMethod) {
+			public FlowFunction<TestFact, AccessPathBundle<String>> getCallFlowFunction(Statement callStmt, TestMethod destinationMethod) {
 				for (final CallEdge edge : callEdges) {
 					if (edge.callSite.equals(callStmt) && edge.destinationMethod.equals(destinationMethod)) {
 						return createFlowFunction(edge);
@@ -440,17 +439,17 @@ public class EagerEvaluationTestHelper {
 				throw new AssertionError(String.format("No Flow Function expected for call %s -> %s", callStmt, destinationMethod));
 			}
 
-			private FlowFunction<TestFact> createFlowFunction(final Edge edge) {
-				return new FlowFunction<TestFact>() {
+			private FlowFunction<TestFact, AccessPathBundle<String>> createFlowFunction(final Edge edge) {
+				return new FlowFunction<TestFact, AccessPathBundle<String>>() {
 					@Override
-					public Set<TestFact> computeTargets(TestFact source) {
-						Set<TestFact> result = Sets.newHashSet();
+					public Set<Pair<TestFact, EdgeFunction<AccessPathBundle<String>>>> computeTargets(TestFact source) {
+						Set<Pair<TestFact, EdgeFunction<AccessPathBundle<String>>>> result = Sets.newHashSet();
 						boolean found = false;
 						for (ExpectedFlowFunction<TestFact> ff : edge.flowFunctions) {
 							if (ff.source.equals(source)) {
 								if (remainingFlowFunctions.remove(ff)) {
 									for (TestFact target : ff.targets) {
-										result.add(target);
+										result.add(new Pair<TestFact, EdgeFunction<AccessPathBundle<String>>>(target, ff.edgeFunction));
 									}
 									found = true;
 								} else {
@@ -468,56 +467,6 @@ public class EagerEvaluationTestHelper {
 		};
 	}
 	
-	private EdgeFunctions<Statement, TestFact, TestMethod, AccessPathBundle<String>> edgeFunctions() {
-		return new EdgeFunctions<Statement, TestFact, TestMethod, AccessPathBundle<String>>() {
-
-			@Override
-			public EdgeFunction<AccessPathBundle<String>> getNormalEdgeFunction(Statement curr, TestFact currNode, Statement succ, TestFact succNode) {
-				for (final NormalEdge edge : normalEdges) {
-					if (edge.unit.equals(curr)) {
-						return getEdgeFunction(edge, currNode, succNode);
-					}
-				}
-				throw new AssertionError(String.format("No Flow Function expected for %s", curr));
-			}
-
-			@Override
-			public EdgeFunction<AccessPathBundle<String>> getCallEdgeFunction(Statement callStmt, TestFact srcNode, TestMethod destinationMethod,
-					TestFact destNode) {
-				for (final CallEdge edge : callEdges) {
-					if (edge.callSite.equals(callStmt) && edge.destinationMethod.equals(destinationMethod)) {
-						return getEdgeFunction(edge, srcNode, destNode);
-					}
-				}
-				throw new AssertionError(String.format("No Flow Function expected for call %s -> %s", callStmt, destinationMethod));
-			}
-
-			@Override
-			public EdgeFunction<AccessPathBundle<String>> getReturnEdgeFunction(Statement callSite, TestMethod calleeMethod, Statement exitStmt,
-					TestFact exitNode, Statement returnSite, TestFact retNode) {
-				for (final ReturnEdge edge : returnEdges) {
-					if (nullAwareEquals(callSite, edge.callSite) && edge.calleeMethod.equals(calleeMethod)
-							&& edge.exitStmt.equals(exitStmt) && nullAwareEquals(edge.returnSite, returnSite)) {
-						return getEdgeFunction(edge, exitNode, retNode);
-					}
-				}
-				throw new AssertionError(String.format("No Flow Function expected for return edge %s -> %s (call edge: %s -> %s)", exitStmt,
-						returnSite, callSite, calleeMethod));
-			}
-
-			@Override
-			public EdgeFunction<AccessPathBundle<String>> getCallToReturnEdgeFunction(Statement callSite, TestFact callNode, Statement returnSite,
-					TestFact returnSideNode) {
-				for (final Call2ReturnEdge edge : call2retEdges) {
-					if (edge.callSite.equals(callSite) && edge.returnSite.equals(returnSite)) {
-						return getEdgeFunction(edge, callNode, returnSideNode);
-					}
-				}
-				throw new AssertionError(String.format("No Flow Function expected for call to return edge %s -> %s", callSite, returnSite));
-			}
-		};
-	}
-
 	protected EdgeFunction<AccessPathBundle<String>> getEdgeFunction(Edge edge, TestFact currNode, TestFact succNode) {
 		for(ExpectedFlowFunction<TestFact> eff : edge.flowFunctions) {
 			if(eff.source.equals(currNode)) {
@@ -567,8 +516,7 @@ public class EagerEvaluationTestHelper {
 
 	private IDETabulationProblem<Statement, TestFact, TestMethod, AccessPathBundle<String>, InterproceduralCFG<Statement, TestMethod>> createTabulationProblem(final boolean followReturnsPastSeeds, final String[] initialSeeds) {
 		final InterproceduralCFG<Statement, TestMethod> icfg = buildIcfg();
-		final FlowFunctions<Statement, TestFact, TestMethod> flowFunctions = flowFunctions();
-		final EdgeFunctions<Statement, TestFact, TestMethod, AccessPathBundle<String>> edgeFunctions = edgeFunctions();
+		final FlowFunctions<Statement, TestFact, TestMethod, AccessPathBundle<String>> flowFunctions = flowFunctions();
 		
 		return new IDETabulationProblem<Statement, TestFact, TestMethod, AccessPathBundle<String>, InterproceduralCFG<Statement, TestMethod>>() {
 
@@ -578,22 +526,7 @@ public class EagerEvaluationTestHelper {
 			}
 
 			@Override
-			public boolean autoAddZero() {
-				return false;
-			}
-
-			@Override
-			public int numThreads() {
-				return 1;
-			}
-
-			@Override
-			public boolean computeValues() {
-				return false;
-			}
-
-			@Override
-			public FlowFunctions<Statement, TestFact, TestMethod> flowFunctions() {
+			public FlowFunctions<Statement, TestFact, TestMethod, AccessPathBundle<String>> flowFunctions() {
 				return flowFunctions;
 			}
 
@@ -619,11 +552,6 @@ public class EagerEvaluationTestHelper {
 			@Override
 			public TestFact zeroValue() {
 				return new TestFact("0");
-			}
-			
-			@Override
-			public EdgeFunctions<Statement, TestFact, TestMethod, AccessPathBundle<String>> edgeFunctions() {
-				return edgeFunctions;
 			}
 
 			@Override

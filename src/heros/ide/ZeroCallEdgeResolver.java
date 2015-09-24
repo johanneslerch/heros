@@ -27,6 +27,7 @@ public class ZeroCallEdgeResolver<Fact, Stmt, Method, Value> extends CallEdgeRes
 	@Override
 	public void resolve(EdgeFunction<Value> constraint, InterestCallback<Fact, Stmt, Method, Value> callback) {
 		//nothing to do. Should already be resolved via initial seed edge function or cannot be resolved anyways.
+		throw new IllegalStateException(this+" asked to resolve "+constraint);
 	}
 	
 	@Override

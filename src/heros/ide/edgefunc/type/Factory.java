@@ -21,9 +21,13 @@ public class Factory<T extends Type<T>> extends AbstractFactory<TypeBoundary<T>>
 	private JoinLattice<TypeBoundary<T>> lattice;
 	private AllTop<TypeBoundary<T>> allTop;
 	private AllBottom<TypeBoundary<T>> allBottom;
+	private T bottomElement;
+	private T topElement;
 
-	public Factory(JoinLattice<TypeBoundary<T>> lattice) {
+	public Factory(JoinLattice<TypeBoundary<T>> lattice, T bottomElement, T topElement) {
 		this.lattice = lattice;
+		this.bottomElement = bottomElement;
+		this.topElement = topElement;
 		this.allTop = new AllTop<TypeBoundary<T>>(lattice.topElement());
 		this.allBottom = new AllBottom<TypeBoundary<T>>(lattice.bottomElement());
 	}
@@ -62,8 +66,20 @@ public class Factory<T extends Type<T>> extends AbstractFactory<TypeBoundary<T>>
 		return new EnsureEmptyFunction<T>(this, null);
 	}
 
-	public EdgeFunction<TypeBoundary<T>> upperBound(TypeBoundary<T> type) {
+	public EdgeFunction<TypeBoundary<T>> bound(TypeBoundary<T> type) {
 		return new BoundFunction<T>(type, this, null);
+	}
+
+	public EdgeFunction<TypeBoundary<T>> bound(T lowerBound, T upperBound) {
+		return new BoundFunction<T>(new TypeBoundary<T>(lowerBound, upperBound), this, null);
+	}
+	
+	public EdgeFunction<TypeBoundary<T>> lowerBound(T lowerBound) {
+		return new BoundFunction<T>(new TypeBoundary<T>(lowerBound, topElement), this, null);
+	}
+	
+	public EdgeFunction<TypeBoundary<T>> upperBound(T upperBound) {
+		return new BoundFunction<T>(new TypeBoundary<T>(bottomElement, upperBound), this, null);
 	}
 
 	public EdgeFunction<TypeBoundary<T>> anyOrUpperBound(TypeBoundary<T> type) {

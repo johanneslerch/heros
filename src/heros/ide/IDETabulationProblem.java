@@ -10,6 +10,9 @@
  ******************************************************************************/
 package heros.ide;
 
+import java.util.Map;
+import java.util.Set;
+
 import heros.IFDSTabulationProblem;
 import heros.InterproceduralCFG;
 import heros.JoinLattice;
@@ -31,14 +34,8 @@ import heros.ide.edgefunc.EdgeFunction;
  * @param <V> The type of values to be computed along flow edges.
  * @param <I> The type of inter-procedural control-flow graph being used.
  */
-public interface IDETabulationProblem<N,D,M,V,I extends InterproceduralCFG<N,M>> extends IFDSTabulationProblem<N,D,M,I>{
+public interface IDETabulationProblem<N,D,M,V,I extends InterproceduralCFG<N,M>> {
 
-	/**
-	 * Returns the edge functions that describe how V-values are transformed along
-	 * flow function edges.
-	 */
-	EdgeFunctions<N,D,M,V> edgeFunctions();
-	
 	/**
 	 * Returns the lattice describing how values of type V need to be joined.
 	 */
@@ -50,4 +47,40 @@ public interface IDETabulationProblem<N,D,M,V,I extends InterproceduralCFG<N,M>>
 	EdgeFunction<V> allTopFunction(); 
 	
 	EdgeFunction<V> initialSeedEdgeFunction(N seed, D val);
+	
+	/**
+	 * Returns a set of flow functions. Those functions are used to compute data-flow facts
+	 * along the various kinds of control flows.
+     *
+	 * <b>NOTE:</b> this method could be called many times. Implementations of this
+	 * interface should therefore cache the return value! 
+	 */
+	FlowFunctions<N,D,M, V> flowFunctions();
+	
+	/**
+	 * Returns the interprocedural control-flow graph which this problem is computed over.
+	 * 
+	 * <b>NOTE:</b> this method could be called many times. Implementations of this
+	 * interface should therefore cache the return value! 
+	 */
+	I interproceduralCFG();
+	
+	/**
+	 * Returns initial seeds to be used for the analysis. This is a mapping of statements to initial analysis facts.
+	 */
+	Map<N,Set<D>> initialSeeds();
+	
+	/**
+	 * This must be a data-flow fact of type {@link D}, but must <i>not</i>
+	 * be part of the domain of data-flow facts. Typically this will be a
+	 * singleton object of type {@link D} that is used for nothing else.
+	 * It must holds that this object does not equals any object 
+	 * within the domain.
+	 *
+	 * <b>NOTE:</b> this method could be called many times. Implementations of this
+	 * interface should therefore cache the return value! 
+	 */
+	D zeroValue();
+	
+	boolean followReturnsPastSeeds();
 }

@@ -10,7 +10,6 @@
  ******************************************************************************/
 package heros.ide;
 
-import heros.FlowFunction;
 import heros.ide.edgefunc.ChainableEdgeFunction;
 import heros.ide.edgefunc.EdgeFunction;
 import heros.ide.edgefunc.EdgeIdentity;
@@ -18,13 +17,9 @@ import heros.ide.structs.FactAtStatement;
 import heros.ide.structs.FactEdgeFnResolverStatementTuple;
 import heros.ide.structs.WrappedFact;
 import heros.ide.structs.WrappedFactAtStatement;
-import heros.solver.Pair;
 import heros.utilities.DefaultValueMap;
 
-import java.io.FileWriter;
-import java.io.IOException;
 import java.util.Collection;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -155,12 +150,7 @@ class PerAccessPathMethodAnalyzer<Fact, Stmt, Method, Value> {
 				}
 
 				@Override
-				protected EdgeFunction<Value> getEdgeFunction(Fact targetFact) {
-					return context.edgeFunctions.getCallEdgeFunction(factAtStmt.getStatement(), factAtStmt.getFact(), calledMethod, targetFact);
-				}
-
-				@Override
-				protected FlowFunction<Fact> getFlowFunction() {
+				protected FlowFunction<Fact, Value> getFlowFunction() {
 					return context.flowFunctions.getCallFlowFunction(factAtStmt.getStatement(), calledMethod);
 				}
 			}.propagate(factAtStmt);
@@ -188,12 +178,7 @@ class PerAccessPathMethodAnalyzer<Fact, Stmt, Method, Value> {
 						}
 
 						@Override
-						protected EdgeFunction<Value> getEdgeFunction(Fact targetFact) {
-							return context.edgeFunctions.getReturnEdgeFunction(callSite, method, factAtStmt.getStatement(), factAtStmt.getFact(), returnSite, targetFact);
-						}
-
-						@Override
-						protected FlowFunction<Fact> getFlowFunction() {
+						protected FlowFunction<Fact, Value> getFlowFunction() {
 							return context.flowFunctions.getReturnFlowFunction(callSite, method, factAtStmt.getStatement(), returnSite);
 						}
 					}.propagate(factAtStmt);
@@ -203,7 +188,7 @@ class PerAccessPathMethodAnalyzer<Fact, Stmt, Method, Value> {
 			//this might be undesirable if the flow function has a side effect such as registering a taint;
 			//instead we thus call the return flow function with a null caller
 			if(callSites.isEmpty()) {
-				FlowFunction<Fact> flowFunction = context.flowFunctions.getReturnFlowFunction(null, method, factAtStmt.getStatement(), null);
+				FlowFunction<Fact, Value> flowFunction = context.flowFunctions.getReturnFlowFunction(null, method, factAtStmt.getStatement(), null);
 				flowFunction.computeTargets(factAtStmt.getFact());
 			}
 		}
@@ -229,12 +214,7 @@ class PerAccessPathMethodAnalyzer<Fact, Stmt, Method, Value> {
 				}
 
 				@Override
-				protected EdgeFunction<Value> getEdgeFunction(Fact targetFact) {
-					return context.edgeFunctions.getCallToReturnEdgeFunction(factAtStmt.getStatement(), factAtStmt.getFact(), returnSite, targetFact);
-				}
-
-				@Override
-				protected FlowFunction<Fact> getFlowFunction() {
+				protected FlowFunction<Fact, Value> getFlowFunction() {
 					return context.flowFunctions.getCallToReturnFlowFunction(factAtStmt.getStatement(), returnSite);
 				}
 			}.propagate(factAtStmt);
@@ -285,12 +265,7 @@ class PerAccessPathMethodAnalyzer<Fact, Stmt, Method, Value> {
 				};
 
 				@Override
-				protected EdgeFunction<Value> getEdgeFunction(Fact targetFact) {
-					return context.edgeFunctions.getNormalEdgeFunction(factAtStmt.getStatement(), factAtStmt.getFact(), successor, targetFact);
-				}
-
-				@Override
-				protected FlowFunction<Fact> getFlowFunction() {
+				protected FlowFunction<Fact, Value> getFlowFunction() {
 					return context.flowFunctions.getNormalFlowFunction(factAtStmt.getStatement(), successor);
 				}
 			}.propagate(factAtStmt);
@@ -317,12 +292,7 @@ class PerAccessPathMethodAnalyzer<Fact, Stmt, Method, Value> {
 				}
 
 				@Override
-				protected EdgeFunction<Value> getEdgeFunction(Fact targetFact) {
-					return context.edgeFunctions.getReturnEdgeFunction(incEdge.getCallSite(), method, exitFact.getStatement(), exitFact.getFact(), returnSite, targetFact);
-				}
-
-				@Override
-				protected FlowFunction<Fact> getFlowFunction() {
+				protected FlowFunction<Fact, Value> getFlowFunction() {
 					return context.flowFunctions.getReturnFlowFunction(incEdge.getCallSite(), method, exitFact.getStatement(), returnSite);
 				}
 			}.propagate(exitFact);

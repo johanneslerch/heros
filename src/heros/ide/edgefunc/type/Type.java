@@ -30,4 +30,5 @@ public interface Type<T> extends Joinable<T> {
 	 */
 	public T meet(T m);
 	
+	public boolean isSubTypeOf(T other);
 }
