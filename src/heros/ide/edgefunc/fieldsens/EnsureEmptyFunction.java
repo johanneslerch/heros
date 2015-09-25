@@ -45,6 +45,8 @@ public class EnsureEmptyFunction<Field> extends ChainableEdgeFunction<AccessPath
 			return factory.allTop();
 		if(chainableFunction instanceof OverwriteFunction)
 			return this;
+		if(chainableFunction instanceof EnsureEmptyFunction)
+			return this;
 		return chainableFunction.chain(this);
 	}
 	
