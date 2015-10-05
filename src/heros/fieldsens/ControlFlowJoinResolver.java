@@ -10,6 +10,10 @@
  ******************************************************************************/
 package heros.fieldsens;
 
+import java.util.Set;
+
+import com.google.common.collect.Sets;
+
 import heros.fieldsens.AccessPath.Delta;
 import heros.fieldsens.structs.AccessPathAndResolver;
 import heros.fieldsens.structs.DeltaConstraint;
@@ -19,46 +23,67 @@ import heros.fieldsens.structs.WrappedFactAtStatement;
 public class ControlFlowJoinResolver<Field, Fact, Stmt, Method> extends ResolverTemplate<Field, Fact, Stmt, Method, WrappedFact<Field, Fact, Stmt, Method>> {
 
 	private Stmt joinStmt;
-	private boolean propagated = false;
+	private Set<PerAccessPathMethodAnalyzer<Field, Fact, Stmt, Method>> propagated = Sets.newHashSet();
 	private Fact sourceFact;
 	private FactMergeHandler<Fact> factMergeHandler;
+	private ContextLogger<Method> logger;
 
-	public ControlFlowJoinResolver(FactMergeHandler<Fact> factMergeHandler, PerAccessPathMethodAnalyzer<Field, Fact, Stmt, Method> analyzer, Stmt joinStmt, Debugger<Field, Fact, Stmt, Method> debugger) {
-		this(factMergeHandler, analyzer, joinStmt, null, new AccessPath<Field>(), debugger, null);
+	public ControlFlowJoinResolver(FactMergeHandler<Fact> factMergeHandler, Stmt joinStmt, Debugger<Field, Fact, Stmt, Method> debugger, ContextLogger<Method> logger) {
+		this(factMergeHandler, joinStmt, null, new AccessPath<Field>(), debugger, null);
 		this.factMergeHandler = factMergeHandler;
-		propagated=false;
+		this.logger = logger;
 	}
 	
-	private ControlFlowJoinResolver(FactMergeHandler<Fact> factMergeHandler, PerAccessPathMethodAnalyzer<Field, Fact, Stmt, Method> analyzer, 
+	private ControlFlowJoinResolver(FactMergeHandler<Fact> factMergeHandler,
 			Stmt joinStmt, Fact sourceFact, AccessPath<Field> resolvedAccPath, Debugger<Field, Fact, Stmt, Method> debugger, ControlFlowJoinResolver<Field, Fact, Stmt, Method> parent) {
-		super(analyzer, resolvedAccPath, parent, debugger);
+		super(resolvedAccPath, parent, debugger);
 		this.factMergeHandler = factMergeHandler;
 		this.joinStmt = joinStmt;
 		this.sourceFact = sourceFact;
-		propagated=true;
+		if(parent != null) {
+			this.logger = parent.logger;
+			this.propagated=parent.propagated;
+		}
 	}
 	
 	@Override
 	protected AccessPath<Field> getAccessPathOf(WrappedFact<Field, Fact, Stmt, Method> inc) {
 		return inc.getAccessPathAndResolver().accessPath;
 	}
+	
+	@Override
+	protected PerAccessPathMethodAnalyzer<Field, Fact, Stmt, Method> getAnalyzer(WrappedFact<Field, Fact, Stmt, Method> inc) {
+		return inc.getAccessPathAndResolver().getAnalyzer();
+	}
 
+	@Override
+	protected Resolver<Field, Fact, Stmt, Method> getResolver(WrappedFact<Field, Fact, Stmt, Method> inc) {
+		return inc.getAccessPathAndResolver().resolver;
+	}
+	
+	@Override
+	protected void registerTransitiveResolverCallback(WrappedFact<Field, Fact, Stmt, Method> inc,
+			TransitiveResolverCallback<Field, Fact, Stmt, Method> callback) {
+		inc.getAccessPathAndResolver().resolver.registerTransitiveResolverCallback(callback);
+	}
+	
 	protected void processIncomingGuaranteedPrefix(heros.fieldsens.structs.WrappedFact<Field,Fact,Stmt,Method> fact) {
-		if(propagated) {
+		PerAccessPathMethodAnalyzer<Field, Fact, Stmt, Method> analyzer = fact.getAccessPathAndResolver().getAnalyzer();
+		if(!propagated.add(analyzer)) {
 			factMergeHandler.merge(sourceFact, fact.getFact());
 		}
 		else {
-			propagated=true;
 			sourceFact = fact.getFact();
-			analyzer.processFlowFromJoinStmt(new WrappedFactAtStatement<Field, Fact, Stmt, Method>(joinStmt, new WrappedFact<Field, Fact, Stmt, Method>(
-					fact.getFact(), new AccessPathAndResolver<Field, Fact, Stmt, Method>(new AccessPath<Field>(), this))));
+			analyzer.processFlowFromJoinStmt(new WrappedFactAtStatement<Field, Fact, Stmt, Method>(
+					joinStmt, new WrappedFact<Field, Fact, Stmt, Method>(
+					fact.getFact(), new AccessPathAndResolver<Field, Fact, Stmt, Method>(analyzer, new AccessPath<Field>(), this))));
 		}
 	};
 	
 	@Override
 	protected void interestByIncoming(WrappedFact<Field, Fact, Stmt, Method> inc) {
 		if(resolvedAccessPath.isEmpty())
-			interest(new AccessPathAndResolver<Field, Fact, Stmt, Method>(AccessPath.<Field>empty(), this));
+			interest(new AccessPathAndResolver<Field, Fact, Stmt, Method>(inc.getAccessPathAndResolver().getAnalyzer(), AccessPath.<Field>empty(), this));
 		else {
 			AccessPath<Field> delta = resolvedAccessPath.getDeltaToAsAccessPath(inc.getAccessPathAndResolver().accessPath);
 			interest(inc.getAccessPathAndResolver().withAccessPath(delta));
@@ -84,17 +109,17 @@ public class ControlFlowJoinResolver<Field, Fact, Stmt, Method> extends Resolver
 	
 	@Override
 	protected ResolverTemplate<Field, Fact, Stmt, Method, WrappedFact<Field, Fact, Stmt, Method>> createNestedResolver(AccessPath<Field> newAccPath) {
-		return new ControlFlowJoinResolver<Field, Fact, Stmt, Method>(factMergeHandler, analyzer, joinStmt, sourceFact, newAccPath, debugger, this);
+		return new ControlFlowJoinResolver<Field, Fact, Stmt, Method>(factMergeHandler, joinStmt, sourceFact, newAccPath, debugger, this);
 	}
 
 	@Override
 	protected void log(String message) {
-		analyzer.log("Join Stmt "+toString()+": "+message);
+		logger.log("Join Stmt "+toString()+": "+message);
 	}
 
 	@Override
 	public String toString() {
-		return "<"+resolvedAccessPath+":"+joinStmt+" in "+analyzer.getMethod()+">";
+		return "<"+resolvedAccessPath+":"+joinStmt+" in "+logger.getMethod()+">";
 	}
 
 	public Stmt getJoinStmt() {

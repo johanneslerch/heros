@@ -10,7 +10,6 @@
  ******************************************************************************/
 package heros.fieldsens;
 
-import heros.fieldsens.AccessPath.Delta;
 import heros.fieldsens.structs.AccessPathAndResolver;
 
 

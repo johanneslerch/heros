@@ -10,11 +10,16 @@
  ******************************************************************************/
 package heros.fieldsens;
 
+import java.util.Collection;
+import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Set;
 
+import com.google.common.collect.HashMultimap;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
+import com.google.common.collect.Multimap;
 import com.google.common.collect.Sets;
 
 import heros.fieldsens.AccessPath.Delta;
@@ -25,17 +30,17 @@ import heros.fieldsens.structs.AccessPathAndResolver;
 
 public abstract class ResolverTemplate<Field, Fact, Stmt, Method, Incoming>  extends Resolver<Field, Fact, Stmt, Method> {
 
-	protected Set<Incoming> incomingEdges = Sets.newHashSet();
+	protected Multimap<Resolver<Field, Fact, Stmt, Method>, Incoming> incomingEdges = HashMultimap.create();
 	private Map<AccessPath<Field>, ResolverTemplate<Field, Fact, Stmt, Method, Incoming>> nestedResolvers = Maps.newHashMap();
 	private Map<AccessPath<Field>, ResolverTemplate<Field, Fact, Stmt, Method, Incoming>> allResolversInExclHierarchy;
+	private List<TransitiveResolverCallback<Field, Fact, Stmt, Method>> transitiveResolverCallbacks = Lists.newLinkedList();
 	protected AccessPath<Field> resolvedAccessPath;
 	protected Debugger<Field, Fact, Stmt, Method> debugger;
 
-	public ResolverTemplate(PerAccessPathMethodAnalyzer<Field, Fact, Stmt, Method> analyzer, 
-			AccessPath<Field> resolvedAccessPath,
+	public ResolverTemplate(AccessPath<Field> resolvedAccessPath,
 			ResolverTemplate<Field, Fact, Stmt, Method, Incoming> parent, 
 			Debugger<Field, Fact, Stmt, Method> debugger) {
-		super(parent, analyzer);
+		super(parent);
 		this.resolvedAccessPath = resolvedAccessPath;
 		this.debugger = debugger;
 		if(parent == null || resolvedAccessPath.getExclusions().isEmpty()) {
@@ -44,17 +49,81 @@ public abstract class ResolverTemplate<Field, Fact, Stmt, Method, Incoming>  ext
 		else {
 			allResolversInExclHierarchy = parent.allResolversInExclHierarchy;
 		}
-		debugger.newResolver(analyzer, this);
+//		debugger.newResolver(analyzer, this);
 	}
 	
 	protected abstract AccessPath<Field> getAccessPathOf(Incoming inc);
 	
-	public void addIncoming(Incoming inc) {
-		if(resolvedAccessPath.isPrefixOf(getAccessPathOf(inc)) == PrefixTestResult.GUARANTEED_PREFIX) {
-			if(!incomingEdges.add(inc))
-				return;
-			log("Incoming Edge: "+inc);
-					
+	protected abstract PerAccessPathMethodAnalyzer<Field, Fact, Stmt, Method> getAnalyzer(Incoming inc); 
+	
+	protected abstract void registerTransitiveResolverCallback(Incoming inc, TransitiveResolverCallback<Field, Fact, Stmt, Method> callback);
+	
+	@Override
+	public void registerTransitiveResolverCallback(TransitiveResolverCallback<Field, Fact, Stmt, Method> callback) {
+		transitiveResolverCallbacks.add(callback);
+		for(Resolver<Field, Fact, Stmt, Method> transRes : Lists.newLinkedList(incomingEdges.keySet())) {
+			if(transRes == null)
+				callback.resolvedByIncomingAccessPath();
+			else
+				callback.resolvedBy(transRes);
+		}
+	}
+	
+	protected abstract Resolver<Field, Fact, Stmt, Method> getResolver(Incoming inc);
+	
+	private boolean shouldDismiss(Incoming inc, Resolver<Field, Fact, Stmt, Method> transitiveResolver) {
+		return transitiveResolver != null && incomingEdges.containsKey(transitiveResolver);
+//		if(incomingEdges.containsKey(transitiveResolver)) {
+//			for(Incoming existingInc : incomingEdges.get(transitiveResolver)) {
+//				if(getResolver(existingInc).isParentOf(getResolver(inc)))
+//					return true;
+//				else if(getResolver(inc).isParentOf(getResolver(existingInc)))
+//					System.out.println();
+//			}
+//		}
+//		return false;
+	}
+
+	public void addIncoming(final Incoming inc) {
+		AccessPath<Field> incAccPath = getAccessPathOf(inc);
+		if(incAccPath.equals(resolvedAccessPath)) {
+			registerTransitiveResolverCallback(inc, new TransitiveResolverCallback<Field, Fact, Stmt, Method>() {
+				@Override
+				public void resolvedByIncomingAccessPath() {
+					addIncomingGuaranteedPrefix(inc, null);
+				}
+				
+				@Override
+				public void resolvedBy(Resolver<Field, Fact, Stmt, Method> resolver) {
+					if(shouldDismiss(inc, resolver))
+						dismissByTransitiveResolver(inc, resolver);
+					else
+						addIncomingGuaranteedPrefix(inc, resolver);
+				}
+			});
+		} else if(resolvedAccessPath.isPrefixOf(incAccPath) == PrefixTestResult.GUARANTEED_PREFIX) {
+			addIncomingGuaranteedPrefix(inc, null);
+		}
+		else if(incAccPath.isPrefixOf(resolvedAccessPath).atLeast(PrefixTestResult.POTENTIAL_PREFIX)) {
+//			lock();
+			processIncomingPotentialPrefix(inc);
+//			unlock();
+		}
+	}
+	
+	protected void dismissByTransitiveResolver(Incoming inc, Resolver<Field, Fact, Stmt, Method> resolver) {
+//		log("Dismissed Incoming Edge "+inc+" because we already saw the same transitive resolver: "+resolver);		
+	}
+
+	private void addIncomingGuaranteedPrefix(Incoming inc, Resolver<Field, Fact, Stmt, Method> transitiveResolver) {
+		boolean isNewTransitiveResolver = !incomingEdges.containsKey(transitiveResolver);
+		boolean isNewIncomingEdge = !incomingEdges.containsValue(inc);
+		if(!incomingEdges.put(transitiveResolver, inc))
+			return;
+		
+		log("Incoming Edge: "+inc+ " (transitive resolver: "+transitiveResolver+")");
+		
+		if(isNewIncomingEdge) {
 			interestByIncoming(inc);
 			
 			for(ResolverTemplate<Field, Fact, Stmt, Method, Incoming> nestedResolver : Lists.newLinkedList(nestedResolvers.values())) {
@@ -63,19 +132,25 @@ public abstract class ResolverTemplate<Field, Fact, Stmt, Method, Incoming>  ext
 			
 			processIncomingGuaranteedPrefix(inc);
 		}
-		else if(getAccessPathOf(inc).isPrefixOf(resolvedAccessPath).atLeast(PrefixTestResult.POTENTIAL_PREFIX)) {
-			processIncomingPotentialPrefix(inc);
+		
+		if(isNewTransitiveResolver) {
+			for(TransitiveResolverCallback<Field, Fact, Stmt, Method> callback : Lists.newLinkedList(transitiveResolverCallbacks)) {
+				if(transitiveResolver == null)
+					callback.resolvedByIncomingAccessPath();
+				else
+					callback.resolvedBy(transitiveResolver);
+			}
 		}
 	}
 
 	protected void interestByIncoming(Incoming inc) {
 		if(getAccessPathOf(inc).equals(resolvedAccessPath) || resolvedAccessPath.getExclusions().size() < 1) {
-			interest(new AccessPathAndResolver<Field, Fact, Stmt, Method>(AccessPath.<Field>empty(), this));
+			interest(new AccessPathAndResolver<Field, Fact, Stmt, Method>(getAnalyzer(inc), AccessPath.<Field>empty(), this));
 		}
 		else {
 			AccessPath<Field> deltaTo = resolvedAccessPath.getDeltaToAsAccessPath(getAccessPathOf(inc));
 			ResolverTemplate<Field,Fact,Stmt,Method,Incoming> nestedResolver = getOrCreateNestedResolver(getAccessPathOf(inc));
-			interest(new AccessPathAndResolver<Field, Fact, Stmt, Method>(deltaTo, nestedResolver));
+			interest(new AccessPathAndResolver<Field, Fact, Stmt, Method>(nestedResolver.getAnalyzer(inc), deltaTo, nestedResolver));
 		}
 	}
 	
@@ -88,11 +163,12 @@ public abstract class ResolverTemplate<Field, Fact, Stmt, Method, Incoming>  ext
 		if(!isLocked()) {
 			log("Resolve: "+constraint);
 			debugger.askedToResolve(this, constraint);
-			if(constraint.canBeAppliedTo(resolvedAccessPath) && !isLocked()) {
+			if(constraint.canBeAppliedTo(resolvedAccessPath)) {
 				AccessPath<Field> newAccPath = constraint.applyToAccessPath(resolvedAccessPath);
 				ResolverTemplate<Field,Fact,Stmt,Method,Incoming> nestedResolver = getOrCreateNestedResolver(newAccPath);
-				if(nestedResolver == this)
+				if(nestedResolver == this) {
 					return;
+				}
 				assert nestedResolver.resolvedAccessPath.equals(constraint.applyToAccessPath(resolvedAccessPath));
 				nestedResolver.registerCallback(callback);
 			}
@@ -104,7 +180,6 @@ public abstract class ResolverTemplate<Field, Fact, Stmt, Method, Incoming>  ext
 			return this;
 		
 		if(!nestedResolvers.containsKey(newAccPath)) {
-//			assert resolvedAccessPath.getDeltaTo(newAccPath).accesses.length <= 1;
 			if(allResolversInExclHierarchy.containsKey(newAccPath)) {
 				return allResolversInExclHierarchy.get(newAccPath);
 			}
@@ -113,8 +188,8 @@ public abstract class ResolverTemplate<Field, Fact, Stmt, Method, Incoming>  ext
 				if(!resolvedAccessPath.getExclusions().isEmpty() || !newAccPath.getExclusions().isEmpty())
 					allResolversInExclHierarchy.put(newAccPath, nestedResolver);
 				nestedResolvers.put(newAccPath, nestedResolver);
-				for(Incoming inc : Lists.newLinkedList(incomingEdges)) {
-					nestedResolver.addIncoming(inc);
+				for(Entry<Resolver<Field, Fact, Stmt, Method>, Incoming> inc : Lists.newLinkedList(incomingEdges.entries())) {
+					nestedResolver.addIncoming(inc.getValue());
 				}
 				return nestedResolver;
 			}

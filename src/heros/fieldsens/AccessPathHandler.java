@@ -44,7 +44,8 @@ public class AccessPathHandler<Field, Fact, Stmt, Method> {
 	
 	public ConstrainedFact<Field, Fact, Stmt, Method> generateWithEmptyAccessPath(Fact fact, ZeroHandler<Field> zeroHandler) {
 		return new ConstrainedFact<Field, Fact, Stmt, Method>(new WrappedFact<Field, Fact, Stmt, Method>(fact, 
-				new AccessPathAndResolver<Field, Fact, Stmt, Method>(new AccessPath<Field>(), new ZeroCallEdgeResolver<Field, Fact, Stmt, Method>(accPathResolver.resolver.analyzer, zeroHandler, debugger))));
+				new AccessPathAndResolver<Field, Fact, Stmt, Method>(accPathResolver.getAnalyzer(), new AccessPath<Field>(), new ZeroCallEdgeResolver<Field, Fact, Stmt, Method>(
+						accPathResolver.getAnalyzer(), zeroHandler, debugger))));
 	}
 	
 	public ResultBuilder<Field, Fact, Stmt, Method> prepend(final Field field) {

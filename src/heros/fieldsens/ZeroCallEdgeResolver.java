@@ -30,11 +30,16 @@ public class ZeroCallEdgeResolver<Field, Fact, Stmt, Method> extends CallEdgeRes
 		AccessPath<Field> accPath = constraint.applyToAccessPath(new AccessPath<Field>());
 		Optional<AccessPath<Field>> gen = zeroHandler.shouldGenerateAccessPath(accPath);
 		if(gen.isPresent())
-			callback.interest(analyzer, new AccessPathAndResolver<Field, Fact, Stmt, Method>(accPath.getDeltaToAsAccessPath(gen.get()), this));
+			callback.interest(analyzer, new AccessPathAndResolver<Field, Fact, Stmt, Method>(analyzer, accPath.getDeltaToAsAccessPath(gen.get()), this));
 	}
 	
 	@Override
 	public void interest(AccessPathAndResolver<Field, Fact, Stmt, Method> accPathResolver) {
+	}
+	
+	@Override
+	public void registerTransitiveResolverCallback(TransitiveResolverCallback<Field, Fact, Stmt, Method> callback) {
+		callback.resolvedBy(this);
 	}
 	
 	@Override
