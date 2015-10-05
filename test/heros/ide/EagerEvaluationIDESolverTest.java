@@ -400,7 +400,7 @@ public class EagerEvaluationIDESolverTest {
 		helper.method("foo",
 				startPoints("d"),
 				normalStmt("d", flow("y", "y", "z")).succ("e"),
-				exitStmt("e").returns(over("c"), to("f"), flow("z", "u"), flow("y")));
+				exitStmt("e").returns(over("c"), to("f"), flow("z", "u"), kill("y")));
 		
 		helper.runSolver(false, "a");
 	}
@@ -426,14 +426,14 @@ public class EagerEvaluationIDESolverTest {
 	public void reuseSummaryForRecursiveCall() {
 		helper.method("foo",
 				startPoints("a"),
-				callSite("a").calls("bar", flow("0", "1")).retSite("b", flow("0")),
+				callSite("a").calls("bar", flow("0", "1")).retSite("b", kill("0")),
 				normalStmt("b", flow("2", "3")).succ("c"));
 		
 		helper.method("bar",
 				startPoints("g"),
 				normalStmt("g", flow("1", "1")).succ("i").succ("h"),
-				callSite("i").calls("bar", flow("1", "1")).retSite("h", flow("1")),
-				exitStmt("h").returns(over("a"), to("b"), flow("1"), flow("2" ,"2"))
+				callSite("i").calls("bar", flow("1", "1")).retSite("h", kill("1")),
+				exitStmt("h").returns(over("a"), to("b"), kill("1"), flow("2" ,"2"))
 							.returns(over("i"), to("h"), flow("1","2"), flow("2", "2")));
 				
 		helper.runSolver(false, "a");
@@ -950,8 +950,8 @@ public class EagerEvaluationIDESolverTest {
 				normalStmt("c", flow("2", prependField("z"), "2")).succ("d"),
 				callSite("d").calls("xyz", flow("2", "3")).retSite("i", kill("2")),
 				normalStmt("i", flow("4", readField("g"), "5")).succ("j"),
-				normalStmt("j", flow("5", readField("f"), "6")).succ("k"),
-				exitStmt("k").returns(over("b"), to("l")));
+				normalStmt("j", flow("5", readField("z"), "6")).succ("k"),
+				exitStmt("k").returns(over("b"), to("l"), kill("6")));
 		
 		helper.method("xyz",
 				startPoints("e"),
@@ -1196,6 +1196,30 @@ public class EagerEvaluationIDESolverTest {
 	}
 	
 	@Test
+	public void intraproceduralStateExplosionInline0Resolver() {
+		helper.method("main",
+				startPoints("m_a"),
+				normalStmt("m_a", flow("0", "1")).succ("m_b"),
+				callSite("m_b").calls("foo", flow("1", "1")));
+		
+		helper.method("foo",
+				startPoints("a"),
+				normalStmt("a", flow("1", "1")).succ("b"),
+				normalStmt("b", flow("1", "1")).succ("c1").succ("c2"),
+				normalStmt("c1", flow("1", "1")).succ("d"),
+				normalStmt("c2", flow("1", overwriteField("f"), "1")).succ("d"),
+				normalStmt("d", flow(2, "1", "1")).succ("e1").succ("e2"),
+				normalStmt("e1", flow(2, "1", "1")).succ("f"),
+				normalStmt("e2", flow(2, "1", overwriteField("g"), "1")).succ("f"),
+				normalStmt("f", flow(4, "1", "1")).succ("g1").succ("g2"),
+				normalStmt("g1", flow(4, "1", "1")).succ("h"),
+				normalStmt("g2", flow(4, "1", overwriteField("h"), "1")).succ("h"),
+				normalStmt("h", flow(8, "1", "1")).succ("i"));
+		
+		helper.runSolver(false, "m_a");
+	}
+	
+	@Test
 	public void intraproceduralStateExplosion() {
 		helper.method("main",
 				startPoints("m_a"),
@@ -1211,10 +1235,10 @@ public class EagerEvaluationIDESolverTest {
 				normalStmt("d", flow(2, "1", "1")).succ("e1").succ("e2"),
 				normalStmt("e1", flow(2, "1", "1")).succ("f"),
 				normalStmt("e2", flow(2, "1", overwriteField("g"), "1")).succ("f"),
-				normalStmt("f", flow(4, "1", "1")).succ("g1").succ("g2"),
-				normalStmt("g1", flow(4, "1", "1")).succ("h"),
-				normalStmt("g2", flow(4, "1", overwriteField("h"), "1")).succ("h"),
-				normalStmt("h", flow(8, "1", "1")).succ("i"));
+				normalStmt("f", flow(2, "1", "1")).succ("g1").succ("g2"),
+				normalStmt("g1", flow(2, "1", "1")).succ("h"),
+				normalStmt("g2", flow(2, "1", overwriteField("h"), "1")).succ("h"),
+				normalStmt("h", flow(2, "1", "1")).succ("i"));
 		
 		helper.runSolver(false, "m_a");
 	}
@@ -1255,6 +1279,712 @@ public class EagerEvaluationIDESolverTest {
 				normalStmt("f", flow("2", "2")).succ("g").succ("f"),
 				exitStmt("g").returns(over("b1"), to("c1"), flow("2", "3")).returns(over("b2"), to("c2"), flow("2", "3")));
 				
+		helper.runSolver(false, "a");
+	}
+	
+	@Test
+	public void readPrefixInLoopToResolveFieldRead() {
+		helper.method("main",
+				startPoints("a"),
+				normalStmt("a", flow("0", "1")).succ("b"),
+				normalStmt("b", flow("1", prependField("f"), "1")).succ("c"),
+				normalStmt("c", flow("1", prependField("a"), "1")).succ("d"),
+				normalStmt("d", flow("1", prependField("a"), "1")).succ("e"),
+				normalStmt("e", flow("1",  "1")).succ("f").succ("g"),
+				normalStmt("f", flow("1", readField("a"), "1")).succ("e"),
+				normalStmt("g", flow("1", readField("f"), "2")).succ("h"),
+				normalStmt("h", kill("2")).succ("i"));
+		
+		helper.runSolver(false, "a");
+	}
+	
+	@Test
+	public void loopReadAfterRecursiveReturnWrite() {
+		helper.method("main",
+				startPoints("a"),
+				normalStmt("a", flow("0", prependField("g"), "1")).succ("b"),
+				callSite("b").calls("foo", flow("1", "1")).retSite("f", kill("1")),
+				normalStmt("f", flow("1", "1")).succ("g").succ("h"),
+				normalStmt("g", flow("1", readField("f"), "1")).succ("f"),
+				
+				normalStmt("h", flow("1", readField("f"), "1")).succ("i"),
+				normalStmt("i", flow(3, "1", readField("f"), "1")).succ("j"),
+				normalStmt("j", flow(3, "1", readField("g"), "1")).succ("k"),
+				normalStmt("k", kill("1")).succ("l"));
+		
+		helper.method("foo",
+				startPoints("c"),
+				normalStmt("c", flow("1", "1")).succ("d"),
+				callSite("d").calls("foo", flow("1", "1")).retSite("e", flow("1", "1")),
+				normalStmt("e", flow(2, "1", prependField("f"), "1")).succ("ep"),
+				exitStmt("ep").returns(over("d"), to("e"), flow(2, "1", "1")).returns(over("b"), to("f"), flow(2, "1", "1")));
+		
+		helper.runSolver(false, "a");
+	}
+	
+	@Test
+	public void loopReadAfterRecursiveCallWrite() {
+		helper.method("main",
+				startPoints("a"),
+				normalStmt("a", flow("0", overwriteField("f"), "1")).succ("b"),
+				callSite("b").calls("foo", flow("1", "1")).retSite("f", kill("1")),
+				normalStmt("f", flow("1", "1")).succ("g").succ("h"),
+				normalStmt("g", flow("1", readField("f"), "1")).succ("f"),
+				
+				normalStmt("h", flow("1", readField("f"), "1")).succ("i"),
+				normalStmt("i", flow("1", readField("f"), "1")).succ("j"),
+				normalStmt("j", flow("1", readField("f"), "1")).succ("k"),
+				normalStmt("k", kill("1")).succ("l"));
+		
+		helper.method("foo",
+				startPoints("c"),
+				normalStmt("c", flow("1", prependField("f"), "1")).succ("d"),
+				callSite("d").calls("foo", flow("1", "1")).retSite("e", flow("1", "1")),
+				exitStmt("e").returns(over("d"), to("e"), flow(2, "1", "1")).returns(over("b"), to("f"), flow(2, "1", "1")));
+		
+		helper.runSolver(false, "a");
+	}
+	
+	@Test
+	public void loopReadAfterReturnFromLoopWrite() {
+		helper.method("main",
+				startPoints("a"),
+				normalStmt("a", flow("0", "1")).succ("b"),
+				callSite("b").calls("foo", flow("1", "1")).retSite("f", kill("1")),
+				normalStmt("f", flow("1", "1")).succ("g").succ("h"),
+				normalStmt("g", flow("1", readField("f"), "1")).succ("f"),
+				normalStmt("h", kill("1")).succ("i"));
+		
+		helper.method("foo",
+				startPoints("c"),
+				normalStmt("c", flow("1", "1")).succ("d").succ("e"),
+				normalStmt("d", flow("1", prependField("f"), "1")).succ("c"),
+				exitStmt("e").returns(over("b"), to("f"), flow("1", "1")));
+		
+		helper.runSolver(false, "a");
+	}
+	
+	@Test
+	public void loopAndReadAfterCalls() {
+		helper.method("main",
+				startPoints("a"),
+				normalStmt("a", flow("0", overwriteField("f"), "1")).succ("b"),
+				normalStmt("b", flow("1", "1")).succ("c").succ("d"),
+				normalStmt("c", flow("1", prependField("f"), "1")).succ("b"),
+				callSite("d").calls("foo", flow("1", "1")));
+		
+		helper.method("foo",
+				startPoints("e"),
+				callSite("e").calls("bar", flow("1", "1")));
+				
+		helper.method("bar",
+				startPoints("f"),
+				normalStmt("f", flow("1", "1")).succ("g").succ("h"),
+				normalStmt("g", flow("1", readField("f"), "1")).succ("f"),
+				normalStmt("h", flow("1", readField("f"), "1")).succ("i"),
+				normalStmt("i", flow("1", readField("g"), "1")).succ("j"),
+				normalStmt("j", kill("1")).succ("k"));
+		
+		helper.runSolver(false, "a");
+	}
+	
+	@Test
+	public void loopAndReadMultipleFieldsAfterCalls() {
+		helper.method("main",
+				startPoints("a"),
+				normalStmt("a", flow("0", prependField("f"), "1")).succ("b"),
+				normalStmt("b", flow("1", "1")).succ("c1").succ("d"),
+				normalStmt("c1", flow("1", prependField("b"), "1")).succ("c2"),
+				normalStmt("c2", flow("1", prependField("a"), "1")).succ("b"),
+				callSite("d").calls("foo", flow("1", "1")));
+		
+		helper.method("foo",
+				startPoints("e"),
+				callSite("e").calls("bar", flow("1", "1")));
+				
+		helper.method("bar",
+				startPoints("f"),
+				normalStmt("f", flow("1", "1")).succ("g1").succ("h"),
+				normalStmt("g1", flow("1", readField("a"), "1")).succ("g2"),
+				normalStmt("g2", flow("1", readField("b"), "1")).succ("f"),
+				
+				normalStmt("h", flow("1", readField("a"), "1")).succ("i"),
+				normalStmt("i", flow("1", readField("b"), "1")).succ("j"),
+				normalStmt("j", flow("1", readField("a"), "1")).succ("k"),
+				normalStmt("k", flow("1", readField("b"), "1")).succ("l"),
+				normalStmt("l", flow("1", readField("f"), "1")).succ("m"),
+				normalStmt("m", kill("1")).succ("n"));
+		
+		helper.runSolver(false, "a");
+	}
+	
+	@Test
+	public void resolveViaReturnAndConsiderCallEdgeConstraints() {
+		helper.method("main",
+				startPoints("a"),
+				normalStmt("a", flow("0", overwriteField("f"), "1")).succ("b0"),
+				normalStmt("b0", flow("1", overwriteField("g"), "1")).succ("b1"),
+				normalStmt("b1", flow("1", prependField("f"), "2")).succ("b2"),
+				normalStmt("b2", flow("2", prependField("f"), "2")).succ("c"),
+				callSite("c").calls("foo", flow("2", "3")).retSite("h", kill("2")),
+				normalStmt("h", flow("4", readField("g"), "5")).succ("i"),
+				normalStmt("i", flow(2, "5", readField("g"), "5")).succ("j"),
+				normalStmt("j", kill("5")).succ("k"));
+		
+		helper.method("foo",
+				startPoints("d"),
+				normalStmt("d", flow("3", readField("f"), "3")).succ("e"),
+				normalStmt("e", flow("3", "3")).succ("ep").succ("f"),
+				callSite("f").calls("foo", flow("3", "3")).retSite("g", kill("3")),
+				normalStmt("g", flow("3", prependField("g"), "3")).succ("ep"),
+				exitStmt("ep").returns(over("c"), to("h"), flow(2, "3", "4")).returns(over("f"), to("g"), flow("3", "3")));
+		
+		helper.runSolver(false, "a");
+	}
+	
+	@Test
+	public void resolveViaReturnAndConsiderCallEdgeConstraints2() {
+		helper.method("main",
+				startPoints("a"),
+				normalStmt("a", flow("0", overwriteField("f"), "1")).succ("b0"),
+				normalStmt("b0", flow("1", overwriteField("g"), "1")).succ("b1"),
+				normalStmt("b1", flow("1", prependField("f"), "1")).succ("b2"),
+				normalStmt("b2", flow("1", prependField("f"), "2")).succ("b3"),
+				normalStmt("b3", flow("2", prependField("f"), "2")).succ("c"),
+				callSite("c").calls("foo", flow("2", "3")).retSite("h", kill("2")),
+				normalStmt("h", flow("4", readField("g"), "5")).succ("i"),
+				normalStmt("i", flow(3, "5", readField("g"), "5")).succ("j"),
+				normalStmt("j", flow(2, "5", readField("g"), "5")).succ("k"),
+				normalStmt("k", kill("5")).succ("l"));
+		
+		helper.method("foo",
+				startPoints("d"),
+				normalStmt("d", flow("3", readField("f"), "3")).succ("e"),
+				normalStmt("e", flow("3", "3")).succ("ep").succ("f"),
+				callSite("f").calls("foo", flow("3", "3")).retSite("g", kill("3")),
+				normalStmt("g", flow(2, "3", prependField("g"), "3")).succ("ep"),
+				exitStmt("ep").returns(over("c"), to("h"), flow(3, "3", "4")).returns(over("f"), to("g"), flow(2, "3", "3")));
+		
+		helper.runSolver(false, "a");
+	}
+	
+	public void recursiveReturnWriteBeforeRecursiveReturnRead() {
+		helper.method("main",
+				startPoints("a"),
+				normalStmt("a", flow("0", "1")).succ("b"),
+				callSite("b").calls("foo", flow("1", "1")).retSite("c", kill("1")),
+				callSite("c").calls("bar", flow("1", "1")).retSite("d", kill("1")),
+				normalStmt("d", kill("1")).succ("e"));
+		
+		helper.method("foo",
+				startPoints("foo_sp"),
+				normalStmt("foo_sp", flow("1", "1")).succ("foo_ep").succ("foo_cs"),
+				callSite("foo_cs").calls("foo", flow("1", "1")).retSite("foo_rs", kill("1")),
+				normalStmt("foo_rs", flow("1", prependField("f"), "1")).succ("foo_ep"),
+				exitStmt("foo_ep").returns(over("foo_cs"), to("foo_rs"), flow("1", "1")).
+									returns(over("b"), to("c"), flow("1", "1")));
+		
+		helper.method("bar",
+				startPoints("bar_sp"),
+				normalStmt("bar_sp", flow("1", "1")).succ("bar_ep").succ("bar_cs"),
+				callSite("bar_cs").calls("bar", flow("1", "1")).retSite("bar_rs", kill("1")),
+				normalStmt("bar_rs", flow("1", readField("f"), "1")).succ("bar_ep"),
+				exitStmt("bar_ep").returns(over("bar_cs"), to("bar_rs"), flow("1", "1")).
+				returns(over("c"), to("d"), flow("1", "1")));
+		
+		helper.runSolver(false, "a");
+	}
+	
+	@Test
+	public void intraproceduralWriteAndReadInLoops() {
+		helper.method("main",
+				startPoints("a"),
+				normalStmt("a", flow("0", "1")).succ("b"),
+				normalStmt("b", flow("1", "1")).succ("c1").succ("c2").succ("d"),
+				normalStmt("c1", flow("1", prependField("f"), "1")).succ("b"),
+				normalStmt("c2", flow("1", prependField("g"), "1")).succ("b"),
+				normalStmt("d", flow("1", "1")).succ("e1").succ("e2").succ("f"),
+				normalStmt("e1", flow("1", readField("g"), "1")).succ("d"),
+				normalStmt("e2", flow("1", readField("f"), "1")).succ("d"),
+				normalStmt("f", flow("1", readField("g"), "1")).succ("g"),
+				normalStmt("g", flow(2, "1", readField("f"), "1")).succ("h"),
+				normalStmt("h", kill(2, "1")).succ("i"));
+		
+		helper.runSolver(false, "a");
+	}
+	
+	@Test
+	public void intraproceduralWriteAndReadMultipleFieldsSubsequentlyInLoops() {
+		helper.method("main",
+				startPoints("a"),
+				normalStmt("a", flow("0", overwriteField("g"), "1")).succ("b"),
+				normalStmt("b", flow("1", "1")).succ("c1").succ("d"),
+				normalStmt("c1", flow("1", prependField("f"), "1")).succ("c2"),
+				normalStmt("c2", flow("1", prependField("g"), "1")).succ("b"),
+				normalStmt("d", flow("1", "1")).succ("e1").succ("f"),
+				normalStmt("e1", flow("1", readField("g"), "1")).succ("e2"),
+				normalStmt("e2", flow("1", readField("f"), "1")).succ("d"),
+				normalStmt("f", flow("1", readField("g"), "1")).succ("g"),
+				normalStmt("g", flow("1", readField("f"), "1")).succ("h"),
+				normalStmt("h", kill("1")).succ("i"));
+		
+		helper.runSolver(false, "a");
+	}
+	
+	@Test
+	public void loopWriteThenCallAndLoopRead() {
+		helper.method("main",
+				startPoints("a"),
+				normalStmt("a", flow("0", prependField("g"), "1")).succ("js1"),
+				normalStmt("js1", flow("1", "1")).succ("b").succ("c"),
+				normalStmt("b", flow("1", prependField("f"), "1")).succ("js1"),
+				callSite("c").calls("foo", flow("1", "1")));
+		
+		helper.method("foo",
+				startPoints("d"),
+				normalStmt("d", flow("1", "1")).succ("js2"),
+				normalStmt("js2", flow("1", "1")).succ("e").succ("f"),
+				normalStmt("e", flow("1", readField("f"), "1")).succ("js2"),
+				normalStmt("f", flow("1", readField("f"), "1")).succ("g"),
+				normalStmt("g", flow("1", readField("g"), "1")).succ("h"),
+				normalStmt("h", kill("1")).succ("i"));
+		
+		helper.runSolver(false, "a");
+	}
+	
+	@Test
+	public void callAndLoopRead() {
+		helper.method("main",
+				startPoints("a"),
+				normalStmt("a", flow("0", prependField("g"), "1")).succ("b"),
+				normalStmt("b", flow("1", prependField("f"), "1")).succ("c"),
+				callSite("c").calls("foo", flow("1", prependField("f"), "1")));
+		
+		helper.method("foo",
+				startPoints("d"),
+				normalStmt("d", flow("1", "1")).succ("js2"),
+				normalStmt("js2", flow(3, "1", "1")).succ("e").succ("f"),
+				normalStmt("e", flow(3, "1", readField("f"), "1")).succ("js2"),
+				normalStmt("f", flow(3, "1", readField("f"), "1")).succ("g"),
+				normalStmt("g", flow(2, "1", readField("g"), "1")).succ("h"),
+				normalStmt("h", kill("1")).succ("i"));
+		
+		helper.runSolver(false, "a");
+	}
+	
+	@Test
+	public void recursiveWriteBeforeAndAfterCall() {
+		helper.method("main",
+				startPoints("a"),
+				normalStmt("a", flow("0", overwriteField("f"), "1")).succ("b"),
+				normalStmt("b", flow("1", overwriteField("g"), "1")).succ("c"),
+				callSite("c").calls("foo", flow("1", "1")).retSite("f", kill("1")),
+				normalStmt("f", flow("1", readField("g"), "1")).succ("g").succ("js"),
+				normalStmt("g", flow(2, "1", readField("f"), "1")).succ("h"),
+				normalStmt("h", flow("1", readField("f"), "1")).succ("i"),
+				normalStmt("i", kill("1")).succ("j"),
+				normalStmt("js", flow("1", "1")).succ("js_inner1").succ("js_inner2").succ("g"),
+				normalStmt("js_inner1", flow("1", readField("f"), "1")).succ("js"),
+				normalStmt("js_inner2", flow("1", readField("g"), "1")).succ("js"));
+		
+		helper.method("foo",
+				startPoints("d"),
+				normalStmt("d", flow("1", "1")).succ("ep").succ("e"),
+				normalStmt("e", flow("1", prependField("f"), "1")).succ("cs"),
+				callSite("cs").calls("foo", flow("1", "1")).retSite("rs", kill("1")),
+				normalStmt("rs", flow("1", prependField("g"), "1")).succ("ep"),
+				exitStmt("ep").returns(over("cs"), to("rs"), flow(2, "1", "1")).returns(over("c"), to("f"), flow(2, "1", "1")));
+				
+		helper.runSolver(false, "a");
+	}
+	
+	@Test
+	public void recursiveWriteBeforeAndAfterCallIncludingAbstractionPoints() {
+		helper.method("main",
+				startPoints("a"),
+				normalStmt("a", flow("0", overwriteField("f"), "1")).succ("b"),
+				normalStmt("b", flow("1", overwriteField("g"), "1")).succ("c"),
+				callSite("c").calls("foo", flow("1", "1")).retSite("f", kill("1")),
+				normalStmt("f", flow("1", readField("g"), "1")).succ("g1").succ("js"),
+				normalStmt("g1", flow("1", readField("g"), "1")).succ("g2"),
+				normalStmt("g2", flow("1", readField("f"), "1")).succ("h"),
+				normalStmt("h", flow("1", readField("f"), "1")).succ("i"),
+				normalStmt("i", kill("1")).succ("j"),
+				normalStmt("js", flow("1", "1")).succ("js_inner1").succ("js_inner2").succ("g"),
+				normalStmt("js_inner1", flow("1", readField("f"), "1")).succ("js"),
+				normalStmt("js_inner2", flow("1", readField("g"), "1")).succ("js"));
+		
+		helper.method("foo",
+				startPoints("d"),
+				normalStmt("d", flow("1", "1")).succ("ep").succ("e"),
+				normalStmt("e", flow("1", prependField("f"), "1")).succ("ap1"),
+				normalStmt("ap1", flow("1", "1")).succ("ap1").succ("cs"),				
+				callSite("cs").calls("foo", flow("1", "1")).retSite("rs", kill("1")),
+				normalStmt("rs", flow("1", prependField("g"), "1")).succ("ap2"),
+				normalStmt("ap2", flow("1", "1")).succ("ap2").succ("ep"),
+				exitStmt("ep").returns(over("cs"), to("rs"), flow(2, "1", "1")).returns(over("c"), to("f"), flow(2, "1", "1")));
+				
+		helper.runSolver(false, "a");
+	}
+	
+	@Test
+	public void recursiveCallReadAndWrite() {
+		helper.method("main",
+				startPoints("a"),
+				normalStmt("a", flow("0", "1")).succ("b"),
+				normalStmt("b", flow("1", overwriteField("f"), "1")).succ("c"),
+				callSite("c").calls("foo", flow("1", "1")).retSite("g", kill("1")),
+				normalStmt("g", kill("1")).succ("h"));
+		
+		helper.method("foo",
+				startPoints("d"),
+				normalStmt("d", flow("1", "1")).succ("e").succ("f"),
+				normalStmt("e", flow("1", readField("f"), "1")).succ("f2"),
+				normalStmt("f", flow("1", prependField("f"), "1")).succ("f2"),
+				normalStmt("f2", flow(2, "1", "1")).succ("cs").succ("ep"),
+				callSite("cs").calls("foo", flow(2, "1", "1")).retSite("rs", kill(2, "1")),
+				normalStmt("rs", flow(3, "1", "1")).succ("ep"),
+				exitStmt("ep").returns(over("cs"), to("rs"), flow(9, "1", "1")).returns(over("c"), to("g"), flow(2, "1", "1")));
+		
+		helper.runSolver(false, "a");
+	}
+	
+	@Test
+	public void mutualRecursiveCallReadAndWrite() {
+		helper.method("main",
+				startPoints("a"),
+				normalStmt("a", flow("0", prependField("h"), "1")).succ("b"),
+				callSite("b").calls("foo", flow("1", "1")).retSite("g", kill("1")));
+		
+		helper.method("foo",
+				startPoints("c"),
+				normalStmt("c", flow("1", "1")).succ("d").succ("cs1").succ("ep1"),
+				normalStmt("d", flow("1", prependField("x"), "1")).succ("cs1").succ("ep1"),
+				callSite("cs1").calls("foo", flow(2, "1", "1")).calls("bar", flow(2, "1", "1")).retSite("rs1", kill(2, "1")),
+				normalStmt("rs1", flow(2, "1", "1")).succ("ep1"),
+				exitStmt("ep1").returns(over("b"), to("g"), flow(3, "1", "1"))
+								.returns(over("cs1"), to("rs1"), flow(8, "1", "1"))
+								.returns(over("cs2"), to("rs2"), flow(6, "1", "1")));
+		
+		helper.method("bar",
+				startPoints("e"),
+				normalStmt("e", flow("1", "1")).succ("f").succ("cs2").succ("ep2"),
+				normalStmt("f", flow("1", readField("x"), "1")).succ("cs2").succ("ep2"),
+				callSite("cs2").calls("foo", flow(2, "1", "1")).calls("bar", flow(2, "1", "1")).retSite("rs2", kill(2, "1")),
+				normalStmt("rs2", flow(2, "1", "1")).succ("ep2"),
+				exitStmt("ep2").returns(over("cs1"), to("rs1"), flow(8, "1", "1"))
+								.returns(over("cs2"), to("rs2"), flow(4, "1", "1")));
+	
+		helper.runSolver(false, "a");
+	}
+	
+	@Test
+	public void mutualRecursiveCallReadAndWriteMultipleFields() {
+		helper.method("main",
+				startPoints("a"),
+				normalStmt("a", flow("0", "1")).succ("b"),
+				normalStmt("b", flow("1", prependField("h"), "1")).succ("c"),
+				callSite("c").calls("foo1", flow("1", "1")).retSite("g", kill("1")),
+				normalStmt("g", kill("1")).succ("end"));
+		
+		helper.method("foo1",
+				startPoints("d"),
+				normalStmt("d", flow("1", "1")).succ("e").succ("f").succ("f2"),
+				normalStmt("e", flow("1", readField("f"), "1")).succ("f").succ("f2"),
+				normalStmt("f", flow(2, "1", prependField("f"), "1")).succ("f2"),
+				normalStmt("f2", flow(4, "1", "1")).succ("cs").succ("ep"),
+				callSite("cs").calls("foo1", flow(4, "1", "1")).calls("foo2", flow(4, "1", "1")).retSite("rs", kill(4, "1")),
+				normalStmt("rs", flow(3, "1", "1")).succ("ep"),
+				exitStmt("ep").returns(over("cs"), to("rs"), flow(19, "1", "1"))
+							.returns(over("cs2"), to("rs2"), flow(18, "1", "1"))
+							.returns(over("c"), to("g"), flow(3, "1", "1")));
+		
+		helper.method("foo2",
+				startPoints("h"),
+				normalStmt("h", flow("1", "1")).succ("i").succ("j").succ("k"),
+				normalStmt("i", flow("1", readField("g"), "1")).succ("j").succ("k"),
+				normalStmt("j", flow(2, "1", prependField("g"), "1")).succ("k"),
+				normalStmt("k", flow(4, "1", "1")).succ("cs2").succ("ep2"),
+				callSite("cs2").calls("foo1", flow(4, "1", "1")).calls("foo2", flow(4, "1", "1")).retSite("rs2", kill(4, "1")),
+				normalStmt("rs2", flow(5, "1", "1")).succ("ep2"),
+				exitStmt("ep2").returns(over("cs"), to("rs"), flow(17, "1", "1"))
+							.returns(over("cs2"), to("rs2"), flow(24, "1", "1")));
+		
+		helper.runSolver(false, "a");
+	}
+	
+	@Test
+	public void mutualRecursiveReturnReadAndWrite() {
+		helper.method("main",
+				startPoints("a"),
+				normalStmt("a", flow("0", prependField("h"), "1")).succ("b"),
+				callSite("b").calls("foo", flow("1", "1")).retSite("g", kill("1")),
+				normalStmt("g", flow("1", readField("x"), "1")).succ("h"),
+				normalStmt("h", flow(2, "1", readField("x"), "1")).succ("i"),
+				normalStmt("i", flow(2, "1", readField("h"), "1")).succ("j"),
+				normalStmt("j", kill("1")).succ("k"));
+		
+		helper.method("foo",
+				startPoints("c"),
+				normalStmt("c", flow("1", "1")).succ("cs1").succ("ep1"),
+				callSite("cs1").calls("foo", flow("1", "1")).calls("bar", flow("1", "1")).retSite("rs1", kill("1")),
+				normalStmt("rs1", flow("1", "1")).succ("d").succ("ep1"),
+				normalStmt("d", flow("1", prependField("x"), "1")).succ("ep1"),
+				exitStmt("ep1").returns(over("b"), to("g"), flow(3, "1", "1"))
+								.returns(over("cs1"), to("rs1"), flow(3, "1", "1"))
+								.returns(over("cs2"), to("rs2"), flow(3, "1", "1")));
+
+		helper.method("bar",
+				startPoints("e"),
+				normalStmt("e", flow("1", "1")).succ("cs2").succ("ep2"),
+				callSite("cs2").calls("foo", flow("1", "1")).calls("bar", flow("1", "1")).retSite("rs2", kill("1")),
+				normalStmt("rs2", flow("1", "1")).succ("f").succ("ep2"),
+				normalStmt("f", flow("1", readField("x"), "1")).succ("ep2"),
+				exitStmt("ep2").returns(over("cs1"), to("rs1"), flow(3, "1", "1"))
+								.returns(over("cs2"), to("rs2"), flow(3, "1", "1")));
+	
+		helper.runSolver(false, "a");
+	}
+	
+	@Test
+	public void recursiveTest() {
+		helper.method("main",
+				startPoints("a"),
+				normalStmt("a", flow("0", prependField("h"), "1")).succ("b"),
+				callSite("b").calls("foo", flow("1", "1")).retSite("c", kill("1")),
+				callSite("c").calls("bar", flow("1", "1")).retSite("d", kill("1")),
+				normalStmt("d", flow("1", readField("h"), "1")).succ("e"),
+				normalStmt("e", kill("1")).succ("f"));
+		
+		helper.method("foo",
+				startPoints("foo_sp"),
+				normalStmt("foo_sp", flow("1", "1")).succ("foo_read").succ("foo_write").succ("foo_cs").succ("foo_ep"),
+				normalStmt("foo_read", flow("1", readField("f"), "1")).succ("foo_write").succ("foo_cs").succ("foo_ep"),
+				normalStmt("foo_write", flow(3, "1", prependField("f"), "1")).succ("foo_cs").succ("foo_ep"),
+				callSite("foo_cs").calls("foo", flow(6, "1", "1")).retSite("foo_rs", kill(6, "1")),
+				normalStmt("foo_rs", flow(3, "1", "1")).succ("foo_ep"),
+				exitStmt("foo_ep").returns(over("b"), to("c"), flow(3, "1", "1"))
+								.returns(over("bar_cs"), to("bar_rs"), flow(9, "1", "1"))
+								.returns(over("foo_cs"), to("foo_rs"), flow(27, "1", "1")));
+		
+		helper.method("bar",
+				startPoints("bar_sp"),
+				normalStmt("bar_sp", flow("1", "1")).succ("bar_cs").succ("bar_ep"),
+				callSite("bar_cs").calls("foo", flow("1", "1")).retSite("bar_rs", kill("1")),
+				normalStmt("bar_rs", flow(3, "1", "1")).succ("bar_ep"),
+				exitStmt("bar_ep").returns(over("c"), to("d"), flow(5, "1", "1")));
+		
+		helper.runSolver(false, "a");
+	}
+	
+	@Test
+	public void recursiveTest2() {
+		helper.method("main",
+				startPoints("a"),
+				normalStmt("a", flow("0", prependField("h"), "1")).succ("b"),
+				callSite("b").calls("foo", flow("1", "1")).retSite("c", kill("1")),
+				callSite("c").calls("foo", flow("1", "1")).retSite("d", kill("1")),
+				normalStmt("d", flow("1", readField("h"), "1")).succ("e"),
+				normalStmt("e", kill("1")).succ("f"));
+		
+		helper.method("foo",
+				startPoints("foo_sp"),
+				normalStmt("foo_sp", flow("1", "1")).succ("foo_read").succ("foo_write").succ("foo_cs").succ("foo_ep"),
+				normalStmt("foo_read", flow("1", readField("f"), "1")).succ("foo_write").succ("foo_cs").succ("foo_ep"),
+				normalStmt("foo_write", flow(3, "1", prependField("f"), "1")).succ("foo_cs").succ("foo_ep"),
+				callSite("foo_cs").calls("bar", flow(6, "1", "1")).retSite("foo_rs", kill(6, "1")),
+				normalStmt("foo_rs", flow(3, "1", "1")).succ("foo_ep"),
+				exitStmt("foo_ep").returns(over("b"), to("c"), flow(3, "1", "1"))
+								.returns(over("c"), to("d"), flow(12, "1", "1"))
+								.returns(over("bar_cs"), to("bar_rs"), flow(11, "1", "1"))
+								.returns(over("foo_cs"), to("foo_rs"), flow(0, "1", "1")));
+		
+		helper.method("bar",
+				startPoints("bar_sp"),
+				normalStmt("bar_sp", flow("1", "1")).succ("bar_cs").succ("bar_ep"),
+				callSite("bar_cs").calls("foo", flow("1", "1")).retSite("bar_rs", kill("1")),
+				normalStmt("bar_rs", flow(2, "1", "1")).succ("bar_ep"),
+				exitStmt("bar_ep").returns(over("bar_cs"), to("bar_rs"), flow(0, "1", "1"))
+								.returns(over("foo_cs"), to("foo_rs"), flow(15, "1", "1")));
+		
+		helper.runSolver(false, "a");
+	}
+	
+	@Test
+	public void recursiveTest3() {
+		helper.method("main",
+				startPoints("a"),
+				normalStmt("a", flow("0", prependField("h"), "1")).succ("b"),
+				callSite("b").calls("foo", flow("1", "1")).retSite("c", kill("1")),
+				callSite("c").calls("foo", flow("1", "1")).retSite("d", kill("1")),
+				normalStmt("d", flow("1", readField("h"), "1")).succ("e"),
+				normalStmt("e", kill("1")).succ("f"));
+		
+		helper.method("foo",
+				startPoints("foo_sp"),
+				normalStmt("foo_sp", flow("1", "1")).succ("foo_read").succ("foo_write").succ("foo_cs").succ("foo_ep"),
+				normalStmt("foo_read", flow("1", readField("f"), "1")).succ("foo_write").succ("foo_cs").succ("foo_ep"),
+				normalStmt("foo_write", flow(2, "1", prependField("f"), "1")).succ("foo_cs").succ("foo_ep"),
+				callSite("foo_cs").calls("foo", flow(4, "1", "1")).calls("bar", flow(4, "1", "1")).retSite("foo_rs", kill(4, "1")),
+				normalStmt("foo_rs", flow(2, "1", "1")).succ("foo_ep"),
+				exitStmt("foo_ep").returns(over("b"), to("c"), flow(3, "1", "1"))
+								.returns(over("c"), to("d"), flow(0, "1", "1"))
+								.returns(over("bar_cs"), to("bar_rs"), flow(9, "1", "1"))
+								.returns(over("foo_cs"), to("foo_rs"), flow(15, "1", "1")));
+		
+		helper.method("bar",
+				startPoints("bar_sp"),
+				normalStmt("bar_sp", flow("1", "1")).succ("bar_cs").succ("bar_ep"),
+				callSite("bar_cs").calls("foo", flow("1", "1")).calls("bar", flow("1", "1")).retSite("bar_rs", kill("1")),
+				normalStmt("bar_rs", flow(2, "1", "1")).succ("bar_ep"),
+				exitStmt("bar_ep").returns(over("bar_cs"), to("bar_rs"), flow(5, "1", "1"))
+								.returns(over("foo_cs"), to("foo_rs"), flow(5, "1", "1")));
+		
+		helper.runSolver(false, "a");
+	}
+	
+	@Test
+	public void recursiveTest4() {
+		helper.method("main",
+				startPoints("a"),
+				normalStmt("a", flow("0", prependField("h"), "1")).succ("b"),
+				callSite("b").calls("foo", flow("1", "1")).retSite("c", flow(20, "1", "1")),
+				callSite("c").calls("foo", flow(20, "1", "1")).retSite("d", flow(100, "1", "1")),
+				normalStmt("d", flow(20, "1", readField("h"), "1")).succ("e"),
+				normalStmt("e", kill("1")).succ("f"));
+		
+		helper.method("foo",
+				startPoints("foo_sp"),
+				normalStmt("foo_sp", flow("1", "1")).succ("foo_read").succ("foo_write").succ("foo_cs").succ("foo_ep"),
+				normalStmt("foo_read", flow("1", readField("f"), "1")).succ("foo_write").succ("foo_cs").succ("foo_ep"),
+				normalStmt("foo_write", flow(2, "1", prependField("f"), "1")).succ("foo_cs").succ("foo_ep"),
+				callSite("foo_cs").calls("foo", flow(4, "1", "1")).calls("bar", flow(4, "1", "1")).retSite("foo_rs", kill(4, "1")),
+				normalStmt("foo_rs", flow(20, "1", "1")).succ("foo_ep"),
+				exitStmt("foo_ep").returns(over("b"), to("c"), flow(30, "1", "1"))
+								.returns(over("c"), to("d"), flow(260, "1", "1"))
+								.returns(over("bar_cs"), to("bar_rs"), flow(90, "1", "1"))
+								.returns(over("foo_cs"), to("foo_rs"), flow(150, "1", "1")));
+
+		helper.method("bar",
+				startPoints("bar_sp"),
+				normalStmt("bar_sp", flow("1", "1")).succ("bar_read").succ("bar_write").succ("bar_cs").succ("bar_ep"),
+				normalStmt("bar_read", flow("1", readField("g"), "1")).succ("bar_write").succ("bar_cs").succ("bar_ep"),
+				normalStmt("bar_write", flow(2, "1", prependField("g"), "1")).succ("bar_cs").succ("bar_ep"),
+				callSite("bar_cs").calls("foo", flow(20, "1", "1")).calls("bar", flow(20, "1", "1")).retSite("bar_rs", kill(20, "1")),
+				normalStmt("bar_rs", flow(20, "1", "1")).succ("bar_ep"),
+				exitStmt("bar_ep").returns(over("b"), to("c"), flow(30, "1", "1"))
+								.returns(over("c"), to("d"), flow(26, "1", "1"))
+								.returns(over("bar_cs"), to("bar_rs"), flow(50, "1", "1"))
+								.returns(over("foo_cs"), to("foo_rs"), flow(250, "1", "1")));
+		
+		helper.runSolver(false, "a");
+	}
+	
+	@Test
+	public void recursiveTest5() {
+		helper.method("main",
+				startPoints("a"),
+				normalStmt("a", flow("0", prependField("h"), "1")).succ("b"),
+				callSite("b").calls("foo", flow("1", "1")).retSite("c", flow(20, "1", "1")),
+				normalStmt("c", flow(20, "1", "1")).succ("d").succ("e").succ("f"),
+				normalStmt("d", flow("1", readField("f"), "1")).succ("c"),
+				normalStmt("e", flow("1", readField("g"), "1")).succ("c"),
+				normalStmt("f", flow(20, "1", readField("h"), "1")).succ("g"),
+				normalStmt("g", kill("1")).succ("h"));
+		
+		helper.method("foo",
+				startPoints("foo_sp"),
+				normalStmt("foo_sp", flow("1", "1")).succ("foo_read").succ("foo_write").succ("foo_cs").succ("foo_ep"),
+				normalStmt("foo_read", flow("1", readField("f"), "1")).succ("foo_write").succ("foo_cs").succ("foo_ep"),
+				normalStmt("foo_write", flow(2, "1", prependField("f"), "1")).succ("foo_cs").succ("foo_ep"),
+				callSite("foo_cs").calls("foo", flow(4, "1", "1")).calls("bar", flow(4, "1", "1")).retSite("foo_rs", kill(4, "1")),
+				normalStmt("foo_rs", flow(20, "1", "1")).succ("foo_ep"),
+				exitStmt("foo_ep").returns(over("b"), to("c"), flow(30, "1", "1"))
+								.returns(over("bar_cs"), to("bar_rs"), flow(90, "1", "1"))
+								.returns(over("foo_cs"), to("foo_rs"), flow(150, "1", "1")));
+
+		helper.method("bar",
+				startPoints("bar_sp"),
+				normalStmt("bar_sp", flow("1", "1")).succ("bar_read").succ("bar_write").succ("bar_cs").succ("bar_ep"),
+				normalStmt("bar_read", flow("1", readField("g"), "1")).succ("bar_write").succ("bar_cs").succ("bar_ep"),
+				normalStmt("bar_write", flow(2, "1", prependField("g"), "1")).succ("bar_cs").succ("bar_ep"),
+				callSite("bar_cs").calls("foo", flow(20, "1", "1")).calls("bar", flow(20, "1", "1")).retSite("bar_rs", kill(20, "1")),
+				normalStmt("bar_rs", flow(20, "1", "1")).succ("bar_ep"),
+				exitStmt("bar_ep").returns(over("b"), to("c"), flow(30, "1", "1"))
+								.returns(over("bar_cs"), to("bar_rs"), flow(50, "1", "1"))
+								.returns(over("foo_cs"), to("foo_rs"), flow(250, "1", "1")));
+		
+		helper.runSolver(false, "a");
+	}
+	
+	@Test
+	public void writeFieldInLoopBeforeRecursiveCallRead() {
+		helper.method("main",
+				startPoints("a"),
+				normalStmt("a", flow("0", prependField("g"), "1")).succ("js"),
+				normalStmt("js", flow("1", "1")).succ("inner").succ("main_cs"),
+				normalStmt("inner", flow("1", prependField("f"), "1")).succ("js"),
+				callSite("main_cs").calls("foo", flow("1", "1")).retSite("main_rs", kill("1")),
+				normalStmt("main_rs", flow("1", readField("h"), "1")).succ("main_read"),
+				normalStmt("main_read", flow("1", readField("g"), "1")).succ("main_ep"),
+				normalStmt("main_ep", kill("1")).succ("main_null"));
+		
+		helper.method("foo",
+				startPoints("b"),
+				normalStmt("b", flow("1", readField("f"), "1")).succ("c").succ("d"),
+				callSite("c").calls("foo", flow("1", "1")).retSite("d", kill("1")),
+				exitStmt("d").returns(over("c"), to("d"), flow("1", prependField("h"), "1"))
+							.returns(over("main_cs"), to("main_rs"), flow("1", "1")));
+		
+		helper.runSolver(false, "a");
+	}
+	
+	@Test
+	public void twoWritingFieldLoopsBeforeRecursiveCallRead() {
+		helper.method("main",
+				startPoints("a"),
+				normalStmt("a", flow("0", "1")).succ("b").succ("c"),
+				callSite("b").calls("mainA", flow("1", "1")).retSite("d", kill("1")),
+				callSite("c").calls("mainB", flow("1", "1")).retSite("d", kill("1")),
+				normalStmt("d").succ("e"));
+		
+		helper.method("mainA",
+				startPoints("mainA_init"),
+				normalStmt("mainA_init", flow("1", prependField("a"), "1")).succ("mainA_js"),
+				normalStmt("mainA_js", flow("1", "1")).succ("mainA_cs").succ("mainA_inner"),
+				normalStmt("mainA_inner", flow("1", prependField("f"), "1")).succ("mainA_js"),
+				callSite("mainA_cs").calls("fooA", flow("1", "1")).calls("fooB", flow("1", "1")).retSite("mainA_rs", kill("1")),
+				normalStmt("mainA_rs", flow("1", readField("a"), "1")).succ("mainA_ep"),
+				normalStmt("mainA_ep", kill("1")).succ("mainA_null"));
+		
+		helper.method("mainB",
+				startPoints("mainB_init"),
+				normalStmt("mainB_init", flow("1", prependField("b"), "1")).succ("mainB_js"),
+				normalStmt("mainB_js", flow("1", "1")).succ("mainB_cs").succ("mainB_inner"),
+				normalStmt("mainB_inner", flow("1", prependField("f"), "1")).succ("mainB_js"),
+				callSite("mainB_cs").calls("fooA", flow("1", "1")).calls("fooB", flow("1", "1")).retSite("mainB_rs", kill("1")),
+				normalStmt("mainB_rs", flow("1", readField("a"), "1")).succ("mainB_ep"),
+				normalStmt("mainB_ep", kill("1")).succ("mainB_null"));
+		
+		helper.method("fooA",
+				startPoints("fooA_sp"),
+				callSite("fooA_sp").calls("bar", flow("1", "1")).retSite("fooA_rs", kill("1")),
+				exitStmt("fooA_rs").returns(over("mainA_cs"), to("mainA_rs"), flow("1", "1"))
+							.returns(over("mainB_cs"), to("mainB_rs"), flow("1", "1")));
+		
+		helper.method("fooB",
+				startPoints("fooB_sp"),
+				callSite("fooB_sp").calls("bar", flow("1", "1")).retSite("fooB_rs", kill("1")),
+				exitStmt("fooB_rs").returns(over("mainA_cs"), to("mainA_rs"), flow("1", "1"))
+							.returns(over("mainB_cs"), to("mainB_rs"), flow("1", "1")));
+		
+		helper.method("bar",
+				startPoints("bar_sp"),
+				normalStmt("bar_sp", flow("1", readField("f"), "1")).succ("bar_cs").succ("bar_rs"),
+				callSite("bar_cs").calls("bar", flow("1", "1")).retSite("bar_rs", flow("1", "1")),
+				exitStmt("bar_rs").returns(over("fooA_sp"), to("fooA_rs"), flow("1", "1"))
+							.returns(over("fooB_sp"), to("fooB_rs"), flow("1", "1")));
+		
 		helper.runSolver(false, "a");
 	}
 }

@@ -63,6 +63,7 @@ public class EagerEvaluationTestHelper {
 	private Map<Statement, TestMethod> stmt2method = Maps.newHashMap();
 	private Multiset<ExpectedFlowFunction> remainingFlowFunctions = HashMultiset.create();
 	private TestDebugger<TestFact, Statement, TestMethod, AccessPathBundle<String>> debugger;
+	private Multiset<String> unexpectedUsages = HashMultiset.create();
 	private static JoinLattice<AccessPathBundle<String>> joinLattice = new JoinLattice<AccessPathBundle<String>>() {
 		@Override
 		public AccessPathBundle<String> topElement() {
@@ -316,6 +317,7 @@ public class EagerEvaluationTestHelper {
 	public void assertAllFlowFunctionsUsed() {
 		assertTrue("These Flow Functions were expected, but never used: \n" + Joiner.on(",\n").join(remainingFlowFunctions),
 				remainingFlowFunctions.isEmpty());
+		assertTrue("These Flow Functions were not expected, but used: \n "+Joiner.on(",\n").join(unexpectedUsages), unexpectedUsages.isEmpty());
 	}
 
 	private void addOrVerifyStmt2Method(Statement stmt, TestMethod m) {
@@ -447,14 +449,13 @@ public class EagerEvaluationTestHelper {
 						boolean found = false;
 						for (ExpectedFlowFunction<TestFact> ff : edge.flowFunctions) {
 							if (ff.source.equals(source)) {
-								if (remainingFlowFunctions.remove(ff)) {
-									for (TestFact target : ff.targets) {
-										result.add(new Pair<TestFact, EdgeFunction<AccessPathBundle<String>>>(target, ff.edgeFunction));
-									}
-									found = true;
-								} else {
-									throw new AssertionError(String.format("Flow Function '%s' was used multiple times on edge '%s'", ff, edge));
+								for (TestFact target : ff.targets) {
+									result.add(new Pair<TestFact, EdgeFunction<AccessPathBundle<String>>>(target, ff.edgeFunction));
 								}
+								if (!remainingFlowFunctions.remove(ff)) {
+									unexpectedUsages.add(String.format("Flow Function '%s' was used multiple times on edge '%s'", ff, edge));
+								}
+								found = true;
 							}
 						}
 						if(found)
