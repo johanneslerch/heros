@@ -11,11 +11,13 @@
 package heros.fieldsens;
 
 import java.util.Collection;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
 
+import com.google.common.base.Joiner;
 import com.google.common.collect.HashMultimap;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
@@ -87,6 +89,10 @@ public abstract class ResolverTemplate<Field, Fact, Stmt, Method, Incoming>  ext
 	public void addIncoming(final Incoming inc) {
 		AccessPath<Field> incAccPath = getAccessPathOf(inc);
 		if(incAccPath.equals(resolvedAccessPath)) {
+			if(getResolver(inc) == this) {
+				dismissByTransitiveResolver(inc, this);
+				return;
+			}
 			registerTransitiveResolverCallback(inc, new TransitiveResolverCallback<Field, Fact, Stmt, Method>() {
 				@Override
 				public void resolvedByIncomingAccessPath() {
@@ -112,7 +118,7 @@ public abstract class ResolverTemplate<Field, Fact, Stmt, Method, Incoming>  ext
 	}
 	
 	protected void dismissByTransitiveResolver(Incoming inc, Resolver<Field, Fact, Stmt, Method> resolver) {
-//		log("Dismissed Incoming Edge "+inc+" because we already saw the same transitive resolver: "+resolver);		
+		log("Dismissed Incoming Edge "+inc+" because we already saw the same transitive resolver: "+resolver);		
 	}
 
 	private void addIncomingGuaranteedPrefix(Incoming inc, Resolver<Field, Fact, Stmt, Method> transitiveResolver) {
@@ -120,6 +126,12 @@ public abstract class ResolverTemplate<Field, Fact, Stmt, Method, Incoming>  ext
 		boolean isNewIncomingEdge = !incomingEdges.containsValue(inc);
 		if(!incomingEdges.put(transitiveResolver, inc))
 			return;
+		
+		HashSet<Incoming> values = Sets.newHashSet(incomingEdges.values());
+		if(values.size() > 2500) {
+			System.out.println(this+" has "+values.size()+" incoming edges:");
+			System.out.println(Joiner.on("\n").join(values));
+		}
 		
 		log("Incoming Edge: "+inc+ " (transitive resolver: "+transitiveResolver+")");
 		
@@ -143,11 +155,18 @@ public abstract class ResolverTemplate<Field, Fact, Stmt, Method, Incoming>  ext
 		}
 	}
 
+	@Override
+	public void interest(AccessPathAndResolver<Field, Fact, Stmt, Method> accPathResolver) {
+		assert ((ResolverTemplate)accPathResolver.resolver).resolvedAccessPath.getExclusions().isEmpty() || accPathResolver.resolver instanceof ZeroCallEdgeResolver;
+		super.interest(accPathResolver);
+	}
+	
 	protected void interestByIncoming(Incoming inc) {
 		if(getAccessPathOf(inc).equals(resolvedAccessPath) || resolvedAccessPath.getExclusions().size() < 1) {
 			interest(new AccessPathAndResolver<Field, Fact, Stmt, Method>(getAnalyzer(inc), AccessPath.<Field>empty(), this));
 		}
 		else {
+			assert getAccessPathOf(inc).getExclusions().isEmpty();
 			AccessPath<Field> deltaTo = resolvedAccessPath.getDeltaToAsAccessPath(getAccessPathOf(inc));
 			ResolverTemplate<Field,Fact,Stmt,Method,Incoming> nestedResolver = getOrCreateNestedResolver(getAccessPathOf(inc));
 			interest(new AccessPathAndResolver<Field, Fact, Stmt, Method>(nestedResolver.getAnalyzer(inc), deltaTo, nestedResolver));

@@ -106,7 +106,7 @@ public class PerAccessPathMethodAnalyzer<Field, Fact, Stmt, Method> {
 		return zeroVersion;
 	}
 	
-	public PerAccessPathMethodAnalyzer<Field, Fact, Stmt, Method> createWithAccessPath(AccessPath<Field> accPath) {
+	PerAccessPathMethodAnalyzer<Field, Fact, Stmt, Method> createWithAccessPath(AccessPath<Field> accPath) {
 		PerAccessPathMethodAnalyzer<Field, Fact, Stmt, Method> result = new PerAccessPathMethodAnalyzer<Field, Fact, Stmt, Method>(
 				method, sourceFact, context, debugger, accPath, null, this);
 		result.callEdgeResolver = new CallEdgeResolver<Field, Fact, Stmt, Method>(result, debugger, callEdgeResolver);
@@ -200,7 +200,7 @@ public class PerAccessPathMethodAnalyzer<Field, Fact, Stmt, Method> {
 		log("New Summary: "+factAtStmt);
 		if(!summaries.add(factAtStmt))
 			throw new AssertionError();
-
+		
 		callEdgeResolver.applySummaries(factAtStmt);
 
 		if(context.followReturnsPastSeeds && isZeroSource()) {

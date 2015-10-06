@@ -12,6 +12,7 @@ package heros.fieldsens;
 
 import java.util.Set;
 
+import heros.fieldsens.structs.AccessPathAndResolver;
 import heros.fieldsens.structs.WrappedFactAtStatement;
 
 import com.google.common.collect.Lists;
@@ -31,7 +32,20 @@ public class CallEdgeResolver<Field, Fact, Stmt, Method> extends ResolverTemplat
 		super(analyzer.getAccessPath(), parent, debugger);
 		this.analyzer = analyzer;
 	}
-
+	
+	@SuppressWarnings("unchecked")
+	@Override
+	protected void interestByIncoming(CallEdge<Field, Fact, Stmt, Method> inc) {
+		if(!resolvedAccessPath.getExclusions().isEmpty() && inc.getCalleeSourceFact().getAccessPathAndResolver().resolver instanceof ZeroCallEdgeResolver) {
+			PerAccessPathMethodAnalyzer<Field, Fact, Stmt, Method> zeroAnalyzer = (resolvedAccessPath.equals(getAccessPathOf(inc))) ? 
+					analyzer.createWithZeroCallEdgeResolver() : ((CallEdgeResolver)getOrCreateNestedResolver(getAccessPathOf(inc))).analyzer.createWithZeroCallEdgeResolver();
+			AccessPath<Field> deltaTo = resolvedAccessPath.getDeltaToAsAccessPath(getAccessPathOf(inc));
+			interest(new AccessPathAndResolver<Field, Fact, Stmt, Method>(zeroAnalyzer, deltaTo, zeroAnalyzer.getCallEdgeResolver()));
+		}
+		else
+			super.interestByIncoming(inc);
+	}
+	
 	@Override
 	protected Resolver<Field, Fact, Stmt, Method> getResolver(CallEdge<Field, Fact, Stmt, Method> inc) {
 		return inc.getCalleeSourceFact().getAccessPathAndResolver().resolver;
@@ -101,7 +115,7 @@ public class CallEdgeResolver<Field, Fact, Stmt, Method> extends ResolverTemplat
 	
 	@Override
 	public String toString() {
-		return "<"+analyzer.getAccessPath()+":"+analyzer.getMethod()+">";
+		return "<"+analyzer.getAccessPath()+":CER-"+analyzer.getMethod()+">";
 	}
 	
 	@Override
