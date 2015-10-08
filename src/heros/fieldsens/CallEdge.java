@@ -84,6 +84,7 @@ public class CallEdge<Field, Fact, Stmt, Method> {
 					PerAccessPathMethodAnalyzer<Field, Fact, Stmt, Method> zeroAnalyzer = interestedAnalyzer.createWithZeroCallEdgeResolver();
 					CallEdge<Field, Fact, Stmt, Method> newCallEdge = createNewCallEdge(analyzer, accPathResolver, delta);
 					zeroAnalyzer.getCallEdgeResolver().incomingEdges.put(null, newCallEdge);
+					zeroAnalyzer.getCallEdgeResolver().incomingEdgeValues.add(newCallEdge);
 					interestedAnalyzer.getCallEdgeResolver().interest(
 							new AccessPathAndResolver<Field, Fact, Stmt, Method>(zeroAnalyzer, AccessPath.<Field>empty(), zeroAnalyzer.getCallEdgeResolver()));
 				}

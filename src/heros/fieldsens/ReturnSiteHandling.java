@@ -29,9 +29,11 @@ public class ReturnSiteHandling<Field, Fact, Stmt, Method> {
 	private boolean isRecursionPossible = false;
 	private ContextLogger<Method> logger;
 	private PerAccessPathMethodAnalyzer<Field, Fact, Stmt, Method> analyzer;
+	private Fact fact;
 
 	public ReturnSiteHandling(PerAccessPathMethodAnalyzer<Field, Fact, Stmt, Method> analyzer, Fact fact, Stmt returnSite, Debugger<Field, Fact, Stmt, Method> debugger, ContextLogger<Method> logger) {
 		this.analyzer = analyzer;
+		this.fact = fact;
 		this.logger = logger;
 		this.returnSite = returnSite;
 		
@@ -83,6 +85,8 @@ public class ReturnSiteHandling<Field, Fact, Stmt, Method> {
 				ResolverTemplate<Field, Fact, Stmt, Method, AccessPathAndResolver<Field, Fact, Stmt, Method>> parent,
 				Debugger<Field, Fact, Stmt, Method> debugger) {
 			super(resolvedAccessPath, parent, debugger);
+			
+			debugger.assertNewInstance(new HashedTuple(getClass(), resolvedAccessPath, returnSite, fact, analyzer), this);
 		}
 
 		@Override
@@ -100,12 +104,12 @@ public class ReturnSiteHandling<Field, Fact, Stmt, Method> {
 			return analyzer;
 		}
 		
-		@Override
-		protected void registerTransitiveResolverCallback(AccessPathAndResolver<Field, Fact, Stmt, Method> inc,
-				TransitiveResolverCallback<Field, Fact, Stmt, Method> callback) {
-			inc.resolver.registerTransitiveResolverCallback(callback);
+//		@Override
+//		protected void registerTransitiveResolverCallback(AccessPathAndResolver<Field, Fact, Stmt, Method> inc,
+//				TransitiveResolverCallback<Field, Fact, Stmt, Method> callback) {
+////			inc.resolver.registerTransitiveResolverCallback(callback);
 //			callback.resolvedByIncomingAccessPath();
-		}
+//		}
 
 		@Override
 		protected void processIncomingPotentialPrefix(AccessPathAndResolver<Field, Fact, Stmt, Method> inc) {
@@ -115,6 +119,7 @@ public class ReturnSiteHandling<Field, Fact, Stmt, Method> {
 				public void interest(PerAccessPathMethodAnalyzer<Field, Fact, Stmt, Method> analyzer,
 						AccessPathAndResolver<Field, Fact, Stmt, Method> accPathResolver) {
 					if(accPathResolver.resolver instanceof ZeroCallEdgeResolver) {
+						//FIXME zeroAnalyzer needs to have the same incoming edges as analyzer
 						PerAccessPathMethodAnalyzer<Field, Fact, Stmt, Method> zeroAnalyzer = ReturnSiteHandling.this.analyzer.createWithZeroCallEdgeResolver();
 						CallSiteResolver.this.interest(new AccessPathAndResolver<Field, Fact, Stmt, Method>(
 								zeroAnalyzer, accPathResolver.accessPath, zeroAnalyzer.getCallEdgeResolver())); 
@@ -175,6 +180,8 @@ public class ReturnSiteHandling<Field, Fact, Stmt, Method> {
 				ResolverTemplate<Field, Fact, Stmt, Method, AccessPathAndResolver<Field, Fact, Stmt, Method>> parent,
 				Debugger<Field, Fact, Stmt, Method> debugger) {
 			super( resolvedAccessPath, parent, debugger);
+			
+			debugger.assertNewInstance(new HashedTuple(getClass(), resolvedAccessPath, returnSite, fact, analyzer), this);
 		}
 
 		@Override
@@ -192,12 +199,12 @@ public class ReturnSiteHandling<Field, Fact, Stmt, Method> {
 			return analyzer;
 		}
 		
-		@Override
-		protected void registerTransitiveResolverCallback(AccessPathAndResolver<Field, Fact, Stmt, Method> inc,
-				TransitiveResolverCallback<Field, Fact, Stmt, Method> callback) {
-			inc.resolver.registerTransitiveResolverCallback(callback);
+//		@Override
+//		protected void registerTransitiveResolverCallback(AccessPathAndResolver<Field, Fact, Stmt, Method> inc,
+//				TransitiveResolverCallback<Field, Fact, Stmt, Method> callback) {
+////			inc.resolver.registerTransitiveResolverCallback(callback);
 //			callback.resolvedByIncomingAccessPath();
-		}
+//		}
 
 		@Override
 		protected void processIncomingPotentialPrefix(final AccessPathAndResolver<Field, Fact, Stmt, Method> inc) {

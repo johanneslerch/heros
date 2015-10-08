@@ -10,10 +10,10 @@
  ******************************************************************************/
 package heros.fieldsens;
 
-import java.util.Set;
-
 import heros.fieldsens.structs.AccessPathAndResolver;
 import heros.fieldsens.structs.WrappedFactAtStatement;
+
+import java.util.Set;
 
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
@@ -31,15 +31,20 @@ public class CallEdgeResolver<Field, Fact, Stmt, Method> extends ResolverTemplat
 	public CallEdgeResolver(PerAccessPathMethodAnalyzer<Field, Fact, Stmt, Method> analyzer, Debugger<Field, Fact, Stmt, Method> debugger, CallEdgeResolver<Field, Fact, Stmt, Method> parent) {
 		super(analyzer.getAccessPath(), parent, debugger);
 		this.analyzer = analyzer;
+		
+		debugger.assertNewInstance(new HashedTuple(getClass(), analyzer.getMethod(), analyzer.getSourceFact(), analyzer.getAccessPath()), this);
 	}
 	
 	@SuppressWarnings("unchecked")
 	@Override
 	protected void interestByIncoming(CallEdge<Field, Fact, Stmt, Method> inc) {
-		if(!resolvedAccessPath.getExclusions().isEmpty() && inc.getCalleeSourceFact().getAccessPathAndResolver().resolver instanceof ZeroCallEdgeResolver) {
+		if(!resolvedAccessPath.getExclusions().isEmpty() && inc.getCalleeSourceFact().getAccessPathAndResolver().resolver instanceof ZeroCallEdgeResolver
+				&& resolvedAccessPath.getDeltaTo(getAccessPathOf(inc)).accesses.length == 0) {
 			PerAccessPathMethodAnalyzer<Field, Fact, Stmt, Method> zeroAnalyzer = (resolvedAccessPath.equals(getAccessPathOf(inc))) ? 
 					analyzer.createWithZeroCallEdgeResolver() : ((CallEdgeResolver)getOrCreateNestedResolver(getAccessPathOf(inc))).analyzer.createWithZeroCallEdgeResolver();
 			AccessPath<Field> deltaTo = resolvedAccessPath.getDeltaToAsAccessPath(getAccessPathOf(inc));
+			zeroAnalyzer.getCallEdgeResolver().incomingEdges.put(null, inc);
+			zeroAnalyzer.getCallEdgeResolver().incomingEdgeValues.add(inc);
 			interest(new AccessPathAndResolver<Field, Fact, Stmt, Method>(zeroAnalyzer, deltaTo, zeroAnalyzer.getCallEdgeResolver()));
 		}
 		else
@@ -83,13 +88,27 @@ public class CallEdgeResolver<Field, Fact, Stmt, Method> extends ResolverTemplat
 	}
 	
 	@Override
+	public void registerTransitiveResolverCallback(TransitiveResolverCallback<Field, Fact, Stmt, Method> callback) {
+		if(resolvedAccessPath.isEmpty())
+			callback.resolvedByIncomingAccessPath();
+		else {
+			for(Resolver<Field, Fact, Stmt, Method> transRes : Lists.newLinkedList(incomingEdges.keySet())) {
+				if(transRes == null)
+					callback.resolvedByIncomingAccessPath();
+				else
+					callback.resolvedBy(transRes);
+			}
+		}
+	}
+	
+	@Override
 	protected void processIncomingGuaranteedPrefix(CallEdge<Field, Fact, Stmt, Method> inc) {
 		analyzer.applySummaries(inc);
 	}
 	
 	@Override
 	protected void dismissByTransitiveResolver(CallEdge<Field, Fact, Stmt, Method> inc, Resolver<Field, Fact, Stmt, Method> resolver) {
-		if(dismissedEdges.add(inc) && !incomingEdges.containsValue(inc))
+		if(dismissedEdges.add(inc) && !incomingEdgeValues.contains(inc))
 			analyzer.applySummaries(inc);
 		//FIXME apply summaries of nested resolvers as well (if the incoming edge satisfies these)
 		super.dismissByTransitiveResolver(inc, resolver);
@@ -106,7 +125,7 @@ public class CallEdgeResolver<Field, Fact, Stmt, Method> extends ResolverTemplat
 	}
 	
 	public void applySummaries(WrappedFactAtStatement<Field, Fact, Stmt, Method> factAtStmt) {
-		Set<CallEdge<Field, Fact, Stmt, Method>> edges = Sets.newHashSet(incomingEdges.values());
+		Set<CallEdge<Field, Fact, Stmt, Method>> edges = Sets.newHashSet(incomingEdgeValues);
 		edges.addAll(dismissedEdges);
 		for(CallEdge<Field, Fact, Stmt, Method> incEdge : edges) {
 			analyzer.applySummary(incEdge, factAtStmt);

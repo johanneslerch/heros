@@ -10,19 +10,18 @@
  ******************************************************************************/
 package heros.fieldsens;
 
-import java.io.FileWriter;
-import java.io.IOException;
-import java.util.Set;
-
-import com.google.common.collect.Sets;
-
 import heros.InterproceduralCFG;
-import heros.fieldsens.Debugger;
 import heros.fieldsens.FlowFunction.Constraint;
-import heros.fieldsens.PerAccessPathMethodAnalyzer;
-import heros.fieldsens.Resolver;
 import heros.fieldsens.structs.WrappedFactAtStatement;
 import heros.utilities.JsonDocument;
+
+import java.io.FileWriter;
+import java.io.IOException;
+import java.util.Map;
+import java.util.Set;
+
+import com.google.common.collect.Maps;
+import com.google.common.collect.Sets;
 
 public class TestDebugger<Field, Fact, Stmt, Method> implements Debugger<Field, Fact, Stmt, Method> {
 
@@ -143,6 +142,17 @@ public class TestDebugger<Field, Fact, Stmt, Method> implements Debugger<Field, 
 	@Override
 	public void askedToResolve(Resolver<Field, Fact, Stmt, Method> resolver, Constraint<Field> constraint) {
 		
+	}
+
+	private final Map<HashedTuple, Resolver<Field, Fact, Stmt, Method>> resolverInstances = Maps.newHashMap();
+
+	@Override
+	public void assertNewInstance(HashedTuple tuple, Resolver<Field, Fact, Stmt, Method> resolver) {
+		if (resolverInstances.containsKey(tuple)) {
+			Resolver<Field, Fact, Stmt, Method> existingResolver = resolverInstances.get(tuple);
+			throw new IllegalStateException("collision with: " + existingResolver);
+		}
+		resolverInstances.put(tuple, resolver);
 	}
 
 }

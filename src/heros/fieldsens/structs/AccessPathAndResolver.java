@@ -31,10 +31,7 @@ public class AccessPathAndResolver<Field, Fact, Stmt, Method> {
 	private PerAccessPathMethodAnalyzer<Field, Fact, Stmt, Method> analyzer;
 
 	public AccessPathAndResolver(PerAccessPathMethodAnalyzer<Field, Fact, Stmt, Method> analyzer, AccessPath<Field> accessPath, Resolver<Field, Fact, Stmt, Method> resolver) {
-		this.analyzer = analyzer;
-		this.accessPath = accessPath;
-		this.resolver = resolver;
-		this.nesting = null;
+		this(analyzer, accessPath, resolver, null);
 	}
 
 	private AccessPathAndResolver(PerAccessPathMethodAnalyzer<Field, Fact, Stmt, Method> analyzer, AccessPath<Field> accessPath, Resolver<Field, Fact, Stmt, Method> resolver,
@@ -130,6 +127,7 @@ public class AccessPathAndResolver<Field, Fact, Stmt, Method> {
 			return this;
 
 		if(this.resolver instanceof ZeroCallEdgeResolver) {
+			//FIXME zero analyzer requires to have the same incoming edges as nesting.getAnalyzer()
 			PerAccessPathMethodAnalyzer<Field, Fact, Stmt, Method> zeroAnalyzer = nesting.getAnalyzer().createWithZeroCallEdgeResolver();
 			return new AccessPathAndResolver<Field, Fact, Stmt, Method>(zeroAnalyzer, accessPath, zeroAnalyzer.getCallEdgeResolver());
 		} else if (this.nesting == null) {

@@ -53,7 +53,7 @@ public class PerAccessPathMethodAnalyzer<Field, Fact, Stmt, Method> {
 		@Override
 		protected ControlFlowJoinResolver<Field, Fact, Stmt, Method> createItem(FactAtStatement<Fact, Stmt> key) {
 			assert context.icfg.getMethodOf(key.stmt).equals(method);
-			return new ControlFlowJoinResolver<Field, Fact, Stmt, Method>(context.factHandler, key.stmt, debugger, getLogger());
+			return new ControlFlowJoinResolver<Field, Fact, Stmt, Method>(context.factHandler, key.stmt, key.fact, debugger, getLogger(), sourceFact, method);
 		}
 	};
 	private DefaultValueMap<FactAtStatement<Fact, Stmt>, CallSiteResolver<Field, Fact, Stmt, Method>> callSiteResolvers = new DefaultValueMap<FactAtStatement<Fact, Stmt>, CallSiteResolver<Field,Fact,Stmt,Method>>() {
@@ -93,20 +93,34 @@ public class PerAccessPathMethodAnalyzer<Field, Fact, Stmt, Method> {
 		}
 	}
 	
+	Context<Field, Fact, Stmt, Method> getContext() {
+		return context;
+	}
+	
 	PerAccessPathMethodAnalyzer<Field, Fact, Stmt, Method> getParent() {
 		return parent;
 	}
 	
 	public PerAccessPathMethodAnalyzer<Field, Fact, Stmt, Method> createWithZeroCallEdgeResolver() {
+		if(callEdgeResolver instanceof ZeroCallEdgeResolver)
+			return this;
+		
 		if(zeroVersion == null) {
-			zeroVersion = new PerAccessPathMethodAnalyzer<Field, Fact, Stmt, Method>(
-					method, sourceFact, context, debugger, accessPath, null, this);
-			zeroVersion.callEdgeResolver = new ZeroCallEdgeResolver<Field, Fact, Stmt, Method>(zeroVersion, context.zeroHandler, debugger);
+			if(accessPath.getExclusions().isEmpty()) {
+				zeroVersion = new PerAccessPathMethodAnalyzer<Field, Fact, Stmt, Method>(
+						method, sourceFact, context, debugger, accessPath, null, this);
+				zeroVersion.callEdgeResolver = new ZeroCallEdgeResolver<Field, Fact, Stmt, Method>(zeroVersion, context.zeroHandler, debugger);
+			}
+			else {
+				zeroVersion = parent.createWithZeroCallEdgeResolver();
+			}
 		}
 		return zeroVersion;
 	}
 	
 	PerAccessPathMethodAnalyzer<Field, Fact, Stmt, Method> createWithAccessPath(AccessPath<Field> accPath) {
+		assert !(callEdgeResolver instanceof ZeroCallEdgeResolver);
+		
 		PerAccessPathMethodAnalyzer<Field, Fact, Stmt, Method> result = new PerAccessPathMethodAnalyzer<Field, Fact, Stmt, Method>(
 				method, sourceFact, context, debugger, accPath, null, this);
 		result.callEdgeResolver = new CallEdgeResolver<Field, Fact, Stmt, Method>(result, debugger, callEdgeResolver);
@@ -135,7 +149,9 @@ public class PerAccessPathMethodAnalyzer<Field, Fact, Stmt, Method> {
 	}
 	
 	public void addInitialSeed(Stmt stmt) {
-		scheduleEdgeTo(new WrappedFactAtStatement<Field, Fact, Stmt, Method>(stmt, wrappedSource()));
+		scheduleEdgeTo(new WrappedFactAtStatement<Field, Fact, Stmt, Method>(stmt, 
+				new WrappedFact<Field, Fact, Stmt, Method>(sourceFact, 
+				new AccessPathAndResolver<Field, Fact, Stmt, Method>(this, AccessPath.<Field>empty().prepend(context.zeroField), callEdgeResolver))));
 	}
 	
 	private void scheduleEdgeTo(Collection<Stmt> successors, WrappedFact<Field, Fact, Stmt, Method> fact) {
@@ -410,6 +426,10 @@ public class PerAccessPathMethodAnalyzer<Field, Fact, Stmt, Method> {
 				return method;
 			}
 		};
+	}
+
+	public Fact getSourceFact() {
+		return sourceFact;
 	}
 	
 //	public void debugReachables() {

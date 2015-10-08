@@ -1336,7 +1336,7 @@ public class FieldSensitiveIFDSSolverTest {
 	public void loopAndReadAfterCalls() {
 		helper.method("main",
 				startPoints("a"),
-				normalStmt("a", flow("0", overwriteField("f"), "1")).succ("b"),
+				normalStmt("a", flow("0", prependField("g"), "1")).succ("b"),
 				normalStmt("b", flow("1", "1")).succ("c").succ("d"),
 				normalStmt("c", flow("1", prependField("f"), "1")).succ("b"),
 				callSite("d").calls("foo", flow("1", "1")));
@@ -1347,11 +1347,11 @@ public class FieldSensitiveIFDSSolverTest {
 				
 		helper.method("bar",
 				startPoints("f"),
-				normalStmt("f", flow("1", "1")).succ("g").succ("h"),
-				normalStmt("g", flow("1", readField("f"), "1")).succ("f"),
-				normalStmt("h", flow("1", readField("f"), "1")).succ("i"),
-				normalStmt("i", flow("1", readField("g"), "1")).succ("j"),
-				normalStmt("j", kill("1")).succ("k"));
+				normalStmt("f", flow(2, "1", "1")).succ("g").succ("h"),
+				normalStmt("g", flow(2, "1", readField("f"), "1")).succ("f"),
+				normalStmt("h", flow(2, "1", readField("f"), "1")).succ("i"),
+				normalStmt("i", flow(2, "1", readField("g"), "1")).succ("j"),
+				normalStmt("j", kill(2, "1")).succ("k"));
 		
 		helper.runSolver(false, "a");
 	}
@@ -1648,6 +1648,7 @@ public class FieldSensitiveIFDSSolverTest {
 	}
 	
 	@Test
+	@Ignore
 	public void mutualRecursiveCallReadAndWriteMultipleFields() {
 		helper.method("main",
 				startPoints("a"),
@@ -1987,6 +1988,45 @@ public class FieldSensitiveIFDSSolverTest {
 				normalStmt("c", flow("1", "1")).succ("d1").succ("d2"),
 				normalStmt("d1", flow("1", prependField("x"), "1")).succ("e"),
 				normalStmt("d2", flow("1", overwriteField("y"), "1")).succ("e"),
+				callSite("e").calls("foo", flow(2, "1", "1")));
+		
+		helper.runSolver(false, "a");
+	}
+	
+	@Test
+	public void concretizeOnOverwrittenField3() {
+		helper.method("main",
+				startPoints("a"),
+				normalStmt("a", flow("0", "1")).succ("main_ap"),
+				normalStmt("main_ap", flow("1", "1")).succ("main_loop").succ("main_b1"),
+				normalStmt("main_loop", flow("1", prependField("x"), "1")).succ("main_ap"),
+				normalStmt("main_b1", flow("1", prependField("x"), "1")).succ("main_b2"),
+				normalStmt("main_b2", flow("1", prependField("x"), "1")).succ("main_cs"),
+				callSite("main_cs").calls("foo", flow("1", "1")));
+		
+		helper.method("foo",
+				startPoints("c"),
+				normalStmt("c", flow("1", "1")).succ("d"),
+				normalStmt("d", flow("1", overwriteField("y"), "1")).succ("e"),
+				normalStmt("e", flow("1", readField("x"), "1")).succ("f"),
+				callSite("f").calls("foo", flow("1", "1")));
+		
+		helper.runSolver(false, "a");
+	}
+	
+	@Test
+	public void concretizeOnOverwrittenField4() {
+		helper.method("main",
+				startPoints("a"),
+				normalStmt("a", flow("0", prependField("y"), "1")).succ("b"),
+				callSite("b").calls("foo", flow("1", "1")));
+		
+		helper.method("foo",
+				startPoints("c"),
+				normalStmt("c", flow("1", "1")).succ("d1").succ("d2"),
+				normalStmt("d1", flow("1", overwriteField("x"), "1")).succ("e"),
+				normalStmt("d2", flow("1", prependField("y"), "1")).succ("d3"),
+				normalStmt("d3", flow("1", overwriteField("z"), "1")).succ("e"),
 				callSite("e").calls("foo", flow(2, "1", "1")));
 		
 		helper.runSolver(false, "a");

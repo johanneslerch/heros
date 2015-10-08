@@ -68,7 +68,7 @@ public abstract class Resolver<Field, Fact, Stmt, Method> {
 	public void interest(AccessPathAndResolver<Field, Fact, Stmt, Method> accPathResolver) {
 		if(/*interestLock || */!interest.add(accPathResolver))
 			return;
-
+		
 		log("Interest given by: "+accPathResolver);
 		
 //		interestLock = true;

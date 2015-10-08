@@ -40,10 +40,29 @@ public class AccessPath<T> {
 		this.accesses = accesses;
 		this.exclusions = exclusions;
 //		assert accesses.length <= 4;
+//		if(accesses.length >= 2 && accesses[0].equals(accesses[1]))
+//			System.err.println(this);
 		if(accesses.length >= 3 && accesses[0].equals(accesses[1]) && accesses[1].equals(accesses[2]))
 			System.err.println(this);
 		if(accesses.length > 4)
 			System.out.println(this);
+		if(accesses.length > 2 && accesses[0].toString().equals("relevantAttributes"))
+			System.out.println(this);
+		
+		int times = 0;
+		T current = null;
+		for(int i=0; i<accesses.length; i++) {
+			if(current == accesses[i]) {
+				times++;
+				if(times >= 3) {
+					System.out.println();
+				}
+			}
+			else {
+				times = 1;
+				current = accesses[i];
+			}
+		}
 	}
 	
 	public boolean hasSuffix(Delta<T> suffix) {
@@ -305,5 +324,9 @@ public class AccessPath<T> {
 
 	Set<T> getExclusions() {
 		return exclusions;
+	}
+
+	public int length() {
+		return accesses.length;
 	}
 }
