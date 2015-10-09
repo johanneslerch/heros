@@ -2031,4 +2031,37 @@ public class FieldSensitiveIFDSSolverTest {
 		
 		helper.runSolver(false, "a");
 	}
+	
+	@Test
+	public void twoLoopsWritingSameFieldThenRecursiveRead() {
+		helper.method("main",
+				startPoints("a"),
+				normalStmt("a", flow("0", "1")).succ("loop1").succ("loop2"),
+				normalStmt("loop1", flow("1", prependField("f"), "1")).succ("loop1").succ("cs"),
+				normalStmt("loop2", flow("1", prependField("f"), "1")).succ("loop2").succ("cs"),
+				callSite("cs").calls("foo", flow(2, "1", "1")));
+		
+		helper.method("foo",
+				startPoints("b"),
+				normalStmt("b", flow("1", readField("f"), "1")).succ("c"),
+				callSite("c").calls("foo", flow("1", "1")));
+		
+		helper.runSolver(false, "a");
+	}
+	
+	@Test
+	public void twoLoopsWritingSameFieldThenLoopRead() {
+		helper.method("main",
+				startPoints("a"),
+				normalStmt("a", flow("0", "1")).succ("loop1").succ("loop2"),
+				normalStmt("loop1", flow("1", prependField("f"), "1")).succ("loop1").succ("cs"),
+				normalStmt("loop2", flow("1", prependField("f"), "1")).succ("loop2").succ("cs"),
+				callSite("cs").calls("foo", flow(2, "1", "1")));
+		
+		helper.method("foo",
+				startPoints("b"),
+				normalStmt("b", flow(2, "1", readField("f"), "1")).succ("b"));
+		
+		helper.runSolver(false, "a");
+	}
 }
