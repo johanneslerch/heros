@@ -80,14 +80,15 @@ public class CallEdge<Field, Fact, Stmt, Method> {
 				assert analyzer.getMethod().equals(callerAnalyzer.getMethod());
 				assert accPathResolver.getAnalyzer().getMethod().equals(callerAnalyzer.getMethod());
 				
-				if(accPathResolver.resolver instanceof ZeroCallEdgeResolver) {
-					PerAccessPathMethodAnalyzer<Field, Fact, Stmt, Method> zeroAnalyzer = interestedAnalyzer.createWithZeroCallEdgeResolver();
-					CallEdge<Field, Fact, Stmt, Method> newCallEdge = createNewCallEdge(analyzer, accPathResolver, delta);
-					zeroAnalyzer.getCallEdgeResolver().incomingEdges.put(null, newCallEdge);
-					zeroAnalyzer.getCallEdgeResolver().incomingEdgeValues.add(newCallEdge);
-					interestedAnalyzer.getCallEdgeResolver().interest(
-							new AccessPathAndResolver<Field, Fact, Stmt, Method>(zeroAnalyzer, AccessPath.<Field>empty(), zeroAnalyzer.getCallEdgeResolver()));
-				}
+//				if(accPathResolver.resolver instanceof ZeroCallEdgeResolver) {
+//					PerAccessPathMethodAnalyzer<Field, Fact, Stmt, Method> zeroAnalyzer = interestedAnalyzer.createWithZeroCallEdgeResolver();
+//					CallEdge<Field, Fact, Stmt, Method> newCallEdge = createNewCallEdge(analyzer, accPathResolver, delta);
+//					zeroAnalyzer.getCallEdgeResolver().incomingEdges.put(null, newCallEdge);
+//					zeroAnalyzer.getCallEdgeResolver().incomingEdgeValues.add(newCallEdge);
+//					interestedAnalyzer.getCallEdgeResolver().interest(
+//							new AccessPathAndResolver<Field, Fact, Stmt, Method>(zeroAnalyzer, AccessPath.<Field>empty() /*FIXME*/, zeroAnalyzer.getCallEdgeResolver()));
+//				}
+				
 //				else if(factAtCallSite.getWrappedFact().getAccessPathAndResolver().resolver.equals(accPathResolver.resolver) ||
 //						accPathResolver.resolver instanceof RepeatedFieldCallEdgeResolver) {
 //					//interest provided by loop/recursion
@@ -99,9 +100,9 @@ public class CallEdge<Field, Fact, Stmt, Method> {
 //					interestedAnalyzer.getCallEdgeResolver().interest(new AccessPathAndResolver<Field, Fact, Stmt, Method>(
 //							accPathResolver.accessPath, repeatingAnalyzer.getCallEdgeResolver()));
 //				}
-				else {
+//				else {
 					interestedAnalyzer.addIncomingEdge(createNewCallEdge(analyzer, accPathResolver, delta));
-				}
+//				}
 			}
 			
 			@Override

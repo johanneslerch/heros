@@ -67,6 +67,4 @@ public interface IFDSTabulationProblem<N,FieldRef, D ,M, I extends Interprocedur
 
 	ZeroHandler<FieldRef> zeroHandler();
 
-	FieldRef zeroField();
-
 }

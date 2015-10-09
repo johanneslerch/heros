@@ -601,11 +601,6 @@ public class FieldSensitiveTestHelper {
 					}
 				};
 			}
-
-			@Override
-			public String zeroField() {
-				return "ZERO-FIELD";
-			}
 		};
 	}
 	

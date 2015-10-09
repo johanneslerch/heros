@@ -71,6 +71,13 @@ public abstract class Resolver<Field, Fact, Stmt, Method> {
 		
 		log("Interest given by: "+accPathResolver);
 		
+		if(!accPathResolver.accessPath.getExclusions().isEmpty() || !((ResolverTemplate) accPathResolver.resolver).resolvedAccessPath.getExclusions().isEmpty()) {
+			System.out.println(this +" -> "+accPathResolver);
+		}
+		if(accPathResolver.accessPath.isEmpty() && !((ResolverTemplate)this).resolvedAccessPath.getExclusions().isEmpty() && accPathResolver.resolver instanceof ZeroCallEdgeResolver) {
+			System.out.println(this +" -> "+accPathResolver);
+		}
+		
 //		interestLock = true;
 		for(InterestCallback<Field, Fact, Stmt, Method> callback : Lists.newLinkedList(interestCallbacks)) {
 			callback.interest(accPathResolver.getAnalyzer(), accPathResolver);

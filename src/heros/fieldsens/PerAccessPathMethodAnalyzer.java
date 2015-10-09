@@ -149,9 +149,7 @@ public class PerAccessPathMethodAnalyzer<Field, Fact, Stmt, Method> {
 	}
 	
 	public void addInitialSeed(Stmt stmt) {
-		scheduleEdgeTo(new WrappedFactAtStatement<Field, Fact, Stmt, Method>(stmt, 
-				new WrappedFact<Field, Fact, Stmt, Method>(sourceFact, 
-				new AccessPathAndResolver<Field, Fact, Stmt, Method>(this, AccessPath.<Field>empty().prepend(context.zeroField), callEdgeResolver))));
+		scheduleEdgeTo(new WrappedFactAtStatement<Field, Fact, Stmt, Method>(stmt, wrappedSource()));
 	}
 	
 	private void scheduleEdgeTo(Collection<Stmt> successors, WrappedFact<Field, Fact, Stmt, Method> fact) {
@@ -163,6 +161,16 @@ public class PerAccessPathMethodAnalyzer<Field, Fact, Stmt, Method> {
 	void scheduleEdgeTo(WrappedFactAtStatement<Field, Fact, Stmt, Method> factAtStmt) {
 		assert factAtStmt.getAccessPathAndResolver().getAnalyzer().method.equals(method);
 		assert context.icfg.getMethodOf(factAtStmt.getStatement()).equals(method);
+		
+		if(!factAtStmt.getAccessPathAndResolver().accessPath.getExclusions().isEmpty() ||
+				!((ResolverTemplate)factAtStmt.getAccessPathAndResolver().resolver).resolvedAccessPath.getExclusions().isEmpty()) {
+			System.out.println("Edge to "+factAtStmt);
+		}
+		
+		if(factAtStmt.getAccessPathAndResolver().resolver.toString().contains("ZERO-FIELD") && !factAtStmt.getAccessPathAndResolver().accessPath.toString().contains("ZERO-FIELD")) {
+			System.out.println(factAtStmt);
+		}
+		
 		if (reachableStatements.containsKey(factAtStmt)) {
 			log("Merging "+factAtStmt);
 			context.factHandler.merge(reachableStatements.get(factAtStmt).getWrappedFact().getFact(), factAtStmt.getWrappedFact().getFact());

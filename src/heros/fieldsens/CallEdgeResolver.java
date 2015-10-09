@@ -43,6 +43,15 @@ public class CallEdgeResolver<Field, Fact, Stmt, Method> extends ResolverTemplat
 			PerAccessPathMethodAnalyzer<Field, Fact, Stmt, Method> zeroAnalyzer = (resolvedAccessPath.equals(getAccessPathOf(inc))) ? 
 					analyzer.createWithZeroCallEdgeResolver() : ((CallEdgeResolver)getOrCreateNestedResolver(getAccessPathOf(inc))).analyzer.createWithZeroCallEdgeResolver();
 			AccessPath<Field> deltaTo = resolvedAccessPath.getDeltaToAsAccessPath(getAccessPathOf(inc));
+			if(!((ResolverTemplate)inc.getCalleeSourceFact().getAccessPathAndResolver().resolver).resolvedAccessPath.getExclusions().isEmpty()) {
+				System.out.println(inc);
+			}
+			if(!deltaTo.getExclusions().isEmpty())
+				System.out.println(deltaTo);
+			if(getResolver(inc).toString().contains("ZERO-FIELD") && !getAccessPathOf(inc).toString().contains("ZERO-FIELD")) {
+				System.out.println(inc);
+			}
+			
 			zeroAnalyzer.getCallEdgeResolver().incomingEdges.put(null, inc);
 			zeroAnalyzer.getCallEdgeResolver().incomingEdgeValues.add(inc);
 			interest(new AccessPathAndResolver<Field, Fact, Stmt, Method>(zeroAnalyzer, deltaTo, zeroAnalyzer.getCallEdgeResolver()));

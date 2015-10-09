@@ -2064,4 +2064,26 @@ public class FieldSensitiveIFDSSolverTest {
 		
 		helper.runSolver(false, "a");
 	}
+	
+	@Test
+	public void analyzerIndependenceOfCtrlFlowJoins() {
+		helper.method("main",
+				startPoints("a"),
+				normalStmt("a", flow("0", prependField("z"), "1")).succ("b"),
+				normalStmt("b", flow("1", prependField("f"), "1")).succ("c"),
+				callSite("c").calls("foo", flow("1", "1")));
+		
+		helper.method("foo", 
+				startPoints("d"),
+				normalStmt("d", flow("1", "1")).succ("e1").succ("js"),
+				normalStmt("e1", flow("1", readField("f"), "1")).succ("e2"),
+				normalStmt("e2", flow("1", prependField("f"), "1")).succ("js"),
+				normalStmt("js", flow("1", "1")).succ("js").succ("f"),
+				normalStmt("f", flow("1", overwriteField("f"), "1")).succ("g"),
+				normalStmt("g", flow("1", readField("z"), "1")).succ("h"),
+				normalStmt("h").succ("i"));
+		
+		helper.runSolver(false, "a");
+				
+	}
 }

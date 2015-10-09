@@ -21,7 +21,6 @@ public abstract class Context<Field, Fact, Stmt, Method> {
 	public final FactMergeHandler<Fact> factHandler;
 	public final ZeroHandler<Field> zeroHandler;
 	public final FlowFunctions<Stmt, Field, Fact, Method> flowFunctions;
-	public final Field zeroField;
 	
 	Context(IFDSTabulationProblem<Stmt, Field, Fact, Method, ? extends InterproceduralCFG<Stmt, Method>> tabulationProblem, 
 			Scheduler scheduler, FactMergeHandler<Fact> factHandler) {
@@ -32,7 +31,6 @@ public abstract class Context<Field, Fact, Stmt, Method> {
 		this.followReturnsPastSeeds = tabulationProblem.followReturnsPastSeeds();
 		this.factHandler = factHandler;
 		this.zeroHandler = tabulationProblem.zeroHandler();
-		this.zeroField = tabulationProblem.zeroField();
 	}
 	
 	public abstract MethodAnalyzer<Field, Fact, Stmt, Method> getAnalyzer(Method method);
