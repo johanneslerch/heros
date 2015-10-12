@@ -46,15 +46,13 @@ public class AccessPath<T> {
 			System.err.println(this);
 		if(accesses.length > 4)
 			System.out.println(this);
-		if(accesses.length > 2 && accesses[0].toString().equals("relevantAttributes"))
-			System.out.println(this);
 		
 		int times = 0;
 		T current = null;
 		for(int i=0; i<accesses.length; i++) {
 			if(current == accesses[i]) {
 				times++;
-				if(times >= 4) {
+				if(times >= 3) {
 					System.out.println();
 				}
 			}
@@ -62,7 +60,7 @@ public class AccessPath<T> {
 				times = 1;
 				current = accesses[i];
 			}
-			if(accesses[i].toString().equals("ZERO-FIELD") && i+1<accesses.length) {
+			if(accesses[i].toString().equals("ZERO-FIELD") && (i+1<accesses.length || !exclusions.isEmpty())) {
 				System.out.println(this);
 			}
 		}

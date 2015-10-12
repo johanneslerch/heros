@@ -228,7 +228,7 @@ public class ReturnSiteHandling<Field, Fact, Stmt, Method> {
 
 				@Override
 				public void canBeResolvedEmpty(PerAccessPathMethodAnalyzer<Field, Fact, Stmt, Method> analyzer) {
-					ReturnSiteResolver.this.canBeResolvedEmpty(analyzer);
+					ReturnSiteResolver.this.canBeResolvedEmpty(ReturnSiteHandling.this.analyzer);
 				}
 			});	
 		}
