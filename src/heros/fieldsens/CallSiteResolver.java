@@ -90,8 +90,8 @@ public class CallSiteResolver<Field, Fact, Stmt, Method> extends ResolverTemplat
 			}
 
 			@Override
-			public void canBeResolvedEmpty() {
-				CallSiteResolver.this.canBeResolvedEmpty();
+			public void canBeResolvedEmpty(PerAccessPathMethodAnalyzer<Field, Fact, Stmt, Method> analyzer) {
+				CallSiteResolver.this.canBeResolvedEmpty(analyzer);
 			}
 		});
 	}

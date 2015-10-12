@@ -2064,7 +2064,7 @@ public class FieldSensitiveIFDSSolverTest {
 		
 		helper.runSolver(false, "a");
 	}
-	
+
 	@Test
 	public void analyzerIndependenceOfCtrlFlowJoins() {
 		helper.method("main",
@@ -2078,12 +2078,33 @@ public class FieldSensitiveIFDSSolverTest {
 				normalStmt("d", flow("1", "1")).succ("e1").succ("js"),
 				normalStmt("e1", flow("1", readField("f"), "1")).succ("e2"),
 				normalStmt("e2", flow("1", prependField("f"), "1")).succ("js"),
-				normalStmt("js", flow("1", "1")).succ("js").succ("f"),
-				normalStmt("f", flow("1", overwriteField("f"), "1")).succ("g"),
-				normalStmt("g", flow("1", readField("z"), "1")).succ("h"),
+				normalStmt("js", flow(2, "1", "1")).succ("js").succ("f"),
+				normalStmt("f", flow(2, "1", overwriteField("f"), "1")).succ("g"),
+				normalStmt("g", flow(0, "1", readField("z"), "1")).succ("h"),
 				normalStmt("h").succ("i"));
 		
 		helper.runSolver(false, "a");
-				
+	}
+	
+	@Test
+	public void analyzerIndependenceOfReturnSiteHandling() {
+		helper.method("main",
+				startPoints("a"),
+				normalStmt("a", flow("0", prependField("z"), "1")).succ("b"),
+				normalStmt("b", flow("1", prependField("f"), "1")).succ("c"),
+				callSite("c").calls("foo", flow("1", "1")).retSite("main_rs", kill("1")),
+				normalStmt("main_rs").succ("nop"));
+		
+		helper.method("foo", 
+				startPoints("d"),
+				normalStmt("d", flow("1", "1")).succ("cs").succ("e"),
+				callSite("cs").calls("foo", flow("1", "1")).retSite("rs", kill("1")),
+				normalStmt("rs", flow("1", overwriteField("f"), "1")).succ("e"),
+				normalStmt("e", flow("1", "1")).succ("f1").succ("g"),
+				normalStmt("f1", flow("1", readField("f"), "1")).succ("f2"),
+				normalStmt("f2", flow("1", prependField("f"), "1")).succ("g"),
+				exitStmt("g").returns(over("cs"), to("rs"), flow("1", "1")).returns(over("c"), to("main_rs"), kill("1")));
+		
+		helper.runSolver(false, "a");
 	}
 }

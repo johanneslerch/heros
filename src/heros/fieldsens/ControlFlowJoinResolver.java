@@ -112,8 +112,8 @@ public class ControlFlowJoinResolver<Field, Fact, Stmt, Method> extends Resolver
 			}
 
 			@Override
-			public void canBeResolvedEmpty() {
-				ControlFlowJoinResolver.this.canBeResolvedEmpty();
+			public void canBeResolvedEmpty(PerAccessPathMethodAnalyzer<Field, Fact, Stmt, Method> analyzer) {
+				ControlFlowJoinResolver.this.canBeResolvedEmpty(analyzer);
 			}
 		});
 	}

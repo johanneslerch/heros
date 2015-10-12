@@ -137,8 +137,8 @@ public class ReturnSiteHandling<Field, Fact, Stmt, Method> {
 				}
 
 				@Override
-				public void canBeResolvedEmpty() {
-					CallSiteResolver.this.canBeResolvedEmpty();
+				public void canBeResolvedEmpty(PerAccessPathMethodAnalyzer<Field, Fact, Stmt, Method> analyzer) {
+					CallSiteResolver.this.canBeResolvedEmpty(analyzer);
 				}
 			});			
 		}
@@ -227,8 +227,8 @@ public class ReturnSiteHandling<Field, Fact, Stmt, Method> {
 				}
 
 				@Override
-				public void canBeResolvedEmpty() {
-					ReturnSiteResolver.this.canBeResolvedEmpty();
+				public void canBeResolvedEmpty(PerAccessPathMethodAnalyzer<Field, Fact, Stmt, Method> analyzer) {
+					ReturnSiteResolver.this.canBeResolvedEmpty(analyzer);
 				}
 			});	
 		}

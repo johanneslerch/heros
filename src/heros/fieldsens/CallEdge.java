@@ -106,8 +106,9 @@ public class CallEdge<Field, Fact, Stmt, Method> {
 			}
 			
 			@Override
-			public void canBeResolvedEmpty() {
-				callerAnalyzer.getCallEdgeResolver().resolve(new DeltaConstraint<Field>(delta), this);
+			public void canBeResolvedEmpty(PerAccessPathMethodAnalyzer<Field, Fact, Stmt, Method> analyzer) {
+				if(analyzer.equals(callerAnalyzer))
+					callerAnalyzer.getCallEdgeResolver().resolve(new DeltaConstraint<Field>(delta), this);
 			}
 		});
 	}

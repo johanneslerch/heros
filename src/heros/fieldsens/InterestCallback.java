@@ -10,6 +10,8 @@
  ******************************************************************************/
 package heros.fieldsens;
 
+import java.util.Set;
+
 import heros.fieldsens.structs.AccessPathAndResolver;
 
 
@@ -18,5 +20,5 @@ public interface InterestCallback<Field, Fact, Stmt, Method> {
 	void interest(PerAccessPathMethodAnalyzer<Field, Fact, Stmt, Method> analyzer,
 			AccessPathAndResolver<Field, Fact, Stmt, Method> accPathResolver);
 	
-	void canBeResolvedEmpty();
+	void canBeResolvedEmpty(PerAccessPathMethodAnalyzer<Field, Fact, Stmt, Method> analyzer);
 }

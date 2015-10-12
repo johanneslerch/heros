@@ -28,7 +28,7 @@ public abstract class Resolver<Field, Fact, Stmt, Method> {
 	protected Resolver<Field, Fact, Stmt, Method> parent;
 	private Set<AccessPathAndResolver<Field, Fact, Stmt, Method>> interest = Sets.newHashSet();
 	private List<InterestCallback<Field, Fact, Stmt, Method>> interestCallbacks = Lists.newLinkedList();
-	private boolean canBeResolvedEmpty = false;
+	private Set<PerAccessPathMethodAnalyzer<Field, Fact, Stmt, Method>> canBeResolvedEmpty = Sets.newHashSet();
 	
 	public Resolver(Resolver<Field, Fact, Stmt, Method> parent) {
 		this.parent = parent;
@@ -85,13 +85,13 @@ public abstract class Resolver<Field, Fact, Stmt, Method> {
 //		interestLock = false;
 	}
 	
-	protected void canBeResolvedEmpty() {
-		if(canBeResolvedEmpty)
+	protected void canBeResolvedEmpty(PerAccessPathMethodAnalyzer<Field, Fact, Stmt, Method> analyzer) {
+		if(canBeResolvedEmpty.contains(analyzer))
 			return;
 		
-		canBeResolvedEmpty = true;
+		canBeResolvedEmpty.add(analyzer);
 		for(InterestCallback<Field, Fact, Stmt, Method> callback : Lists.newLinkedList(interestCallbacks)) {
-			callback.canBeResolvedEmpty();
+			callback.canBeResolvedEmpty(analyzer);
 		}
 	}
 
@@ -106,8 +106,8 @@ public abstract class Resolver<Field, Fact, Stmt, Method> {
 		}
 		interestCallbacks.add(callback);
 
-		if(canBeResolvedEmpty)
-			callback.canBeResolvedEmpty();
+		for(PerAccessPathMethodAnalyzer<Field, Fact, Stmt, Method> analyzer : canBeResolvedEmpty)
+			callback.canBeResolvedEmpty(analyzer);
 	}
 	
 	protected abstract void log(String message);

@@ -75,8 +75,9 @@ public class AccessPathAndResolver<Field, Fact, Stmt, Method> {
 				}
 
 				@Override
-				public void canBeResolvedEmpty() {
-					resolveViaNesting(constraint, callback);
+				public void canBeResolvedEmpty(PerAccessPathMethodAnalyzer<Field, Fact, Stmt, Method> analyzer) {
+					if(analyzer.equals(getAnalyzer()))
+						resolveViaNesting(constraint, callback);
 				}
 			});
 		}
@@ -84,7 +85,7 @@ public class AccessPathAndResolver<Field, Fact, Stmt, Method> {
 
 	private void resolveViaNesting(Constraint<Field> constraint, InterestCallback<Field, Fact, Stmt, Method> callback) {
 		if(nesting == null)
-			callback.canBeResolvedEmpty();
+			callback.canBeResolvedEmpty(getAnalyzer());
 		else {
 			AccessPath<Field> toBeResolved = constraint.applyToAccessPath(AccessPath.<Field> empty());
 			if (toBeResolved.isPrefixOf(nesting.accessPath) == PrefixTestResult.GUARANTEED_PREFIX) {

@@ -329,8 +329,9 @@ public class PerAccessPathMethodAnalyzer<Field, Fact, Stmt, Method> {
 					}
 
 					@Override
-					public void canBeResolvedEmpty() {
-						callEdgeResolver.resolve(targetFact.getConstraint(), this);
+					public void canBeResolvedEmpty(PerAccessPathMethodAnalyzer<Field, Fact, Stmt, Method> analyzer) {
+						if(analyzer.equals(PerAccessPathMethodAnalyzer.this))
+							callEdgeResolver.resolve(targetFact.getConstraint(), this);
 					}
 				});
 			}
