@@ -53,7 +53,7 @@ public class AccessPath<T> {
 			if(current == accesses[i]) {
 				times++;
 				if(times >= 3) {
-					System.out.println();
+					System.out.println(this);
 				}
 			}
 			else {

@@ -168,7 +168,7 @@ public class PerAccessPathMethodAnalyzer<Field, Fact, Stmt, Method> {
 		}
 		
 		if(factAtStmt.getAccessPathAndResolver().resolver.toString().contains("ZERO-FIELD") && !factAtStmt.getAccessPathAndResolver().accessPath.toString().contains("ZERO-FIELD")) {
-			System.out.println(factAtStmt);
+//			System.out.println(factAtStmt);
 		}
 		
 		if (reachableStatements.containsKey(factAtStmt)) {

@@ -64,10 +64,10 @@ public class ReturnSiteHandling<Field, Fact, Stmt, Method> {
 		
 		if(returnEdge.resolver == returnSiteResolver) 
 			setRecursionIsPossible();
-		if(returnEdge.hasNesting())
-			callSiteResolver.addIncoming(returnEdge.getNesting());
+//		if(returnEdge.hasNesting())
+//			callSiteResolver.addIncoming(returnEdge.getNesting());
 
-		returnSiteResolver.addIncoming(returnEdge.withoutNesting());
+		returnSiteResolver.addIncoming(returnEdge);
 		
 		if(callEdge.resolver == callSiteResolver) {
 			setRecursionIsPossible();
@@ -87,6 +87,14 @@ public class ReturnSiteHandling<Field, Fact, Stmt, Method> {
 			super(resolvedAccessPath, parent, debugger);
 			
 			debugger.assertNewInstance(new HashedTuple(getClass(), resolvedAccessPath, returnSite, fact, analyzer), this);
+		}
+		
+		@Override
+		public void addIncoming(AccessPathAndResolver<Field, Fact, Stmt, Method> inc) {
+			if(inc.getAnalyzer() != analyzer)
+				System.out.println(analyzer +" mismatch to "+inc);
+			
+			super.addIncoming(inc);
 		}
 
 		@Override
@@ -128,7 +136,7 @@ public class ReturnSiteHandling<Field, Fact, Stmt, Method> {
 //					else if(accPathResolver.resolver instanceof ReturnSiteHandling.CallSiteResolver)
 //						CallSiteResolver.this.interest(new AccessPathAndResolver<Field, Fact, Stmt, Method>(
 //								ReturnSiteHandling.this.analyzer, accPathResolver.accessPath, CallSiteResolver.this.parent));
-					else if(!accPathResolver.hasNesting() && ReturnSiteHandling.this.analyzer.getCallEdgeResolver().isParentOf(accPathResolver.getAnalyzer().getCallEdgeResolver()))
+//					else if(!accPathResolver.hasNesting() && ReturnSiteHandling.this.analyzer.getCallEdgeResolver().isParentOf(accPathResolver.getAnalyzer().getCallEdgeResolver()))
 						CallSiteResolver.this.interest(accPathResolver);
 					//FIXME
 //					else 

@@ -137,10 +137,8 @@ public abstract class ResolverTemplate<Field, Fact, Stmt, Method, Incoming>  ext
 		if(!isNewTransitiveResolver && !isNewIncomingEdge)
 			return;
 		
-		if(!((ResolverTemplate) getResolver(inc)).resolvedAccessPath.getExclusions().isEmpty())
-			System.out.println(inc);
 		if(getResolver(inc).toString().contains("ZERO-FIELD") && !getAccessPathOf(inc).toString().contains("ZERO-FIELD")) {
-			System.out.println(inc);
+//			System.out.println(inc);
 		}
 		
 		incomingEdges.put(transitiveResolver, inc);

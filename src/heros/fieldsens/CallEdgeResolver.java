@@ -39,17 +39,16 @@ public class CallEdgeResolver<Field, Fact, Stmt, Method> extends ResolverTemplat
 	@Override
 	protected void interestByIncoming(CallEdge<Field, Fact, Stmt, Method> inc) {
 		if(!resolvedAccessPath.getExclusions().isEmpty() && inc.getCalleeSourceFact().getAccessPathAndResolver().resolver instanceof ZeroCallEdgeResolver
-				&& resolvedAccessPath.getDeltaTo(getAccessPathOf(inc)).accesses.length == 0) {
-			PerAccessPathMethodAnalyzer<Field, Fact, Stmt, Method> zeroAnalyzer = (resolvedAccessPath.equals(getAccessPathOf(inc))) ? 
-					analyzer.createWithZeroCallEdgeResolver() : ((CallEdgeResolver)getOrCreateNestedResolver(getAccessPathOf(inc))).analyzer.createWithZeroCallEdgeResolver();
+				/*&& resolvedAccessPath.getDeltaTo(getAccessPathOf(inc)).accesses.length == 0*/) {
+			PerAccessPathMethodAnalyzer<Field, Fact, Stmt, Method> zeroAnalyzer;
 			AccessPath<Field> deltaTo = resolvedAccessPath.getDeltaToAsAccessPath(getAccessPathOf(inc));
-			if(!((ResolverTemplate)inc.getCalleeSourceFact().getAccessPathAndResolver().resolver).resolvedAccessPath.getExclusions().isEmpty()) {
-				System.out.println(inc);
-			}
-			if(!deltaTo.getExclusions().isEmpty())
-				System.out.println(deltaTo);
-			if(getResolver(inc).toString().contains("ZERO-FIELD") && !getAccessPathOf(inc).toString().contains("ZERO-FIELD")) {
-				System.out.println(inc);
+			if(deltaTo.hasEmptyAccessPath()) {
+				zeroAnalyzer = analyzer.createWithZeroCallEdgeResolver();
+			} else {
+				if(!getAccessPathOf(inc).getExclusions().isEmpty())
+					System.out.println("not expected in FlowTwist: "+inc);
+				deltaTo = AccessPath.<Field>empty().append(deltaTo.getFirstAccess());
+				zeroAnalyzer = ((CallEdgeResolver)getOrCreateNestedResolver(resolvedAccessPath.append(deltaTo))).analyzer.createWithZeroCallEdgeResolver();
 			}
 			
 			zeroAnalyzer.getCallEdgeResolver().incomingEdges.put(null, inc);
