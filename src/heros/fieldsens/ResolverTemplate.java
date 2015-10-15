@@ -10,26 +10,21 @@
  ******************************************************************************/
 package heros.fieldsens;
 
-import java.util.Collection;
+import heros.fieldsens.AccessPath.PrefixTestResult;
+import heros.fieldsens.FlowFunction.Constraint;
+import heros.fieldsens.structs.AccessPathAndResolver;
+
 import java.util.Collections;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Map.Entry;
 import java.util.Set;
 
 import com.google.common.base.Joiner;
-import com.google.common.collect.HashMultimap;
 import com.google.common.collect.LinkedHashMultimap;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Multimap;
 import com.google.common.collect.Sets;
-
-import heros.fieldsens.AccessPath.Delta;
-import heros.fieldsens.AccessPath.PrefixTestResult;
-import heros.fieldsens.FlowFunction.Constraint;
-import heros.fieldsens.structs.AccessPathAndResolver;
 
 
 public abstract class ResolverTemplate<Field, Fact, Stmt, Method, Incoming>  extends Resolver<Field, Fact, Stmt, Method> {
@@ -61,8 +56,19 @@ public abstract class ResolverTemplate<Field, Fact, Stmt, Method, Incoming>  ext
 	
 	protected abstract PerAccessPathMethodAnalyzer<Field, Fact, Stmt, Method> getAnalyzer(Incoming inc); 
 	
-	protected void registerTransitiveResolverCallback(Incoming inc, TransitiveResolverCallback<Field, Fact, Stmt, Method> callback) {
-		getResolver(inc).registerTransitiveResolverCallback(callback);
+	private void registerTransitiveResolverCallback(Incoming inc, final TransitiveResolverCallback<Field, Fact, Stmt, Method> callback) {
+		final Resolver<Field, Fact, Stmt, Method> incResolver = getResolver(inc);
+		incResolver.registerTransitiveResolverCallback(new TransitiveResolverCallback<Field, Fact, Stmt, Method>() {
+			@Override
+			public void resolvedByIncomingAccessPath() {
+				callback.resolvedBy(incResolver);
+			}
+
+			@Override
+			public void resolvedBy(Resolver<Field, Fact, Stmt, Method> resolver) {
+				callback.resolvedBy(resolver);
+			}
+		});
 	}
 	
 	@Override
@@ -98,7 +104,9 @@ public abstract class ResolverTemplate<Field, Fact, Stmt, Method, Incoming>  ext
 
 	public void addIncoming(final Incoming inc) {
 		AccessPath<Field> incAccPath = getAccessPathOf(inc);
-		if((this instanceof CallEdgeResolver || getResolver(inc) instanceof CallEdgeResolver) && incAccPath.equals(resolvedAccessPath)) {
+		if((this instanceof CallEdgeResolver || getResolver(inc) instanceof CallEdgeResolver ||
+				this instanceof ReturnSiteResolver || getResolver(inc) instanceof ReturnSiteResolver)
+				&& incAccPath.equals(resolvedAccessPath)) {
 			if(getResolver(inc) == this) {
 				dismissByTransitiveResolver(inc, this);
 				return;
@@ -176,12 +184,6 @@ public abstract class ResolverTemplate<Field, Fact, Stmt, Method, Incoming>  ext
 					callback.resolvedBy(transitiveResolver);
 			}
 		}
-	}
-
-	@Override
-	public void interest(AccessPathAndResolver<Field, Fact, Stmt, Method> accPathResolver) {
-		assert ((ResolverTemplate)accPathResolver.resolver).resolvedAccessPath.getExclusions().isEmpty() || accPathResolver.resolver instanceof ZeroCallEdgeResolver;
-		super.interest(accPathResolver);
 	}
 	
 	protected void interestByIncoming(Incoming inc) {

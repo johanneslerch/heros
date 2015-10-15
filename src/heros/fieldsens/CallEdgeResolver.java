@@ -79,23 +79,6 @@ public class CallEdgeResolver<Field, Fact, Stmt, Method> extends ResolverTemplat
 	}
 	
 	@Override
-	protected void registerTransitiveResolverCallback(CallEdge<Field, Fact, Stmt, Method> inc,
-		final TransitiveResolverCallback<Field, Fact, Stmt, Method> callback) {
-		final Resolver<Field, Fact, Stmt, Method> incResolver = inc.getCalleeSourceFact().getAccessPathAndResolver().resolver;
-		incResolver.registerTransitiveResolverCallback(new TransitiveResolverCallback<Field, Fact, Stmt, Method>() {
-			@Override
-			public void resolvedByIncomingAccessPath() {
-				callback.resolvedBy(incResolver);
-			}
-
-			@Override
-			public void resolvedBy(Resolver<Field, Fact, Stmt, Method> resolver) {
-				callback.resolvedBy(resolver);
-			}
-		});
-	}
-	
-	@Override
 	public void registerTransitiveResolverCallback(TransitiveResolverCallback<Field, Fact, Stmt, Method> callback) {
 		if(resolvedAccessPath.isEmpty())
 			callback.resolvedByIncomingAccessPath();

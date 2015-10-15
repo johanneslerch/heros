@@ -46,6 +46,8 @@ public class AccessPathAndResolver<Field, Fact, Stmt, Method> {
 		}
 		
 //		assert depth() <= 3;
+//		if(depth()>3)
+//			System.out.println(depth()+": "+this);
 	}
 	
 	private int depth() {
@@ -80,7 +82,7 @@ public class AccessPathAndResolver<Field, Fact, Stmt, Method> {
 
 				@Override
 				public void canBeResolvedEmpty(PerAccessPathMethodAnalyzer<Field, Fact, Stmt, Method> analyzer) {
-					if(analyzer.equals(getAnalyzer()))
+					if(analyzer.equals(AccessPathAndResolver.this.analyzer))
 						resolveViaNesting(constraint, callback);
 				}
 			});

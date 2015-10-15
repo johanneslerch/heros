@@ -10,37 +10,35 @@
  ******************************************************************************/
 package heros.fieldsens;
 
-import java.util.Collection;
 import java.util.Set;
 
+import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 
 import heros.fieldsens.AccessPath.Delta;
-import heros.fieldsens.FlowFunction.ConstrainedFact;
 import heros.fieldsens.structs.AccessPathAndResolver;
 import heros.fieldsens.structs.DeltaConstraint;
 import heros.fieldsens.structs.WrappedFact;
 import heros.fieldsens.structs.WrappedFactAtStatement;
 
-public class CallSiteResolver<Field, Fact, Stmt, Method> extends ResolverTemplate<Field, Fact, Stmt, Method, WrappedFact<Field, Fact, Stmt, Method>> {
+public class ReturnSiteResolver<Field, Fact, Stmt, Method> extends ResolverTemplate<Field, Fact, Stmt, Method, WrappedFact<Field, Fact, Stmt, Method>> {
 
-	private Stmt callSite;
-	private Set<PerAccessPathMethodAnalyzer<Field, Fact, Stmt, Method>> propagated = Sets.newHashSet();
+	private Stmt returnSite;
 	private Fact sourceFact;
 	private FactMergeHandler<Fact> factMergeHandler;
+	private Set<PerAccessPathMethodAnalyzer<Field, Fact, Stmt, Method>> propagated = Sets.newHashSet();
 	private ContextLogger<Method> logger;
-	
-	public CallSiteResolver(FactMergeHandler<Fact> factMergeHandler, Stmt callSite, Debugger<Field, Fact, Stmt, Method> debugger, ContextLogger<Method> logger) {
-		this(factMergeHandler, callSite, null, new AccessPath<Field>(), debugger, null);
-		this.factMergeHandler = factMergeHandler;
+
+	public ReturnSiteResolver(FactMergeHandler<Fact> factMergeHandler, Stmt returnSite, Fact sourceFact, Debugger<Field, Fact, Stmt, Method> debugger, ContextLogger<Method> logger) {
+		this(factMergeHandler, returnSite, sourceFact, AccessPath.<Field>empty(), null, debugger);
 		this.logger = logger;
 	}
 	
-	private CallSiteResolver(FactMergeHandler<Fact> factMergeHandler,
-			Stmt callSite, Fact sourceFact, AccessPath<Field> resolvedAccPath, Debugger<Field, Fact, Stmt, Method> debugger, CallSiteResolver<Field, Fact, Stmt, Method> parent) {
-		super(resolvedAccPath, parent, debugger);
+	private ReturnSiteResolver(FactMergeHandler<Fact> factMergeHandler, Stmt returnSite, Fact sourceFact, AccessPath<Field> resolvedAccessPath,
+			ReturnSiteResolver<Field, Fact, Stmt, Method> parent, Debugger<Field, Fact, Stmt, Method> debugger) {
+		super(resolvedAccessPath, parent, debugger);
 		this.factMergeHandler = factMergeHandler;
-		this.callSite = callSite;
+		this.returnSite = returnSite;
 		this.sourceFact = sourceFact;
 		if(parent != null) {
 			this.logger = parent.logger;
@@ -64,58 +62,65 @@ public class CallSiteResolver<Field, Fact, Stmt, Method> extends ResolverTemplat
 	}
 
 	@Override
-	protected void interestByIncoming(WrappedFact<Field, Fact, Stmt, Method> inc) {
+	public void registerTransitiveResolverCallback(TransitiveResolverCallback<Field, Fact, Stmt, Method> callback) {
 		if(resolvedAccessPath.isEmpty())
-			interest(new AccessPathAndResolver<Field, Fact, Stmt, Method>(inc.getAccessPathAndResolver().getAnalyzer(), AccessPath.<Field>empty(), this));
+			callback.resolvedByIncomingAccessPath();
 		else {
-			AccessPath<Field> delta = resolvedAccessPath.getDeltaToAsAccessPath(inc.getAccessPathAndResolver().accessPath);
-			interest(inc.getAccessPathAndResolver().withAccessPath(delta));
+			for(Resolver<Field, Fact, Stmt, Method> transRes : Lists.newLinkedList(incomingEdges.keySet())) {
+				if(transRes == null)
+					callback.resolvedByIncomingAccessPath();
+				else
+					callback.resolvedBy(transRes);
+			}
 		}
 	}
 	
 	@Override
-	protected void processIncomingPotentialPrefix(WrappedFact<Field, Fact, Stmt, Method> fact) {
-		Delta<Field> delta = fact.getAccessPathAndResolver().accessPath.getDeltaTo(resolvedAccessPath);
-		fact.getAccessPathAndResolver().resolve(new DeltaConstraint<Field>(delta), new InterestCallback<Field, Fact, Stmt, Method>() {
+	protected void processIncomingPotentialPrefix(final WrappedFact<Field, Fact, Stmt, Method> inc) {
+		Delta<Field> delta = inc.getAccessPathAndResolver().accessPath.getDeltaTo(resolvedAccessPath);
+		inc.getAccessPathAndResolver().resolve(new DeltaConstraint<Field>(delta), new InterestCallback<Field, Fact, Stmt, Method>() {
 			@Override
 			public void interest(PerAccessPathMethodAnalyzer<Field, Fact, Stmt, Method> analyzer,
 					AccessPathAndResolver<Field, Fact, Stmt, Method> accPathResolver) {
-				CallSiteResolver.this.interest(accPathResolver);
+				AccessPath<Field> newAccPath = resolvedAccessPath.append(accPathResolver.accessPath);
+				addIncoming(new WrappedFact<Field, Fact, Stmt, Method>(sourceFact, accPathResolver.withAccessPath(newAccPath)));
 			}
 
 			@Override
 			public void canBeResolvedEmpty(PerAccessPathMethodAnalyzer<Field, Fact, Stmt, Method> analyzer) {
-				CallSiteResolver.this.canBeResolvedEmpty(analyzer);
+				ReturnSiteResolver.this.canBeResolvedEmpty(analyzer);
 			}
 		});
 	}
 
 	@Override
 	protected void processIncomingGuaranteedPrefix(WrappedFact<Field, Fact, Stmt, Method> fact) {
+		assert fact.getFact().equals(sourceFact);
 		PerAccessPathMethodAnalyzer<Field, Fact, Stmt, Method> analyzer = fact.getAccessPathAndResolver().getAnalyzer();
 		if(!propagated.add(analyzer)) {
 			factMergeHandler.merge(sourceFact, fact.getFact());
 		}
 		else {
-			sourceFact = fact.getFact();
-			analyzer.processCallWithoutAbstractionPoint(new WrappedFactAtStatement<Field, Fact, Stmt, Method>(callSite, 
+			analyzer.scheduleEdgeTo(new WrappedFactAtStatement<Field, Fact, Stmt, Method>(returnSite, 
 					new WrappedFact<Field, Fact, Stmt, Method>(fact.getFact(), new AccessPathAndResolver<Field, Fact, Stmt, Method>(
-							analyzer, AccessPath.<Field>empty(), this))));
+							analyzer, new AccessPath<Field>(), this))));
 		}
 	}
 
 	@Override
 	protected ResolverTemplate<Field, Fact, Stmt, Method, WrappedFact<Field, Fact, Stmt, Method>> createNestedResolver(AccessPath<Field> newAccPath) {
-		return new CallSiteResolver<Field, Fact, Stmt, Method>(factMergeHandler, callSite, sourceFact, newAccPath, debugger, this);
+		return new ReturnSiteResolver<Field, Fact, Stmt, Method>(
+				factMergeHandler, returnSite, sourceFact, newAccPath, this, debugger);
 	}
 
 	@Override
 	protected void log(String message) {
-		logger.log("CallSite "+toString()+": "+message);
+		logger.log("Return Site "+toString()+": "+message);
 	}
 
 	@Override
 	public String toString() {
-		return "<"+resolvedAccessPath+":"+callSite+" in "+logger.getMethod()+">";
+		return "<"+resolvedAccessPath+":RSR-"+returnSite+" in "+logger.getMethod()+">";
 	}
+
 }
