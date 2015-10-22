@@ -106,7 +106,7 @@ public abstract class Resolver<Field, Fact, Stmt, Method> {
 		}
 		interestCallbacks.add(callback);
 
-		for(PerAccessPathMethodAnalyzer<Field, Fact, Stmt, Method> analyzer : canBeResolvedEmpty)
+		for(PerAccessPathMethodAnalyzer<Field, Fact, Stmt, Method> analyzer : Lists.newLinkedList(canBeResolvedEmpty))
 			callback.canBeResolvedEmpty(analyzer);
 	}
 	

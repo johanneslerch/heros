@@ -93,7 +93,7 @@ public class CallSiteResolver<Field, Fact, Stmt, Method> extends ResolverTemplat
 	@Override
 	protected void processIncomingGuaranteedPrefix(WrappedFact<Field, Fact, Stmt, Method> fact) {
 		PerAccessPathMethodAnalyzer<Field, Fact, Stmt, Method> analyzer = fact.getAccessPathAndResolver().getAnalyzer();
-		if(!propagated.add(analyzer)) {
+		if(!propagated.add(analyzer) || !resolvedAccessPath.isEmpty()) {
 			factMergeHandler.merge(sourceFact, fact.getFact());
 		}
 		else {

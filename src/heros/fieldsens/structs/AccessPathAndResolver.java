@@ -41,10 +41,6 @@ public class AccessPathAndResolver<Field, Fact, Stmt, Method> {
 		this.resolver = resolver;
 		this.nesting = nesting;
 		
-		if(accessPath.toString().contains("ZERO-FIELD") && !(resolver instanceof ZeroCallEdgeResolver)) {
-			System.out.println(this);
-		}
-		
 //		assert depth() <= 3;
 //		if(depth()>3)
 //			System.out.println(depth()+": "+this);

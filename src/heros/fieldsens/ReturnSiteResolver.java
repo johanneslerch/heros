@@ -97,7 +97,7 @@ public class ReturnSiteResolver<Field, Fact, Stmt, Method> extends ResolverTempl
 	protected void processIncomingGuaranteedPrefix(WrappedFact<Field, Fact, Stmt, Method> fact) {
 		assert fact.getFact().equals(sourceFact);
 		PerAccessPathMethodAnalyzer<Field, Fact, Stmt, Method> analyzer = fact.getAccessPathAndResolver().getAnalyzer();
-		if(!propagated.add(analyzer)) {
+		if(!propagated.add(analyzer) || !resolvedAccessPath.isEmpty()) {
 			factMergeHandler.merge(sourceFact, fact.getFact());
 		}
 		else {
