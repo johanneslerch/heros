@@ -2105,4 +2105,16 @@ public class FieldSensitiveIFDSSolverTest {
 		
 		helper.runSolver(false, "a");
 	}
+	
+	@Test
+	public void selfSatisfyingLoop() {
+		helper.method("main",
+				startPoints("a"),
+				normalStmt("a", flow("0", prependField("f"), "1")).succ("b"),
+				normalStmt("b", flow("1", readField("f"), "1")).succ("c"),
+				normalStmt("c", flow("1", prependField("f"), "1")).succ("d"),
+				normalStmt("d", flow("1", prependField("f"), "1")).succ("b"));
+		
+		helper.runSolver(false, "a");
+	}
 }

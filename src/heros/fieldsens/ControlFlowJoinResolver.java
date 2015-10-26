@@ -89,15 +89,15 @@ public class ControlFlowJoinResolver<Field, Fact, Stmt, Method> extends Resolver
 		}
 	};
 	
-	@Override
-	protected void interestByIncoming(WrappedFact<Field, Fact, Stmt, Method> inc) {
-		if(resolvedAccessPath.isEmpty())
-			interest(new AccessPathAndResolver<Field, Fact, Stmt, Method>(inc.getAccessPathAndResolver().getAnalyzer(), AccessPath.<Field>empty(), this));
-		else {
-			AccessPath<Field> delta = resolvedAccessPath.getDeltaToAsAccessPath(inc.getAccessPathAndResolver().accessPath);
-			interest(inc.getAccessPathAndResolver().withAccessPath(delta));
-		}
-	}
+//	@Override
+//	protected void interestByIncoming(WrappedFact<Field, Fact, Stmt, Method> inc) {
+//		if(resolvedAccessPath.isEmpty())
+//			interest(new AccessPathAndResolver<Field, Fact, Stmt, Method>(inc.getAccessPathAndResolver().getAnalyzer(), AccessPath.<Field>empty(), this));
+//		else {
+//			AccessPath<Field> delta = resolvedAccessPath.getDeltaToAsAccessPath(inc.getAccessPathAndResolver().accessPath);
+//			interest(inc.getAccessPathAndResolver().withAccessPath(delta));
+//		}
+//	}
 
 	@Override
 	protected void processIncomingPotentialPrefix(final WrappedFact<Field, Fact, Stmt, Method> fact) {

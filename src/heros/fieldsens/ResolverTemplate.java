@@ -73,7 +73,16 @@ public abstract class ResolverTemplate<Field, Fact, Stmt, Method, Incoming>  ext
 	
 	@Override
 	public void registerTransitiveResolverCallback(TransitiveResolverCallback<Field, Fact, Stmt, Method> callback) {
-		callback.resolvedByIncomingAccessPath();
+		if(resolvedAccessPath.isEmpty())
+			callback.resolvedByIncomingAccessPath();
+		else {
+			for(Resolver<Field, Fact, Stmt, Method> transRes : Lists.newLinkedList(incomingEdges.keySet())) {
+				if(transRes == null)
+					callback.resolvedByIncomingAccessPath();
+				else
+					callback.resolvedBy(transRes);
+			}
+		}
 	}
 	
 //	@Override
