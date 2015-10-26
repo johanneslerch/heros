@@ -44,12 +44,11 @@ public abstract class Resolver<Field, Fact, Stmt, Method> {
 	}
 	
 	protected boolean isLocked() {
-		return recursionLock;
-//		if(recursionLock)
-//			return true;
-//		if(parent == null)
-//			return false;
-//		return parent.isLocked();
+		if(recursionLock)
+			return true;
+		if(parent == null)
+			return false;
+		return parent.isLocked();
 	}
 
 	protected void lock() {

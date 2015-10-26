@@ -52,6 +52,11 @@ public class CallSiteResolver<Field, Fact, Stmt, Method> extends ResolverTemplat
 	protected AccessPath<Field> getAccessPathOf(WrappedFact<Field, Fact, Stmt, Method> inc) {
 		return inc.getAccessPathAndResolver().accessPath;
 	}
+	
+	@Override
+	protected AccessPathAndResolver<Field, Fact, Stmt, Method> getAccessPathAndResolver(WrappedFact<Field, Fact, Stmt, Method> inc) {
+		return inc.getAccessPathAndResolver();
+	}
 
 	@Override
 	protected PerAccessPathMethodAnalyzer<Field, Fact, Stmt, Method> getAnalyzer(WrappedFact<Field, Fact, Stmt, Method> inc) {

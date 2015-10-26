@@ -60,6 +60,11 @@ public class ControlFlowJoinResolver<Field, Fact, Stmt, Method> extends Resolver
 	}
 	
 	@Override
+	protected AccessPathAndResolver<Field, Fact, Stmt, Method> getAccessPathAndResolver(WrappedFact<Field, Fact, Stmt, Method> inc) {
+		return inc.getAccessPathAndResolver();
+	}
+	
+	@Override
 	protected PerAccessPathMethodAnalyzer<Field, Fact, Stmt, Method> getAnalyzer(WrappedFact<Field, Fact, Stmt, Method> inc) {
 		return inc.getAccessPathAndResolver().getAnalyzer();
 	}

@@ -50,7 +50,12 @@ public class ReturnSiteResolver<Field, Fact, Stmt, Method> extends ResolverTempl
 	protected AccessPath<Field> getAccessPathOf(WrappedFact<Field, Fact, Stmt, Method> inc) {
 		return inc.getAccessPathAndResolver().accessPath;
 	}
-
+	
+	@Override
+	protected AccessPathAndResolver<Field, Fact, Stmt, Method> getAccessPathAndResolver(WrappedFact<Field, Fact, Stmt, Method> inc) {
+		return inc.getAccessPathAndResolver();
+	}
+	
 	@Override
 	protected PerAccessPathMethodAnalyzer<Field, Fact, Stmt, Method> getAnalyzer(WrappedFact<Field, Fact, Stmt, Method> inc) {
 		return inc.getAccessPathAndResolver().getAnalyzer();
@@ -61,20 +66,6 @@ public class ReturnSiteResolver<Field, Fact, Stmt, Method> extends ResolverTempl
 		return inc.getAccessPathAndResolver().resolver;
 	}
 
-	@Override
-	public void registerTransitiveResolverCallback(TransitiveResolverCallback<Field, Fact, Stmt, Method> callback) {
-		if(resolvedAccessPath.isEmpty())
-			callback.resolvedByIncomingAccessPath();
-		else {
-			for(Resolver<Field, Fact, Stmt, Method> transRes : Lists.newLinkedList(incomingEdges.keySet())) {
-				if(transRes == null)
-					callback.resolvedByIncomingAccessPath();
-				else
-					callback.resolvedBy(transRes);
-			}
-		}
-	}
-	
 	@Override
 	protected void processIncomingPotentialPrefix(final WrappedFact<Field, Fact, Stmt, Method> inc) {
 		Delta<Field> delta = inc.getAccessPathAndResolver().accessPath.getDeltaTo(resolvedAccessPath);

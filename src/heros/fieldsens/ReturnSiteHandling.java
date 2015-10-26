@@ -103,6 +103,11 @@ public class ReturnSiteHandling<Field, Fact, Stmt, Method> {
 		}
 		
 		@Override
+		protected AccessPathAndResolver<Field, Fact, Stmt, Method> getAccessPathAndResolver(AccessPathAndResolver<Field, Fact, Stmt, Method> inc) {
+			return inc;
+		}
+		
+		@Override
 		protected Resolver<Field, Fact, Stmt, Method> getResolver(AccessPathAndResolver<Field, Fact, Stmt, Method> inc) {
 			return inc.resolver;
 		}
@@ -200,6 +205,11 @@ public class ReturnSiteHandling<Field, Fact, Stmt, Method> {
 		@Override
 		protected AccessPath<Field> getAccessPathOf(AccessPathAndResolver<Field, Fact, Stmt, Method> inc) {
 			return inc.accessPath;
+		}
+		
+		@Override
+		protected AccessPathAndResolver<Field, Fact, Stmt, Method> getAccessPathAndResolver(AccessPathAndResolver<Field, Fact, Stmt, Method> inc) {
+			return inc;
 		}
 		
 		@Override

@@ -54,6 +54,8 @@ public abstract class ResolverTemplate<Field, Fact, Stmt, Method, Incoming>  ext
 	
 	protected abstract AccessPath<Field> getAccessPathOf(Incoming inc);
 	
+	protected abstract AccessPathAndResolver<Field, Fact, Stmt, Method> getAccessPathAndResolver(Incoming inc);
+	
 	protected abstract PerAccessPathMethodAnalyzer<Field, Fact, Stmt, Method> getAnalyzer(Incoming inc); 
 	
 	private void registerTransitiveResolverCallback(Incoming inc, final TransitiveResolverCallback<Field, Fact, Stmt, Method> callback) {
@@ -85,41 +87,28 @@ public abstract class ResolverTemplate<Field, Fact, Stmt, Method, Incoming>  ext
 		}
 	}
 	
-//	@Override
-//	public void registerTransitiveResolverCallback(TransitiveResolverCallback<Field, Fact, Stmt, Method> callback) {
-//		transitiveResolverCallbacks.add(callback);
-//		for(Resolver<Field, Fact, Stmt, Method> transRes : Lists.newLinkedList(incomingEdges.keySet())) {
-//			if(transRes == null)
-//				callback.resolvedByIncomingAccessPath();
-//			else
-//				callback.resolvedBy(transRes);
-//		}
-//	}
-	
 	protected abstract Resolver<Field, Fact, Stmt, Method> getResolver(Incoming inc);
 	
 	private boolean shouldDismiss(Incoming inc, Resolver<Field, Fact, Stmt, Method> transitiveResolver) {
-		return transitiveResolver != null && incomingEdges.containsKey(transitiveResolver);
-//		if(incomingEdges.containsKey(transitiveResolver)) {
-//			for(Incoming existingInc : incomingEdges.get(transitiveResolver)) {
-//				if(getResolver(existingInc).isParentOf(getResolver(inc)))
+		if(transitiveResolver != null && incomingEdges.containsKey(transitiveResolver)) {
+			return true;//!getAccessPathAndResolver(inc).hasNesting();
+//			for(Incoming transRes : incomingEdges.get(transitiveResolver)) {
+//				if(getAccessPathAndResolver(inc).hasNesting() == getAccessPathAndResolver(transRes).hasNesting())
 //					return true;
-//				else if(getResolver(inc).isParentOf(getResolver(existingInc)))
-//					System.out.println();
 //			}
-//		}
-//		return false;
+		}
+		return false;
 	}
 
 	public void addIncoming(final Incoming inc) {
 		AccessPath<Field> incAccPath = getAccessPathOf(inc);
-		if((this instanceof CallEdgeResolver || getResolver(inc) instanceof CallEdgeResolver ||
+		if(/*(this instanceof CallEdgeResolver || getResolver(inc) instanceof CallEdgeResolver ||
 				this instanceof ReturnSiteResolver || getResolver(inc) instanceof ReturnSiteResolver)
-				&& incAccPath.equals(resolvedAccessPath)) {
-			if(getResolver(inc) == this) {
-				dismissByTransitiveResolver(inc, this);
-				return;
-			}
+				&& */incAccPath.equals(resolvedAccessPath)) {
+//			if(getResolver(inc) == this) {
+//				dismissByTransitiveResolver(inc, this);
+//				return;
+//			}
 			registerTransitiveResolverCallback(inc, new TransitiveResolverCallback<Field, Fact, Stmt, Method>() {
 				@Override
 				public void resolvedByIncomingAccessPath() {
@@ -140,7 +129,7 @@ public abstract class ResolverTemplate<Field, Fact, Stmt, Method, Incoming>  ext
 		else if(incAccPath.isPrefixOf(resolvedAccessPath).atLeast(PrefixTestResult.POTENTIAL_PREFIX)) {
 //			lock();
 			processIncomingPotentialPrefix(inc);
-//			unlock();
+			unlock();
 		}
 	}
 	
