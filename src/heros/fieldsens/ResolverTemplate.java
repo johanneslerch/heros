@@ -31,7 +31,7 @@ public abstract class ResolverTemplate<Field, Fact, Stmt, Method, Incoming>  ext
 
 	protected Multimap<Resolver<Field, Fact, Stmt, Method>, Incoming> incomingEdges = LinkedHashMultimap.create();
 	protected Set<Incoming> incomingEdgeValues = Sets.newLinkedHashSet();
-	private Map<AccessPath<Field>, ResolverTemplate<Field, Fact, Stmt, Method, Incoming>> nestedResolvers = Maps.newHashMap();
+	protected Map<AccessPath<Field>, ResolverTemplate<Field, Fact, Stmt, Method, Incoming>> nestedResolvers = Maps.newHashMap();
 	private Map<AccessPath<Field>, ResolverTemplate<Field, Fact, Stmt, Method, Incoming>> allResolversInExclHierarchy;
 	private List<TransitiveResolverCallback<Field, Fact, Stmt, Method>> transitiveResolverCallbacks = Lists.newLinkedList();
 	protected AccessPath<Field> resolvedAccessPath;

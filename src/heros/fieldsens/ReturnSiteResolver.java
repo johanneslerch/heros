@@ -67,6 +67,22 @@ public class ReturnSiteResolver<Field, Fact, Stmt, Method> extends ResolverTempl
 	}
 
 	@Override
+	public void registerTransitiveResolverCallback(TransitiveResolverCallback<Field, Fact, Stmt, Method> callback) {
+		if(resolvedAccessPath.isEmpty())
+			callback.resolvedByIncomingAccessPath();
+		else {
+			for(Resolver<Field, Fact, Stmt, Method> transRes : Lists.newLinkedList(incomingEdges.keySet())) {
+				if(transRes == null)
+					callback.resolvedByIncomingAccessPath();
+				else if(transRes instanceof CallEdgeResolver) 
+					callback.resolvedBy(getRootParent());
+				else
+					callback.resolvedBy(transRes);
+			}
+		}
+	}
+	
+	@Override
 	protected void processIncomingPotentialPrefix(final WrappedFact<Field, Fact, Stmt, Method> inc) {
 		Delta<Field> delta = inc.getAccessPathAndResolver().accessPath.getDeltaTo(resolvedAccessPath);
 		inc.getAccessPathAndResolver().resolve(new DeltaConstraint<Field>(delta), new InterestCallback<Field, Fact, Stmt, Method>() {

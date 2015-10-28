@@ -43,6 +43,13 @@ public abstract class Resolver<Field, Fact, Stmt, Method> {
 			return false;
 	}
 	
+	protected Resolver<Field, Fact, Stmt, Method> getRootParent() {
+		if(parent == null)
+			return this;
+		else
+			return parent.getRootParent();
+	}
+	
 	protected boolean isLocked() {
 		if(recursionLock)
 			return true;

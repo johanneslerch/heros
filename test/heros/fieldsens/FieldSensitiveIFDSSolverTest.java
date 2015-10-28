@@ -1276,9 +1276,9 @@ public class FieldSensitiveIFDSSolverTest {
 				normalStmt("g", flow("1", readField("f"), "1")).succ("f"),
 				
 				normalStmt("h", flow("1", readField("f"), "1")).succ("i"),
-				normalStmt("i", flow(3, "1", readField("f"), "1")).succ("j"),
-				normalStmt("j", flow(3, "1", readField("g"), "1")).succ("k"),
-				normalStmt("k", kill(3, "1")).succ("l"));
+				normalStmt("i", flow(2, "1", readField("f"), "1")).succ("j"),
+				normalStmt("j", flow(2, "1", readField("g"), "1")).succ("k"),
+				normalStmt("k", kill(2, "1")).succ("l"));
 		
 		helper.method("foo",
 				startPoints("c"),
@@ -1300,9 +1300,9 @@ public class FieldSensitiveIFDSSolverTest {
 				normalStmt("g", flow("1", readField("f"), "1")).succ("f"),
 				
 				normalStmt("h", flow("1", readField("f"), "1")).succ("i"),
-				normalStmt("i", flow(2, "1", readField("f"), "1")).succ("j"),
-				normalStmt("j", flow(2, "1", readField("f"), "1")).succ("k"),
-				normalStmt("k", kill(2, "1")).succ("l"));
+				normalStmt("i", flow("1", readField("f"), "1")).succ("j"),
+				normalStmt("j", flow("1", readField("f"), "1")).succ("k"),
+				normalStmt("k", kill("1")).succ("l"));
 		
 		helper.method("foo",
 				startPoints("c"),
