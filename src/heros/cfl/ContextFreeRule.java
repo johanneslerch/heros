@@ -15,7 +15,25 @@ import com.google.common.base.Optional;
 public class ContextFreeRule implements Rule {
 
 	@Override
-	public Optional<NonTerminal> getNonTerminal() {
+	public boolean containsConsumers() {
+		// TODO Auto-generated method stub
+		return false;
+	}
+
+	@Override
+	public boolean isPossible() {
+		// TODO Auto-generated method stub
+		return false;
+	}
+
+	@Override
+	public void accept(RuleVisitor ruleVisitor) {
+		ruleVisitor.visit(this);
+	}
+
+	@Override
+	public Rule append(Terminal... terminals) {
+		// TODO Auto-generated method stub
 		return null;
 	}
 }

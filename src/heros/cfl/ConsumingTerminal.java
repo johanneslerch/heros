@@ -20,7 +20,13 @@ public class ConsumingTerminal implements Terminal {
 
 	@Override
 	public String toString() {
-		return "-"+representation;
+		String string = representation.toString();
+		char[] result = new char[string.length()*2];
+		for(int i=0; i<string.length(); i++) {
+			result[i*2+1] = '\u0305';
+			result[i*2] = string.charAt(i);
+		}
+		return new String(result);
 	}
 
 	public Object getRepresentation() {
@@ -35,5 +41,30 @@ public class ConsumingTerminal implements Terminal {
 	@Override
 	public boolean isProducing(ConsumingTerminal consumingTerminal) {
 		return false;
+	}
+
+	@Override
+	public int hashCode() {
+		final int prime = 31;
+		int result = 1;
+		result = prime * result + ((representation == null) ? 0 : representation.hashCode());
+		return result;
+	}
+
+	@Override
+	public boolean equals(Object obj) {
+		if (this == obj)
+			return true;
+		if (obj == null)
+			return false;
+		if (getClass() != obj.getClass())
+			return false;
+		ConsumingTerminal other = (ConsumingTerminal) obj;
+		if (representation == null) {
+			if (other.representation != null)
+				return false;
+		} else if (!representation.equals(other.representation))
+			return false;
+		return true;
 	}
 }

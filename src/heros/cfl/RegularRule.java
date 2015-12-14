@@ -37,41 +37,10 @@ public class RegularRule implements Rule {
 
 	@Override
 	public String toString() {
-		return (nonTerminal.isPresent() ? nonTerminal.get() : "") + Joiner.on("").join(terminals);
-	}
-
-	@Override
-	public Optional<NonTerminal> getNonTerminal() {
-		return nonTerminal;
-	}
-
-	@Override
-	public boolean areSuccessorsPossible(ConsumingTerminal... consumingTerminals) {
-		for(int i=0; i<consumingTerminals.length && i<terminals.length; i++) {
-			if(terminals[terminals.length -1 -i].isConsumer())
-				return true;
-			else if(!terminals[terminals.length -1 -i].isProducing(consumingTerminals[i]))
-				return false;
-		}
-		return true;
-	}
-
-	@Override
-	public Rule apply(ConsumingTerminal... consumingTerminals) {
-		for(int i=0; i<consumingTerminals.length && i<terminals.length; i++) {
-			if(terminals[terminals.length -1 -i].isConsumer())
-				return new RegularRule(nonTerminal, merge(i, consumingTerminals));
-			else if(!terminals[terminals.length -1 -i].isProducing(consumingTerminals[i]))
-				throw new IllegalStateException(toString()+" cannot be succeeded by "+Joiner.on("").join(consumingTerminals));
-		}
-		return new RegularRule(nonTerminal, Arrays.copyOfRange(consumingTerminals, terminals.length, consumingTerminals.length));
-	}
-	
-	private Terminal[] merge(int index, ConsumingTerminal[] consumingTerminals) {
-		Terminal[] result = new Terminal[terminals.length-index + consumingTerminals.length-index];
-		System.arraycopy(terminals, 0, result, 0, terminals.length-index);
-		System.arraycopy(consumingTerminals, index, result, terminals.length-index, consumingTerminals.length-index);
-		return result;
+		if(!nonTerminal.isPresent() && terminals.length==0)
+			return "\u03B5";
+		else
+			return (nonTerminal.isPresent() ? nonTerminal.get() : "") + Joiner.on("").join(terminals);
 	}
 
 	@Override
@@ -83,10 +52,83 @@ public class RegularRule implements Rule {
 	}
 
 	@Override
-	public ConsumingTerminal[] getConsumers() {
-		for(int i=0; i<terminals.length; i++) 
-			if(!terminals[i].isConsumer())
-				return Arrays.copyOfRange(terminals, 0, i, ConsumingTerminal[].class);
-		return Arrays.copyOf(terminals, terminals.length, ConsumingTerminal[].class);
+	public boolean isPossible() {
+		int firstConsumer = -1;
+		for(int i=0; i<terminals.length; i++) {
+			if(terminals[i].isConsumer()) {
+				if(firstConsumer < 0)
+					firstConsumer = i;
+				int correspondingProducerIndex = 2*firstConsumer-i-1;
+				if(correspondingProducerIndex >= 0) {
+					if(!terminals[correspondingProducerIndex].isProducing((ConsumingTerminal) terminals[i]))
+						return false;
+				}	
+				else
+					return true;
+			}
+		}
+		return true;
+	}
+
+	@Override
+	public void accept(RuleVisitor ruleVisitor) {
+		ruleVisitor.visit(this);
+	}
+
+	public Optional<NonTerminal> getNonTerminal() {
+		return nonTerminal;
+	}
+
+	public Rule applyForNonTerminal(Rule rule) {
+		return rule.append(terminals);
+	}
+
+	@Override
+	public Rule append(Terminal... terminals) {
+		if(terminals.length == 0)
+			return this;
+		if(this.terminals.length == 0)
+			return new RegularRule(nonTerminal, terminals);
+		
+		int skip = 0;
+		for(int i=0; i<terminals.length; i++) {
+			if(terminals[i].isConsumer() && this.terminals.length>i && this.terminals[this.terminals.length-i-1].isProducing((ConsumingTerminal) terminals[i]))  {
+				skip++;
+			}
+			else
+				break;
+		}
+		
+		Terminal[] newTerminals = Arrays.copyOf(this.terminals, this.terminals.length+terminals.length -skip*2);
+		System.arraycopy(terminals, skip, newTerminals, this.terminals.length-skip, terminals.length-skip);
+		return new RegularRule(nonTerminal, newTerminals);
+	}
+
+	@Override
+	public int hashCode() {
+		final int prime = 31;
+		int result = 1;
+		result = prime * result + ((nonTerminal == null) ? 0 : nonTerminal.hashCode());
+		result = prime * result + Arrays.hashCode(terminals);
+		return result;
+	}
+
+	@Override
+	public boolean equals(Object obj) {
+		if (this == obj)
+			return true;
+		if (obj == null)
+			return false;
+		if (getClass() != obj.getClass())
+			return false;
+		RegularRule other = (RegularRule) obj;
+		if (nonTerminal == null) {
+			if (other.nonTerminal != null)
+				return false;
+		} else if (!nonTerminal.equals(other.nonTerminal))
+			return false;
+		if (!Arrays.equals(terminals, other.terminals))
+			return false;
+		return true;
 	}
 }

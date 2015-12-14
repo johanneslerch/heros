@@ -15,6 +15,8 @@ import static heros.cfl.SolverResult.*;
 
 import org.junit.Test;
 
+import fj.data.Option;
+
 public class TestCfl {
 
 	@Test
@@ -24,7 +26,7 @@ public class TestCfl {
 		NonTerminal x = new NonTerminal("X");
 		x.addRule(new RegularRule(new ProducingTerminal("f")));
 		x.addRule(new RegularRule(new ProducingTerminal("g")));
-		solvable(x, new ConsumingTerminal("f"));
+		solvable(new RegularRule(x, new ConsumingTerminal("f")));
 	}
 	
 	@Test
@@ -37,7 +39,7 @@ public class TestCfl {
 		x.addRule(new RegularRule(y));
 		y.addRule(new RegularRule(new ProducingTerminal("f")));
 		y.addRule(new RegularRule(new ProducingTerminal("g")));
-		solvable(x, new ConsumingTerminal("f"));
+		solvable(new RegularRule(x, new ConsumingTerminal("f")));
 	}
 	
 	@Test
@@ -53,7 +55,7 @@ public class TestCfl {
 		x.addRule(new RegularRule(y));
 		y.addRule(new RegularRule(z));
 		z.addRule(new RegularRule(new ProducingTerminal("f")));
-		solvable(x, new ConsumingTerminal("f"));
+		solvable(new RegularRule(x, new ConsumingTerminal("f")));
 	}
 	
 	@Test
@@ -66,7 +68,7 @@ public class TestCfl {
 		x.addRule(new RegularRule(x, new ConsumingTerminal("g")));
 		x.addRule(new RegularRule(y, new ProducingTerminal("g")));
 		y.addRule(new RegularRule(y, new ProducingTerminal("f")));
-		solvable(x, new ConsumingTerminal("f"));
+		solvable(new RegularRule(x, new ConsumingTerminal("f")));
 	}
 	
 	@Test
@@ -79,27 +81,29 @@ public class TestCfl {
 		x.addRule(new RegularRule(x, new ConsumingTerminal("g")));
 		x.addRule(new RegularRule(y, new ProducingTerminal("h")));
 		y.addRule(new RegularRule(y, new ProducingTerminal("f")));
-		unsolvable(x, new ConsumingTerminal("f"));
+		unsolvable(new RegularRule(x, new ConsumingTerminal("f")));
 	}
 
-	private void solvable(NonTerminal x, ConsumingTerminal consumingTerminal) {
-		assertResult(Solvable, x, consumingTerminal);
+	private void solvable(RegularRule rule) {
+		assertResult(Solvable, rule);
 	}
 	
-	private void unsolvable(NonTerminal x, ConsumingTerminal consumingTerminal) {
-		assertResult(NotSolvable, x, consumingTerminal);
+	private void unsolvable(RegularRule rule) {
+		assertResult(NotSolvable, rule);
 	}
 	
-	private void unknown(NonTerminal x, ConsumingTerminal consumingTerminal) {
-		assertResult(Unknown, x, consumingTerminal);
+	private void unknown(RegularRule rule) {
+		assertResult(Unknown, rule);
 	}
 
-	private void assertResult(SolverResult expected, NonTerminal x, ConsumingTerminal consumingTerminal) {
-		Solver solver = new Solver(x.getRules(), consumingTerminal);
-		SolverResult actual = solver.solve();
-		System.out.println(solver.explain());
+	private void assertResult(SolverResult expected, RegularRule rule) {
+		SearchTreeViewer treeViewer = new SearchTreeViewer();
+		SearchTree searchTree = new SearchTree(rule, Option.some(treeViewer));
+		SolverResult actual = searchTree.search();
+		
+		System.out.println(treeViewer);
 		if(!expected.equals(actual)) {
-			fail(x.toString()+consumingTerminal+" should be "+expected+", but was "+actual+". Given the rule set:\n"+x.printRules());
+			fail(rule+" should be "+expected+", but was "+actual+". Given the rule set:\n"+new ToStringRuleVisitor(rule));
 		}
 	}
 }

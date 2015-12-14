@@ -35,24 +35,6 @@ public class NonTerminal {
 		return representation.toString();
 	}
 
-	public String printRules() {
-		Set<NonTerminal> visited = Sets.newHashSet();
-		StringBuilder builder = new StringBuilder();
-		printRules(visited, builder);
-		return builder.toString();
-	}
-
-	private void printRules(Set<NonTerminal> visited, StringBuilder builder) {
-		if(visited.add(this)) {
-			builder.append(representation.toString()+": " +Joiner.on(" | ").join(rules)+"\n");
-			for(Rule rule : rules) {
-				if(rule.getNonTerminal().isPresent()) {
-					rule.getNonTerminal().get().printRules(visited, builder);
-				}
-			}
-		}
-	}
-
 	public List<Rule> getRules() {
 		return rules;
 	}

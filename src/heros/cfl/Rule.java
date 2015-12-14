@@ -14,14 +14,12 @@ import com.google.common.base.Optional;
 
 public interface Rule {
 
-	Optional<NonTerminal> getNonTerminal();
-
-	boolean areSuccessorsPossible(ConsumingTerminal... terminals);
-
-	Rule apply(ConsumingTerminal... consumingTerminals);
-
 	boolean containsConsumers();
 
-	ConsumingTerminal[] getConsumers();
+	boolean isPossible();
+
+	void accept(RuleVisitor ruleVisitor);
+
+	Rule append(Terminal... terminals);
 
 }

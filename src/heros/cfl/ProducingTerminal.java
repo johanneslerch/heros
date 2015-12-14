@@ -32,4 +32,30 @@ public class ProducingTerminal implements Terminal {
 	public boolean isProducing(ConsumingTerminal consumingTerminal) {
 		return consumingTerminal.getRepresentation().equals(representation);
 	}
+
+	@Override
+	public int hashCode() {
+		final int prime = 31;
+		int result = 1;
+		result = prime * result + ((representation == null) ? 0 : representation.hashCode());
+		return result;
+	}
+
+	@Override
+	public boolean equals(Object obj) {
+		if (this == obj)
+			return true;
+		if (obj == null)
+			return false;
+		if (getClass() != obj.getClass())
+			return false;
+		ProducingTerminal other = (ProducingTerminal) obj;
+		if (representation == null) {
+			if (other.representation != null)
+				return false;
+		} else if (!representation.equals(other.representation))
+			return false;
+		return true;
+	}
+	
 }
