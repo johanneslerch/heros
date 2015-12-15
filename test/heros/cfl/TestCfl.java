@@ -78,7 +78,7 @@ public class TestCfl {
 		y.addRule(new RegularRule(y, new ProducingTerminal("f")));
 		unsolvable(consumeFOnX);
 	}
-	//   ̅
+
 	@Test
 	public void regularReadingLoopSolvable() {
 		// X: Xg̅ | Yg
@@ -99,6 +99,52 @@ public class TestCfl {
 		unsolvable(consumeFOnX);
 	}
 
+	@Test
+	public void regularReadingTwoFieldsInLoopOnceReducable() {
+		// X: Xg̅f̅ | Yg | Zgg
+		// Y: f
+		// Z: ff
+		x.addRule(new RegularRule(x, new ConsumingTerminal("g"), new ConsumingTerminal(("f"))));
+		x.addRule(new RegularRule(y, new ProducingTerminal("g")));
+		x.addRule(new RegularRule(z, new ProducingTerminal("g"), new ProducingTerminal("g")));
+		y.addRule(new RegularRule(new ProducingTerminal("f")));
+		z.addRule(new RegularRule(new ProducingTerminal("f"), new ProducingTerminal("f")));
+		unsolvable(consumeFOnX);
+	}
+	
+	@Test
+	public void regularLoopUnsolvable() {
+		//X: Xg̅f̅ | Zfgfg
+		//Z: i
+		x.addRule(new RegularRule(x, new ConsumingTerminal("g"), new ConsumingTerminal("f")));
+		x.addRule(new RegularRule(z, new ProducingTerminal("f"), new ProducingTerminal("g"), new ProducingTerminal("f"), new ProducingTerminal("g")));
+		z.addRule(new RegularRule(new ProducingTerminal("i")));
+		unsolvable(new RegularRule(x, new ConsumingTerminal("h")));
+	}
+	
+	@Test
+	public void regularLoopUnsolvable2() {
+		// X: Yg̅ | Zggg
+		// Y: Xg̅ 
+		// Z: f
+		x.addRule(new RegularRule(y, new ConsumingTerminal("g")));
+		x.addRule(new RegularRule(z, new ProducingTerminal("g"), new ProducingTerminal("g"), new ProducingTerminal("g")));
+		y.addRule(new RegularRule(x, new ConsumingTerminal("g")));
+		z.addRule(new RegularRule(new ProducingTerminal("f")));
+		unsolvable(consumeFOnX);
+	}
+	
+	@Test
+	public void regularWritingAndConsumingLoops() {
+		// X: Xg̅ | Y
+		// Y: Yg | f
+		x.addRule(new RegularRule(x, new ConsumingTerminal("g")));
+		x.addRule(new RegularRule(y));
+		y.addRule(new RegularRule(y, new ProducingTerminal("g")));
+		y.addRule(new RegularRule(new ProducingTerminal("f")));
+		solvable(consumeFOnX);
+	}
+	
 	private void solvable(RegularRule rule) {
 		assertResult(Solvable, rule);
 	}
