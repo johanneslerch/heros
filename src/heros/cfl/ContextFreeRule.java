@@ -27,8 +27,8 @@ public class ContextFreeRule implements Rule {
 	}
 
 	@Override
-	public void accept(RuleVisitor ruleVisitor) {
-		ruleVisitor.visit(this);
+	public <T> T accept(RuleVisitor<T> ruleVisitor) {
+		return ruleVisitor.visit(this);
 	}
 
 	@Override

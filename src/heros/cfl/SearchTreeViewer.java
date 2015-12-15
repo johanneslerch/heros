@@ -13,16 +13,19 @@ package heros.cfl;
 import heros.solver.Pair;
 
 import java.util.Collection;
+import java.util.Map;
 import java.util.Set;
 
 import com.google.common.base.Strings;
 import com.google.common.collect.HashMultimap;
+import com.google.common.collect.Maps;
 import com.google.common.collect.Multimap;
 import com.google.common.collect.Sets;
 
 public class SearchTreeViewer {
 
 	private Multimap<SearchTreeNode, Pair<RuleApplication, SearchTreeNode>> tree = HashMultimap.create();
+	private Map<SearchTreeNode, PrefixIterator> blockedByUnreducedPrefixes = Maps.newHashMap();
 	
 	public void add(SearchTreeNode parent, SearchTreeNode child, RuleApplication ruleAppl) {
 		tree.put(parent, new Pair<RuleApplication, SearchTreeNode>(ruleAppl, child));
@@ -50,6 +53,11 @@ public class SearchTreeViewer {
 				result.append(" ✔");
 			if(!parent.isPossible())
 				result.append(" ╳");
+			
+			if(blockedByUnreducedPrefixes.containsKey(parent)) {
+				result.append(" waiting on prefix: "+blockedByUnreducedPrefixes.get(parent).current());
+			}
+			
 			result.append("\n");
 		}
 		if(newState) {
@@ -57,5 +65,13 @@ public class SearchTreeViewer {
 				append(depth+1, result, visited, child.getO1(), child.getO2());
 			}
 		}
+	}
+
+	public void associate(SearchTreeNode node, PrefixIterator prefixIterator) {
+		blockedByUnreducedPrefixes.put(node, prefixIterator);
+	}
+
+	public void removePrefixIteratorAssociation(SearchTreeNode node) {
+		blockedByUnreducedPrefixes.remove(node);
 	}
 }

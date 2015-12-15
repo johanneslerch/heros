@@ -18,7 +18,7 @@ public interface Rule {
 
 	boolean isPossible();
 
-	void accept(RuleVisitor ruleVisitor);
+	<T> T accept(RuleVisitor<T> ruleVisitor);
 
 	Rule append(Terminal... terminals);
 

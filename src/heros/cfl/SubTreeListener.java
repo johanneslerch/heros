@@ -10,12 +10,7 @@
  ******************************************************************************/
 package heros.cfl;
 
-public interface RuleVisitor<T> {
+public interface SubTreeListener {
 
-	T visit(ContextFreeRule contextFreeRule);
-
-	T visit(NonLinearRule nonLinearRule);
-
-	T visit(RegularRule regularRule);
-
+	public void newChildren(SearchTreeNode parent, SearchTreeNode child);
 }

@@ -64,15 +64,15 @@ public class RegularRule implements Rule {
 						return false;
 				}	
 				else
-					return true;
+					return nonTerminal.isPresent();
 			}
 		}
 		return true;
 	}
 
 	@Override
-	public void accept(RuleVisitor ruleVisitor) {
-		ruleVisitor.visit(this);
+	public <T> T accept(RuleVisitor<T> ruleVisitor) {
+		return ruleVisitor.visit(this);
 	}
 
 	public Optional<NonTerminal> getNonTerminal() {
@@ -83,6 +83,10 @@ public class RegularRule implements Rule {
 		return rule.append(terminals);
 	}
 
+	public Terminal[] getTerminals() {
+		return terminals;
+	}
+	
 	@Override
 	public Rule append(Terminal... terminals) {
 		if(terminals.length == 0)

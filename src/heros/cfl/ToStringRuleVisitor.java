@@ -16,7 +16,7 @@ import java.util.List;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 
-public class ToStringRuleVisitor implements RuleVisitor {
+public class ToStringRuleVisitor implements RuleVisitor<Void> {
 
 	private StringBuilder result = new StringBuilder();
 	private HashSet<NonTerminal> visited = Sets.newHashSet();
@@ -50,23 +50,24 @@ public class ToStringRuleVisitor implements RuleVisitor {
 	}
 
 	@Override
-	public void visit(ContextFreeRule contextFreeRule) {
+	public Void visit(ContextFreeRule contextFreeRule) {
 		// TODO Auto-generated method stub
-		
+		return null;
 	}
 
 	@Override
-	public void visit(NonLinearRule nonLinearRule) {
+	public Void visit(NonLinearRule nonLinearRule) {
 		// TODO Auto-generated method stub
-		
+		return null;
 	}
 
 	@Override
-	public void visit(RegularRule regularRule) {
+	public Void visit(RegularRule regularRule) {
 		if(regularRule.getNonTerminal().isPresent())
 			worklist.add(regularRule.getNonTerminal().get());
 		
 		result.append(regularRule.toString());
+		return null;
 	}
 
 	@Override
