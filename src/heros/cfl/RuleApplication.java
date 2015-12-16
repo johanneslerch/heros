@@ -12,12 +12,14 @@ package heros.cfl;
 
 public class RuleApplication {
 
-	private NonTerminal nonTerminal;
-	private Rule rule;
+	public final NonTerminal nonTerminal;
+	public final Rule appliedRule;
+	public final Rule result;
 	
-	public RuleApplication(NonTerminal nonTerminal, Rule rule) {
+	public RuleApplication(NonTerminal nonTerminal, Rule rule, Rule result) {
 		this.nonTerminal = nonTerminal;
-		this.rule = rule;
+		this.appliedRule = rule;
+		this.result = result;
 	}
 	
 	@Override
@@ -25,7 +27,8 @@ public class RuleApplication {
 		final int prime = 31;
 		int result = 1;
 		result = prime * result + ((nonTerminal == null) ? 0 : nonTerminal.hashCode());
-		result = prime * result + ((rule == null) ? 0 : rule.hashCode());
+		result = prime * result + ((this.result == null) ? 0 : this.result.hashCode());
+		result = prime * result + ((appliedRule == null) ? 0 : appliedRule.hashCode());
 		return result;
 	}
 	
@@ -43,16 +46,21 @@ public class RuleApplication {
 				return false;
 		} else if (!nonTerminal.equals(other.nonTerminal))
 			return false;
-		if (rule == null) {
-			if (other.rule != null)
+		if (result == null) {
+			if (other.result != null)
 				return false;
-		} else if (!rule.equals(other.rule))
+		} else if (!result.equals(other.result))
+			return false;
+		if (appliedRule == null) {
+			if (other.appliedRule != null)
+				return false;
+		} else if (!appliedRule.equals(other.appliedRule))
 			return false;
 		return true;
 	}
 	
 	@Override
 	public String toString() {
-		return nonTerminal + "→"+rule;
+		return nonTerminal + "→"+appliedRule;
 	}
 }

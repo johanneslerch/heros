@@ -14,12 +14,16 @@ import com.google.common.base.Optional;
 
 public interface Rule {
 
-	boolean containsConsumers();
+	boolean isSolved();
 
 	boolean isPossible();
 
 	<T> T accept(RuleVisitor<T> ruleVisitor);
 
 	Rule append(Terminal... terminals);
+
+	boolean containsNonTerminals();
+
+	Terminal[] getTerminals();
 
 }

@@ -30,7 +30,7 @@ public class SearchTreeNode {
 	}
 	
 	public boolean isSolution() {
-		return !rule.containsConsumers();
+		return !rule.isSolved();
 	}
 	
 	public boolean isPossible() {
@@ -40,34 +40,45 @@ public class SearchTreeNode {
 	public Collection<? extends SearchTreeNode> expand(final Option<SearchTreeViewer> treeViewer) {
 		assert childs == null;
 		
-		childs = rule.accept(new RuleVisitor<List<SearchTreeNode>>() {
+		List<RuleApplication> list = rule.accept(new RuleVisitor<List<RuleApplication>>() {
 			@Override
-			public List<SearchTreeNode> visit(ContextFreeRule contextFreeRule) {
+			public List<RuleApplication> visit(ContextFreeRule contextFreeRule) {
 				// TODO Auto-generated method stub
 				return null;
 			}
 
 			@Override
-			public List<SearchTreeNode> visit(NonLinearRule nonLinearRule) {
-				// TODO Auto-generated method stub
-				return null;
+			public List<RuleApplication> visit(NonLinearRule nonLinearRule) {
+				List<RuleApplication> result = Lists.newLinkedList();
+				List<RuleApplication> rightApplied = nonLinearRule.getRight().accept(this);
+				for(RuleApplication appl : rightApplied) {
+					if(appl.result.containsNonTerminals())
+						result.add(new RuleApplication(appl.nonTerminal, appl.appliedRule, new NonLinearRule(nonLinearRule.getLeft(), appl.result)));
+					else
+						result.add(new RuleApplication(appl.nonTerminal, appl.appliedRule, nonLinearRule.getLeft().append(appl.result.getTerminals())));
+				}
+				return result;
 			}
 
 			@Override
-			public List<SearchTreeNode> visit(RegularRule regularRule) {
-				final List<SearchTreeNode> result = Lists.newLinkedList();
+			public List<RuleApplication> visit(RegularRule regularRule) {
+				final List<RuleApplication> result = Lists.newLinkedList();
 				if(regularRule.getNonTerminal().isPresent()) {
 					for(Rule rule : regularRule.getNonTerminal().get().getRules()) {
-						SearchTreeNode newNode = new SearchTreeNode(regularRule.applyForNonTerminal(rule));
-						result.add(newNode);
-						notifyListenersAboutNewChild(newNode);
-						if(treeViewer.isSome())
-							treeViewer.some().add(SearchTreeNode.this, newNode, new RuleApplication(regularRule.getNonTerminal().get(), rule));
+						result.add(new RuleApplication(regularRule.getNonTerminal().get(), rule, regularRule.applyForNonTerminal(rule)));
 					}				
 				}
 				return result;
 			}
 		});
+		childs = Lists.newLinkedList();
+		for(RuleApplication appl : list) {
+			SearchTreeNode newChild = new SearchTreeNode(appl.result);
+			childs.add(newChild);
+			notifyListenersAboutNewChild(newChild);
+			if(treeViewer.isSome())
+				treeViewer.some().add(SearchTreeNode.this, newChild, appl);
+		}
 		return childs;
 	}
 	
@@ -88,8 +99,7 @@ public class SearchTreeNode {
 			
 			@Override
 			public PrefixIterator visit(NonLinearRule nonLinearRule) {
-				// TODO Auto-generated method stub
-				return null;
+				return nonLinearRule.getRight().accept(this);
 			}
 			
 			@Override
@@ -110,8 +120,7 @@ public class SearchTreeNode {
 
 			@Override
 			public Boolean visit(NonLinearRule nonLinearRule) {
-				// TODO Auto-generated method stub
-				return null;
+				return nonLinearRule.getRight().accept(this);
 			}
 
 			@Override

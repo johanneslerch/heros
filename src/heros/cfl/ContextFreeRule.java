@@ -10,12 +10,11 @@
  ******************************************************************************/
 package heros.cfl;
 
-import com.google.common.base.Optional;
 
 public class ContextFreeRule implements Rule {
 
 	@Override
-	public boolean containsConsumers() {
+	public boolean isSolved() {
 		// TODO Auto-generated method stub
 		return false;
 	}
@@ -33,6 +32,18 @@ public class ContextFreeRule implements Rule {
 
 	@Override
 	public Rule append(Terminal... terminals) {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+	@Override
+	public boolean containsNonTerminals() {
+		// TODO Auto-generated method stub
+		return false;
+	}
+
+	@Override
+	public Terminal[] getTerminals() {
 		// TODO Auto-generated method stub
 		return null;
 	}

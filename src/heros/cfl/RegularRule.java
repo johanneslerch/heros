@@ -17,8 +17,8 @@ import com.google.common.base.Optional;
 
 public class RegularRule implements Rule {
 
-	private Optional<NonTerminal> nonTerminal;
-	private Terminal[] terminals;
+	private final Optional<NonTerminal> nonTerminal;
+	private final Terminal[] terminals;
 
 	public RegularRule(Terminal... terminals) {
 		this.nonTerminal = Optional.absent();
@@ -44,7 +44,7 @@ public class RegularRule implements Rule {
 	}
 
 	@Override
-	public boolean containsConsumers() {
+	public boolean isSolved() {
 		for(Terminal t : terminals)
 			if(t.isConsumer())
 				return true;
@@ -83,6 +83,12 @@ public class RegularRule implements Rule {
 		return rule.append(terminals);
 	}
 
+	@Override
+	public boolean containsNonTerminals() {
+		return nonTerminal.isPresent();
+	}
+	
+	@Override
 	public Terminal[] getTerminals() {
 		return terminals;
 	}

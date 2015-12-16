@@ -145,19 +145,30 @@ public class TestCfl {
 		solvable(consumeFOnX);
 	}
 	
-	private void solvable(RegularRule rule) {
+	@Test
+	public void regularNonLinear() {
+		// X: Xg̅ | g̅
+		// Y: Yg | f
+		x.addRule(new RegularRule(x, new ConsumingTerminal("g")));
+		x.addRule(new RegularRule(new ConsumingTerminal("g")));
+		y.addRule(new RegularRule(y, new ProducingTerminal("g")));
+		y.addRule(new RegularRule(new ProducingTerminal("f")));
+		solvable(new NonLinearRule(new RegularRule(y), consumeFOnX));
+	}
+	
+	private void solvable(Rule rule) {
 		assertResult(Solvable, rule);
 	}
 	
-	private void unsolvable(RegularRule rule) {
+	private void unsolvable(Rule rule) {
 		assertResult(NotSolvable, rule);
 	}
 	
-	private void unknown(RegularRule rule) {
+	private void unknown(Rule rule) {
 		assertResult(Unknown, rule);
 	}
 
-	private void assertResult(SolverResult expected, RegularRule rule) {
+	private void assertResult(SolverResult expected, Rule rule) {
 		SearchTreeViewer treeViewer = new SearchTreeViewer();
 		SearchTree searchTree = new SearchTree(rule, Option.some(treeViewer));
 		SolverResult actual = searchTree.search();

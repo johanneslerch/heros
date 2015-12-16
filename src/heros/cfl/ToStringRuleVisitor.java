@@ -57,7 +57,8 @@ public class ToStringRuleVisitor implements RuleVisitor<Void> {
 
 	@Override
 	public Void visit(NonLinearRule nonLinearRule) {
-		// TODO Auto-generated method stub
+		nonLinearRule.getLeft().accept(this);
+		nonLinearRule.getRight().accept(this);
 		return null;
 	}
 

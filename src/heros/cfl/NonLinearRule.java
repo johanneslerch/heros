@@ -10,21 +10,20 @@
  ******************************************************************************/
 package heros.cfl;
 
-import com.google.common.base.Optional;
 
 public class NonLinearRule implements Rule {
 
-	private Rule left;
-	private Rule right;
+	private final Rule left;
+	private final Rule right;
 
 	public NonLinearRule(Rule left, Rule right) {
 		this.left = left;
 		this.right = right;
 	}
-	
+
 	@Override
-	public boolean containsConsumers() {
-		return right.containsConsumers();
+	public boolean isSolved() {
+		return right.isSolved();
 	}
 
 	@Override
@@ -39,7 +38,61 @@ public class NonLinearRule implements Rule {
 
 	@Override
 	public Rule append(Terminal... terminals) {
-		// TODO Auto-generated method stub
-		return null;
+		return new NonLinearRule(left, right.append(terminals));
 	}
+
+	public Rule getLeft() {
+		return left;
+	}
+	
+	public Rule getRight() {
+		return right;
+	}
+
+	@Override
+	public boolean containsNonTerminals() {
+		return right.containsNonTerminals() || left.containsNonTerminals();
+	}
+
+	@Override
+	public Terminal[] getTerminals() {
+		throw new IllegalStateException("Only allowed to be called when rule does not contain non-terminals. A non-linear rule should never exist without non-terminals on left and right side.");
+	}
+
+	@Override
+	public String toString() {
+		return left.toString()+right.toString();
+	}
+	
+	@Override
+	public int hashCode() {
+		final int prime = 31;
+		int result = 1;
+		result = prime * result + ((left == null) ? 0 : left.hashCode());
+		result = prime * result + ((right == null) ? 0 : right.hashCode());
+		return result;
+	}
+
+	@Override
+	public boolean equals(Object obj) {
+		if (this == obj)
+			return true;
+		if (obj == null)
+			return false;
+		if (getClass() != obj.getClass())
+			return false;
+		NonLinearRule other = (NonLinearRule) obj;
+		if (left == null) {
+			if (other.left != null)
+				return false;
+		} else if (!left.equals(other.left))
+			return false;
+		if (right == null) {
+			if (other.right != null)
+				return false;
+		} else if (!right.equals(other.right))
+			return false;
+		return true;
+	}
+
 }
