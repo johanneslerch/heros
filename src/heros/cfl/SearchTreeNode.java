@@ -30,7 +30,7 @@ public class SearchTreeNode {
 	}
 	
 	public boolean isSolution() {
-		return !rule.isSolved();
+		return rule.isSolved();
 	}
 	
 	public boolean isPossible() {
@@ -43,8 +43,7 @@ public class SearchTreeNode {
 		List<RuleApplication> list = rule.accept(new RuleVisitor<List<RuleApplication>>() {
 			@Override
 			public List<RuleApplication> visit(ContextFreeRule contextFreeRule) {
-				// TODO Auto-generated method stub
-				return null;
+				throw new IllegalStateException();
 			}
 
 			@Override
@@ -83,7 +82,7 @@ public class SearchTreeNode {
 	}
 	
 	protected void notifyListenersAboutNewChild(SearchTreeNode child) {
-		for(SubTreeListener listener : listeners) {
+		for(SubTreeListener listener : Lists.newLinkedList(listeners)) {
 			listener.newChildren(this, child);
 		}
 	}

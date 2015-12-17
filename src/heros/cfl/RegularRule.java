@@ -47,27 +47,18 @@ public class RegularRule implements Rule {
 	public boolean isSolved() {
 		for(Terminal t : terminals)
 			if(t.isConsumer())
-				return true;
-		return false;
+				return false;
+		return true;
 	}
 
 	@Override
 	public boolean isPossible() {
-		int firstConsumer = -1;
-		for(int i=0; i<terminals.length; i++) {
-			if(terminals[i].isConsumer()) {
-				if(firstConsumer < 0)
-					firstConsumer = i;
-				int correspondingProducerIndex = 2*firstConsumer-i-1;
-				if(correspondingProducerIndex >= 0) {
-					if(!terminals[correspondingProducerIndex].isProducing((ConsumingTerminal) terminals[i]))
-						return false;
-				}	
-				else
-					return nonTerminal.isPresent();
-			}
+		switch(TerminalUtil.isBalanced(terminals)) {
+		case BALANCED: return true;
+		default:
+		case IMBALANCED: return false;
+		case MORE_CONSUMERS: return nonTerminal.isPresent();
 		}
-		return true;
 	}
 
 	@Override
@@ -95,23 +86,7 @@ public class RegularRule implements Rule {
 	
 	@Override
 	public Rule append(Terminal... terminals) {
-		if(terminals.length == 0)
-			return this;
-		if(this.terminals.length == 0)
-			return new RegularRule(nonTerminal, terminals);
-		
-		int skip = 0;
-		for(int i=0; i<terminals.length; i++) {
-			if(terminals[i].isConsumer() && this.terminals.length>i && this.terminals[this.terminals.length-i-1].isProducing((ConsumingTerminal) terminals[i]))  {
-				skip++;
-			}
-			else
-				break;
-		}
-		
-		Terminal[] newTerminals = Arrays.copyOf(this.terminals, this.terminals.length+terminals.length -skip*2);
-		System.arraycopy(terminals, skip, newTerminals, this.terminals.length-skip, terminals.length-skip);
-		return new RegularRule(nonTerminal, newTerminals);
+		return new RegularRule(nonTerminal, TerminalUtil.append(this.terminals, terminals));
 	}
 
 	@Override

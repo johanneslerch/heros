@@ -10,12 +10,10 @@
  ******************************************************************************/
 package heros.cfl;
 
+import java.util.Collection;
 import java.util.List;
-import java.util.Set;
 
-import com.google.common.base.Joiner;
 import com.google.common.collect.Lists;
-import com.google.common.collect.Sets;
 
 public class NonTerminal {
 
@@ -35,7 +33,11 @@ public class NonTerminal {
 		return representation.toString();
 	}
 
-	public List<Rule> getRules() {
+	public Collection<Rule> getRules() {
 		return rules;
+	}
+
+	public Object getRepresentation() {
+		return representation;
 	}
 }

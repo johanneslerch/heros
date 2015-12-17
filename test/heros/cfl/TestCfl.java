@@ -19,17 +19,26 @@ import fj.data.Option;
 
 public class TestCfl {
 
-	NonTerminal x = new NonTerminal("X");
-	NonTerminal y = new NonTerminal("Y");
-	NonTerminal z = new NonTerminal("Z");
-	RegularRule consumeFOnX = new RegularRule(x, new ConsumingTerminal("f"));
+	ProducingTerminal f = new ProducingTerminal("f");
+	ConsumingTerminal f̅ = new ConsumingTerminal("f");
+	ProducingTerminal g = new ProducingTerminal("g");
+	ConsumingTerminal g̅ = new ConsumingTerminal("g");
+	ProducingTerminal h = new ProducingTerminal("h");
+	ConsumingTerminal h̄ = new ConsumingTerminal("h");
+	ProducingTerminal i = new ProducingTerminal("i");
+
+	NonTerminal X = new NonTerminal("X");
+	NonTerminal Y = new NonTerminal("Y");
+	NonTerminal Z = new NonTerminal("Z");
+	RegularRule consumeFOnX = new RegularRule(X, f̅);
+	
 	
 	@Test
 	public void regularTrivialSolvable1() {
 		// X: f | g
 		// solvable X-f ?
-		x.addRule(new RegularRule(new ProducingTerminal("f")));
-		x.addRule(new RegularRule(new ProducingTerminal("g")));
+		X.addRule(new RegularRule(f));
+		X.addRule(new RegularRule(g));
 		solvable(consumeFOnX);
 	}
 	
@@ -38,9 +47,9 @@ public class TestCfl {
 		// X: Y
 		// Y: f | g
 		// solvable X-f ?
-		x.addRule(new RegularRule(y));
-		y.addRule(new RegularRule(new ProducingTerminal("f")));
-		y.addRule(new RegularRule(new ProducingTerminal("g")));
+		X.addRule(new RegularRule(Y));
+		Y.addRule(new RegularRule(f));
+		Y.addRule(new RegularRule(g));
 		solvable(consumeFOnX);
 	}
 	
@@ -50,10 +59,10 @@ public class TestCfl {
 		// Y: Z
 		// Z: f
 		// solvable X-f ?
-		x.addRule(new RegularRule(x));
-		x.addRule(new RegularRule(y));
-		y.addRule(new RegularRule(z));
-		z.addRule(new RegularRule(new ProducingTerminal("f")));
+		X.addRule(new RegularRule(X));
+		X.addRule(new RegularRule(Y));
+		Y.addRule(new RegularRule(Z));
+		Z.addRule(new RegularRule(f));
 		solvable(consumeFOnX);
 	}
 	
@@ -62,9 +71,9 @@ public class TestCfl {
 		// X: X -g | Y g
 		// Y: Y f
 		// solvable X-f ?
-		x.addRule(new RegularRule(x, new ConsumingTerminal("g")));
-		x.addRule(new RegularRule(y, new ProducingTerminal("g")));
-		y.addRule(new RegularRule(y, new ProducingTerminal("f")));
+		X.addRule(new RegularRule(X, g̅));
+		X.addRule(new RegularRule(Y, g));
+		Y.addRule(new RegularRule(Y, f));
 		solvable(consumeFOnX);
 	}
 	
@@ -73,9 +82,9 @@ public class TestCfl {
 		// X: X -g | Y h
 		// Y: Y f
 		// solvable X-f ?
-		x.addRule(new RegularRule(x, new ConsumingTerminal("g")));
-		x.addRule(new RegularRule(y, new ProducingTerminal("h")));
-		y.addRule(new RegularRule(y, new ProducingTerminal("f")));
+		X.addRule(new RegularRule(X, g̅));
+		X.addRule(new RegularRule(Y, h));
+		Y.addRule(new RegularRule(Y, f));
 		unsolvable(consumeFOnX);
 	}
 
@@ -83,9 +92,9 @@ public class TestCfl {
 	public void regularReadingLoopSolvable() {
 		// X: Xg̅ | Yg
 		// Y: f
-		x.addRule(new RegularRule(x, new ConsumingTerminal("g")));
-		x.addRule(new RegularRule(y, new ProducingTerminal("g")));
-		y.addRule(new RegularRule(new ProducingTerminal("f")));
+		X.addRule(new RegularRule(X, g̅));
+		X.addRule(new RegularRule(Y, g));
+		Y.addRule(new RegularRule(f));
 		solvable(consumeFOnX);
 	}
 	
@@ -93,9 +102,9 @@ public class TestCfl {
 	public void regularReadingTwoFieldsInLoopUnsolvable() {
 		// X: Xg̅f̅ | Yg
 		// Y: f
-		x.addRule(new RegularRule(x, new ConsumingTerminal("g"), new ConsumingTerminal("f")));
-		x.addRule(new RegularRule(y, new ProducingTerminal("g")));
-		y.addRule(new RegularRule(new ProducingTerminal("f")));
+		X.addRule(new RegularRule(X, g̅, f̅));
+		X.addRule(new RegularRule(Y, g));
+		Y.addRule(new RegularRule(f));
 		unsolvable(consumeFOnX);
 	}
 
@@ -104,11 +113,11 @@ public class TestCfl {
 		// X: Xg̅f̅ | Yg | Zgg
 		// Y: f
 		// Z: ff
-		x.addRule(new RegularRule(x, new ConsumingTerminal("g"), new ConsumingTerminal(("f"))));
-		x.addRule(new RegularRule(y, new ProducingTerminal("g")));
-		x.addRule(new RegularRule(z, new ProducingTerminal("g"), new ProducingTerminal("g")));
-		y.addRule(new RegularRule(new ProducingTerminal("f")));
-		z.addRule(new RegularRule(new ProducingTerminal("f"), new ProducingTerminal("f")));
+		X.addRule(new RegularRule(X, g̅, f̅));
+		X.addRule(new RegularRule(Y, g));
+		X.addRule(new RegularRule(Z, g, g));
+		Y.addRule(new RegularRule(f));
+		Z.addRule(new RegularRule(f, f));
 		unsolvable(consumeFOnX);
 	}
 	
@@ -116,10 +125,10 @@ public class TestCfl {
 	public void regularLoopUnsolvable() {
 		//X: Xg̅f̅ | Zfgfg
 		//Z: i
-		x.addRule(new RegularRule(x, new ConsumingTerminal("g"), new ConsumingTerminal("f")));
-		x.addRule(new RegularRule(z, new ProducingTerminal("f"), new ProducingTerminal("g"), new ProducingTerminal("f"), new ProducingTerminal("g")));
-		z.addRule(new RegularRule(new ProducingTerminal("i")));
-		unsolvable(new RegularRule(x, new ConsumingTerminal("h")));
+		X.addRule(new RegularRule(X, g̅, f̅));
+		X.addRule(new RegularRule(Z, f, g, f, g));
+		Z.addRule(new RegularRule(i));
+		unsolvable(new RegularRule(X, h̄));
 	}
 	
 	@Test
@@ -127,10 +136,10 @@ public class TestCfl {
 		// X: Yg̅ | Zggg
 		// Y: Xg̅ 
 		// Z: f
-		x.addRule(new RegularRule(y, new ConsumingTerminal("g")));
-		x.addRule(new RegularRule(z, new ProducingTerminal("g"), new ProducingTerminal("g"), new ProducingTerminal("g")));
-		y.addRule(new RegularRule(x, new ConsumingTerminal("g")));
-		z.addRule(new RegularRule(new ProducingTerminal("f")));
+		X.addRule(new RegularRule(Y, g̅));
+		X.addRule(new RegularRule(Z, g, g, g));
+		Y.addRule(new RegularRule(X, g̅));
+		Z.addRule(new RegularRule(f));
 		unsolvable(consumeFOnX);
 	}
 	
@@ -138,22 +147,101 @@ public class TestCfl {
 	public void regularWritingAndConsumingLoops() {
 		// X: Xg̅ | Y
 		// Y: Yg | f
-		x.addRule(new RegularRule(x, new ConsumingTerminal("g")));
-		x.addRule(new RegularRule(y));
-		y.addRule(new RegularRule(y, new ProducingTerminal("g")));
-		y.addRule(new RegularRule(new ProducingTerminal("f")));
+		X.addRule(new RegularRule(X, g̅));
+		X.addRule(new RegularRule(Y));
+		Y.addRule(new RegularRule(Y, g));
+		Y.addRule(new RegularRule(f));
 		solvable(consumeFOnX);
 	}
 	
 	@Test
-	public void regularNonLinear() {
+	public void regularNonLinear1() {
 		// X: Xg̅ | g̅
 		// Y: Yg | f
-		x.addRule(new RegularRule(x, new ConsumingTerminal("g")));
-		x.addRule(new RegularRule(new ConsumingTerminal("g")));
-		y.addRule(new RegularRule(y, new ProducingTerminal("g")));
-		y.addRule(new RegularRule(new ProducingTerminal("f")));
-		solvable(new NonLinearRule(new RegularRule(y), consumeFOnX));
+		X.addRule(new RegularRule(X, g̅));
+		X.addRule(new RegularRule(g̅));
+		Y.addRule(new RegularRule(Y, g));
+		Y.addRule(new RegularRule(f));
+		solvable(new NonLinearRule(new RegularRule(Y), consumeFOnX));
+	}
+	
+	@Test
+	public void regularNonLinear2() {
+		// X: Xf̅ | f̅
+		// Y: Yff | g
+		X.addRule(new RegularRule(X, f̅));
+		X.addRule(new RegularRule(f̅));
+		Y.addRule(new RegularRule(Y, f, f));
+		Y.addRule(new RegularRule(g));
+		solvable(new NonLinearRule(new RegularRule(Y), new RegularRule(X, g̅)));
+	}
+	
+	@Test
+	public void regularNonLinear3a() {
+		// X: ZY | Y
+		// Y: Yg̅ | g̅
+		// Z: Zg | fg
+		X.addRule(new NonLinearRule(new RegularRule(Z), new RegularRule(Y)));
+		X.addRule(new RegularRule(Y));
+		Y.addRule(new RegularRule(Y, g̅));
+		Y.addRule(new RegularRule(g̅));
+		Z.addRule(new RegularRule(Z, g));
+		Z.addRule(new RegularRule(f, g));
+		solvable(consumeFOnX);
+	}
+	
+	@Test
+	public void regularNonLinear3b() {
+		// X: Y | ZY
+		// Y: Yg̅ | g̅
+		// Z: Zg | fg
+		X.addRule(new RegularRule(Y));
+		X.addRule(new NonLinearRule(new RegularRule(Z), new RegularRule(Y)));
+		Y.addRule(new RegularRule(Y, g̅));
+		Y.addRule(new RegularRule(g̅));
+		Z.addRule(new RegularRule(Z, g));
+		Z.addRule(new RegularRule(f, g));
+		solvable(consumeFOnX);
+	}
+	
+	@Test
+	public void contextFree1() {
+		// X: fXg̅ | Y
+		// Y: Yg | g
+		X.addRule(new ContextFreeRule(new Terminal[] {f}, X, new Terminal[] {g̅}));
+		X.addRule(new RegularRule(Y));
+		Y.addRule(new RegularRule(Y, g));
+		Y.addRule(new RegularRule(g));
+		solvable(consumeFOnX);
+	}
+	
+	@Test
+	public void contextFree2() {
+		// X: fXg̅g̅ | fXg | fg
+		X.addRule(new ContextFreeRule(new Terminal[] {f}, X, new Terminal[] {g̅, g̅}));
+		X.addRule(new ContextFreeRule(new Terminal[] {f}, X, new Terminal[] {g}));
+		X.addRule(new RegularRule(f, g));
+		solvable(consumeFOnX);
+	}
+	
+	@Test
+	public void contextFreeSolvableInOverApproximation1() {
+		// X: f̅Xg | f̅g
+		// Y: f
+		X.addRule(new ContextFreeRule(new Terminal[] {f̅}, X, new Terminal[] {g}));
+		X.addRule(new RegularRule(f̅, g));
+		Y.addRule(new RegularRule(f));
+		solvable(new NonLinearRule(new RegularRule(Y), new RegularRule(X, g̅, g̅)));
+	}
+	
+	@Test
+	public void contextFreeSolvableInOverApproximation2() {
+		// X: f̅Xg | f̅g
+		// Y: ff
+		X.addRule(new ContextFreeRule(new Terminal[] {f̅}, X, new Terminal[] {g}));
+		X.addRule(new RegularRule(f̅, g));
+		Y.addRule(new RegularRule(f, f));
+		solvable(new NonLinearRule(new RegularRule(Y), new RegularRule(X, g̅, g̅, g̅)));
 	}
 	
 	private void solvable(Rule rule) {
@@ -175,7 +263,7 @@ public class TestCfl {
 		
 		System.out.println(treeViewer);
 		if(!expected.equals(actual)) {
-			fail(rule+" should be "+expected+", but was "+actual+". Given the rule set:\n"+rule.accept(new ToStringRuleVisitor(rule)));
+			fail(rule+" should be "+expected+", but was "+actual+". Given the rule set:\n"+new ToStringRuleVisitor(rule));
 		}
 	}
 }

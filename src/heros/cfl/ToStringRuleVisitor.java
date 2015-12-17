@@ -51,7 +51,8 @@ public class ToStringRuleVisitor implements RuleVisitor<Void> {
 
 	@Override
 	public Void visit(ContextFreeRule contextFreeRule) {
-		// TODO Auto-generated method stub
+		worklist.add(contextFreeRule.getNonTerminal());
+		result.append(contextFreeRule.toString());
 		return null;
 	}
 

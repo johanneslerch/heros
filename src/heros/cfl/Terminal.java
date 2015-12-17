@@ -15,5 +15,4 @@ public interface Terminal {
 	boolean isConsumer();
 
 	boolean isProducing(ConsumingTerminal consumingTerminal);
-
 }
