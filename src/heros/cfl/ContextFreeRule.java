@@ -52,7 +52,7 @@ public class ContextFreeRule implements Rule {
 	public Rule append(Terminal... terminals) {
 		NonTerminal nonTerminalReturn = new NonTerminal("["+toString()+"]");
 		nonTerminalReturn.addRule(new RegularRule(nonTerminal));
-		nonTerminalReturn.addRule(new NonLinearRule(new RegularRule(leftTerminals), new RegularRule(nonTerminal)));
+		nonTerminalReturn.addRule(new NonLinearRule(new ConstantRule(leftTerminals), new RegularRule(nonTerminal)));
 		return new RegularRule(nonTerminalReturn, TerminalUtil.append(rightTerminals, terminals));
 	}
 

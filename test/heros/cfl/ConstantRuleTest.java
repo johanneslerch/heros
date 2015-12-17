@@ -16,83 +16,83 @@ import static org.junit.Assert.assertTrue;
 
 import org.junit.Test;
 
-public class RegularRuleTest {
+public class ConstantRuleTest {
 
-	private RegularRule sut;
+	private ConstantRule sut;
 
 	@Test
 	public void oneMatch() {
-		sut = new RegularRule(new ProducingTerminal("a"), new ConsumingTerminal("a"));
+		sut = new ConstantRule(new ProducingTerminal("a"), new ConsumingTerminal("a"));
 		assertTrue(sut.isPossible());
 	}
 	
 	@Test
 	public void twoMatches() {
-		sut = new RegularRule(new ProducingTerminal("a"), new ProducingTerminal("b"), new ConsumingTerminal("b"), new ConsumingTerminal("a"));
+		sut = new ConstantRule(new ProducingTerminal("a"), new ProducingTerminal("b"), new ConsumingTerminal("b"), new ConsumingTerminal("a"));
 		assertTrue(sut.isPossible());
 	}
 	
 	@Test
 	public void oneMismatch() {
-		sut = new RegularRule(new ProducingTerminal("a"), new ConsumingTerminal("b"));
+		sut = new ConstantRule(new ProducingTerminal("a"), new ConsumingTerminal("b"));
 		assertFalse(sut.isPossible());
 	}
 	
 	@Test
 	public void twoMismatchFirst() {
-		sut = new RegularRule(new ProducingTerminal("a"), new ProducingTerminal("b"), new ConsumingTerminal("b"), new ConsumingTerminal("c"));
+		sut = new ConstantRule(new ProducingTerminal("a"), new ProducingTerminal("b"), new ConsumingTerminal("b"), new ConsumingTerminal("c"));
 		assertFalse(sut.isPossible());
 	}
 	
 	@Test
 	public void twoMismatchSecond() {
-		sut = new RegularRule(new ProducingTerminal("a"), new ProducingTerminal("b"), new ConsumingTerminal("c"), new ConsumingTerminal("a"));
+		sut = new ConstantRule(new ProducingTerminal("a"), new ProducingTerminal("b"), new ConsumingTerminal("c"), new ConsumingTerminal("a"));
 		assertFalse(sut.isPossible());
 	}
 	
 	@Test
 	public void wrongOrder() {
-		sut = new RegularRule(new ProducingTerminal("a"), new ProducingTerminal("b"), new ConsumingTerminal("a"), new ConsumingTerminal("b"));
+		sut = new ConstantRule(new ProducingTerminal("a"), new ProducingTerminal("b"), new ConsumingTerminal("a"), new ConsumingTerminal("b"));
 		assertFalse(sut.isPossible());
 	}
 	
 	@Test
 	public void moreConsumers() {
-		sut = new RegularRule(new ProducingTerminal("a"), new ConsumingTerminal("a"), new ConsumingTerminal("b"));
-		assertTrue(sut.isPossible());
+		sut = new ConstantRule(new ProducingTerminal("a"), new ConsumingTerminal("a"), new ConsumingTerminal("b"));
+		assertFalse(sut.isPossible());
 	}
 	
 	@Test
 	public void moreProducers() {
-		sut = new RegularRule(new ProducingTerminal("a"), new ProducingTerminal("b"), new ConsumingTerminal("b"));
+		sut = new ConstantRule(new ProducingTerminal("a"), new ProducingTerminal("b"), new ConsumingTerminal("b"));
 		assertTrue(sut.isPossible());
 	}
 	
 	@Test
 	public void appendMatch() {
-		sut = new RegularRule(new ProducingTerminal("a"));
+		sut = new ConstantRule(new ProducingTerminal("a"));
 		Rule actual = sut.append(new ConsumingTerminal("a"));
-		assertEquals(new RegularRule(), actual);
+		assertEquals(new ConstantRule(), actual);
 	}
 	
 	@Test
-	public void appendMoreConsumers() {
-		sut = new RegularRule(new ProducingTerminal("a"));
+	public void ConstantRule() {
+		sut = new ConstantRule(new ProducingTerminal("a"));
 		Rule actual = sut.append(new ConsumingTerminal("a"), new ConsumingTerminal("b"));
-		assertEquals(new RegularRule(new ConsumingTerminal("b")), actual);
+		assertEquals(new ConstantRule(new ConsumingTerminal("b")), actual);
 	}
 	
 	@Test
 	public void appendMoreProducers() {
-		sut = new RegularRule(new ProducingTerminal("a"), new ProducingTerminal("b"));
+		sut = new ConstantRule(new ProducingTerminal("a"), new ProducingTerminal("b"));
 		Rule actual = sut.append(new ConsumingTerminal("b"));
-		assertEquals(new RegularRule(new ProducingTerminal("a")), actual);
+		assertEquals(new ConstantRule(new ProducingTerminal("a")), actual);
 	}
 	
 	@Test
 	public void appendMismatch() {
-		sut = new RegularRule(new ProducingTerminal("a"));
+		sut = new ConstantRule(new ProducingTerminal("a"));
 		Rule actual = sut.append(new ConsumingTerminal("b"));
-		assertEquals(new RegularRule(new ProducingTerminal("a"), new ConsumingTerminal("b")), actual);
+		assertEquals(new ConstantRule(new ProducingTerminal("a"), new ConsumingTerminal("b")), actual);
 	}
 }

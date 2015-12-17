@@ -62,12 +62,15 @@ public class SearchTreeNode {
 			@Override
 			public List<RuleApplication> visit(RegularRule regularRule) {
 				final List<RuleApplication> result = Lists.newLinkedList();
-				if(regularRule.getNonTerminal().isPresent()) {
-					for(Rule rule : regularRule.getNonTerminal().get().getRules()) {
-						result.add(new RuleApplication(regularRule.getNonTerminal().get(), rule, regularRule.applyForNonTerminal(rule)));
-					}				
-				}
+				for(Rule rule : regularRule.getNonTerminal().getRules()) {
+					result.add(new RuleApplication(regularRule.getNonTerminal(), rule, regularRule.applyForNonTerminal(rule)));
+				}				
 				return result;
+			}
+
+			@Override
+			public List<RuleApplication> visit(ConstantRule constantRule) {
+				throw new IllegalStateException();
 			}
 		});
 		childs = Lists.newLinkedList();
@@ -103,8 +106,12 @@ public class SearchTreeNode {
 			
 			@Override
 			public PrefixIterator visit(ContextFreeRule contextFreeRule) {
-				// TODO Auto-generated method stub
-				return null;
+				throw new IllegalStateException();
+			}
+
+			@Override
+			public PrefixIterator visit(ConstantRule constantRule) {
+				throw new IllegalStateException();
 			}
 		});
 	}
@@ -113,8 +120,7 @@ public class SearchTreeNode {
 		return rule.accept(new RuleVisitor<Boolean>() {
 			@Override
 			public Boolean visit(ContextFreeRule contextFreeRule) {
-				// TODO Auto-generated method stub
-				return null;
+				throw new IllegalStateException();
 			}
 
 			@Override
@@ -124,7 +130,12 @@ public class SearchTreeNode {
 
 			@Override
 			public Boolean visit(RegularRule regularRule) {
-				Terminal[] terminals = regularRule.getTerminals();
+				return visit(regularRule.getConstantRule());
+			}
+
+			@Override
+			public Boolean visit(ConstantRule constantRule) {
+				Terminal[] terminals = constantRule.getTerminals();
 				if(terminals.length < suffix.length)
 					return false;
 				for(int i=0; i<suffix.length; i++) {

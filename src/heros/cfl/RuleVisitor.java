@@ -18,4 +18,6 @@ public interface RuleVisitor<T> {
 
 	T visit(RegularRule regularRule);
 
+	T visit(ConstantRule constantRule);
+
 }

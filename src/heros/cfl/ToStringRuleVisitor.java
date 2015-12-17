@@ -65,10 +65,14 @@ public class ToStringRuleVisitor implements RuleVisitor<Void> {
 
 	@Override
 	public Void visit(RegularRule regularRule) {
-		if(regularRule.getNonTerminal().isPresent())
-			worklist.add(regularRule.getNonTerminal().get());
-		
+		worklist.add(regularRule.getNonTerminal());		
 		result.append(regularRule.toString());
+		return null;
+	}
+	
+	@Override
+	public Void visit(ConstantRule constantRule) {
+		result.append(constantRule.toString());
 		return null;
 	}
 

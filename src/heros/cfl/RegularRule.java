@@ -10,54 +10,41 @@
  ******************************************************************************/
 package heros.cfl;
 
-import java.util.Arrays;
-
 import com.google.common.base.Joiner;
-import com.google.common.base.Optional;
+
 
 public class RegularRule implements Rule {
 
-	private final Optional<NonTerminal> nonTerminal;
-	private final Terminal[] terminals;
+	private final NonTerminal nonTerminal;
+	private final ConstantRule constantRule;
 
-	public RegularRule(Terminal... terminals) {
-		this.nonTerminal = Optional.absent();
-		this.terminals = terminals;
-	}
-
-	public RegularRule(NonTerminal nonTerminal, Terminal... terminals) {
-		this.nonTerminal = Optional.of(nonTerminal);
-		this.terminals = terminals;
-	}
-
-	public RegularRule(Optional<NonTerminal> nonTerminal, Terminal[] terminals) {
+	public RegularRule(NonTerminal nonTerminal, ConstantRule constantRule) {
 		this.nonTerminal = nonTerminal;
-		this.terminals = terminals;
+		this.constantRule = constantRule;
+	}
+	
+	public RegularRule(NonTerminal nonTerminal, Terminal... terminals) {
+		this.nonTerminal = nonTerminal;
+		this.constantRule = new ConstantRule(terminals);
 	}
 
 	@Override
 	public String toString() {
-		if(!nonTerminal.isPresent() && terminals.length==0)
-			return "\u03B5";
-		else
-			return (nonTerminal.isPresent() ? nonTerminal.get() : "") + Joiner.on("").join(terminals);
+		return nonTerminal.toString() + Joiner.on("").join(constantRule.getTerminals());
 	}
 
 	@Override
 	public boolean isSolved() {
-		for(Terminal t : terminals)
-			if(t.isConsumer())
-				return false;
-		return true;
+		return constantRule.isSolved();
 	}
 
 	@Override
 	public boolean isPossible() {
-		switch(TerminalUtil.isBalanced(terminals)) {
+		switch(TerminalUtil.isBalanced(constantRule.getTerminals())) {
 		case BALANCED: return true;
 		default:
 		case IMBALANCED: return false;
-		case MORE_CONSUMERS: return nonTerminal.isPresent();
+		case MORE_CONSUMERS: return true;
 		}
 	}
 
@@ -66,35 +53,39 @@ public class RegularRule implements Rule {
 		return ruleVisitor.visit(this);
 	}
 
-	public Optional<NonTerminal> getNonTerminal() {
+	public NonTerminal getNonTerminal() {
 		return nonTerminal;
 	}
 
 	public Rule applyForNonTerminal(Rule rule) {
-		return rule.append(terminals);
+		return rule.append(constantRule.getTerminals());
 	}
 
 	@Override
 	public boolean containsNonTerminals() {
-		return nonTerminal.isPresent();
+		return true;
 	}
 	
 	@Override
 	public Terminal[] getTerminals() {
-		return terminals;
+		return constantRule.getTerminals();
+	}
+
+	public ConstantRule getConstantRule() {
+		return constantRule;
 	}
 	
 	@Override
 	public Rule append(Terminal... terminals) {
-		return new RegularRule(nonTerminal, TerminalUtil.append(this.terminals, terminals));
+		return new RegularRule(nonTerminal, constantRule.append(terminals));
 	}
 
 	@Override
 	public int hashCode() {
 		final int prime = 31;
 		int result = 1;
+		result = prime * result + ((constantRule == null) ? 0 : constantRule.hashCode());
 		result = prime * result + ((nonTerminal == null) ? 0 : nonTerminal.hashCode());
-		result = prime * result + Arrays.hashCode(terminals);
 		return result;
 	}
 
@@ -107,13 +98,17 @@ public class RegularRule implements Rule {
 		if (getClass() != obj.getClass())
 			return false;
 		RegularRule other = (RegularRule) obj;
+		if (constantRule == null) {
+			if (other.constantRule != null)
+				return false;
+		} else if (!constantRule.equals(other.constantRule))
+			return false;
 		if (nonTerminal == null) {
 			if (other.nonTerminal != null)
 				return false;
 		} else if (!nonTerminal.equals(other.nonTerminal))
 			return false;
-		if (!Arrays.equals(terminals, other.terminals))
-			return false;
 		return true;
 	}
+
 }

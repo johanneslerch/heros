@@ -37,8 +37,8 @@ public class TestCfl {
 	public void regularTrivialSolvable1() {
 		// X: f | g
 		// solvable X-f ?
-		X.addRule(new RegularRule(f));
-		X.addRule(new RegularRule(g));
+		X.addRule(new ConstantRule(f));
+		X.addRule(new ConstantRule(g));
 		solvable(consumeFOnX);
 	}
 	
@@ -48,8 +48,8 @@ public class TestCfl {
 		// Y: f | g
 		// solvable X-f ?
 		X.addRule(new RegularRule(Y));
-		Y.addRule(new RegularRule(f));
-		Y.addRule(new RegularRule(g));
+		Y.addRule(new ConstantRule(f));
+		Y.addRule(new ConstantRule(g));
 		solvable(consumeFOnX);
 	}
 	
@@ -62,7 +62,7 @@ public class TestCfl {
 		X.addRule(new RegularRule(X));
 		X.addRule(new RegularRule(Y));
 		Y.addRule(new RegularRule(Z));
-		Z.addRule(new RegularRule(f));
+		Z.addRule(new ConstantRule(f));
 		solvable(consumeFOnX);
 	}
 	
@@ -94,7 +94,7 @@ public class TestCfl {
 		// Y: f
 		X.addRule(new RegularRule(X, g̅));
 		X.addRule(new RegularRule(Y, g));
-		Y.addRule(new RegularRule(f));
+		Y.addRule(new ConstantRule(f));
 		solvable(consumeFOnX);
 	}
 	
@@ -104,7 +104,7 @@ public class TestCfl {
 		// Y: f
 		X.addRule(new RegularRule(X, g̅, f̅));
 		X.addRule(new RegularRule(Y, g));
-		Y.addRule(new RegularRule(f));
+		Y.addRule(new ConstantRule(f));
 		unsolvable(consumeFOnX);
 	}
 
@@ -116,8 +116,8 @@ public class TestCfl {
 		X.addRule(new RegularRule(X, g̅, f̅));
 		X.addRule(new RegularRule(Y, g));
 		X.addRule(new RegularRule(Z, g, g));
-		Y.addRule(new RegularRule(f));
-		Z.addRule(new RegularRule(f, f));
+		Y.addRule(new ConstantRule(f));
+		Z.addRule(new ConstantRule(f, f));
 		unsolvable(consumeFOnX);
 	}
 	
@@ -127,7 +127,7 @@ public class TestCfl {
 		//Z: i
 		X.addRule(new RegularRule(X, g̅, f̅));
 		X.addRule(new RegularRule(Z, f, g, f, g));
-		Z.addRule(new RegularRule(i));
+		Z.addRule(new ConstantRule(i));
 		unsolvable(new RegularRule(X, h̄));
 	}
 	
@@ -139,7 +139,7 @@ public class TestCfl {
 		X.addRule(new RegularRule(Y, g̅));
 		X.addRule(new RegularRule(Z, g, g, g));
 		Y.addRule(new RegularRule(X, g̅));
-		Z.addRule(new RegularRule(f));
+		Z.addRule(new ConstantRule(f));
 		unsolvable(consumeFOnX);
 	}
 	
@@ -150,7 +150,7 @@ public class TestCfl {
 		X.addRule(new RegularRule(X, g̅));
 		X.addRule(new RegularRule(Y));
 		Y.addRule(new RegularRule(Y, g));
-		Y.addRule(new RegularRule(f));
+		Y.addRule(new ConstantRule(f));
 		solvable(consumeFOnX);
 	}
 	
@@ -159,9 +159,9 @@ public class TestCfl {
 		// X: Xg̅ | g̅
 		// Y: Yg | f
 		X.addRule(new RegularRule(X, g̅));
-		X.addRule(new RegularRule(g̅));
+		X.addRule(new ConstantRule(g̅));
 		Y.addRule(new RegularRule(Y, g));
-		Y.addRule(new RegularRule(f));
+		Y.addRule(new ConstantRule(f));
 		solvable(new NonLinearRule(new RegularRule(Y), consumeFOnX));
 	}
 	
@@ -170,9 +170,9 @@ public class TestCfl {
 		// X: Xf̅ | f̅
 		// Y: Yff | g
 		X.addRule(new RegularRule(X, f̅));
-		X.addRule(new RegularRule(f̅));
+		X.addRule(new ConstantRule(f̅));
 		Y.addRule(new RegularRule(Y, f, f));
-		Y.addRule(new RegularRule(g));
+		Y.addRule(new ConstantRule(g));
 		solvable(new NonLinearRule(new RegularRule(Y), new RegularRule(X, g̅)));
 	}
 	
@@ -184,9 +184,9 @@ public class TestCfl {
 		X.addRule(new NonLinearRule(new RegularRule(Z), new RegularRule(Y)));
 		X.addRule(new RegularRule(Y));
 		Y.addRule(new RegularRule(Y, g̅));
-		Y.addRule(new RegularRule(g̅));
+		Y.addRule(new ConstantRule(g̅));
 		Z.addRule(new RegularRule(Z, g));
-		Z.addRule(new RegularRule(f, g));
+		Z.addRule(new ConstantRule(f, g));
 		solvable(consumeFOnX);
 	}
 	
@@ -198,9 +198,9 @@ public class TestCfl {
 		X.addRule(new RegularRule(Y));
 		X.addRule(new NonLinearRule(new RegularRule(Z), new RegularRule(Y)));
 		Y.addRule(new RegularRule(Y, g̅));
-		Y.addRule(new RegularRule(g̅));
+		Y.addRule(new ConstantRule(g̅));
 		Z.addRule(new RegularRule(Z, g));
-		Z.addRule(new RegularRule(f, g));
+		Z.addRule(new ConstantRule(f, g));
 		solvable(consumeFOnX);
 	}
 	
@@ -211,7 +211,7 @@ public class TestCfl {
 		X.addRule(new ContextFreeRule(new Terminal[] {f}, X, new Terminal[] {g̅}));
 		X.addRule(new RegularRule(Y));
 		Y.addRule(new RegularRule(Y, g));
-		Y.addRule(new RegularRule(g));
+		Y.addRule(new ConstantRule(g));
 		solvable(consumeFOnX);
 	}
 	
@@ -220,7 +220,7 @@ public class TestCfl {
 		// X: fXg̅g̅ | fXg | fg
 		X.addRule(new ContextFreeRule(new Terminal[] {f}, X, new Terminal[] {g̅, g̅}));
 		X.addRule(new ContextFreeRule(new Terminal[] {f}, X, new Terminal[] {g}));
-		X.addRule(new RegularRule(f, g));
+		X.addRule(new ConstantRule(f, g));
 		solvable(consumeFOnX);
 	}
 	
@@ -229,8 +229,8 @@ public class TestCfl {
 		// X: f̅Xg | f̅g
 		// Y: f
 		X.addRule(new ContextFreeRule(new Terminal[] {f̅}, X, new Terminal[] {g}));
-		X.addRule(new RegularRule(f̅, g));
-		Y.addRule(new RegularRule(f));
+		X.addRule(new ConstantRule(f̅, g));
+		Y.addRule(new ConstantRule(f));
 		solvable(new NonLinearRule(new RegularRule(Y), new RegularRule(X, g̅, g̅)));
 	}
 	
@@ -239,8 +239,8 @@ public class TestCfl {
 		// X: f̅Xg | f̅g
 		// Y: ff
 		X.addRule(new ContextFreeRule(new Terminal[] {f̅}, X, new Terminal[] {g}));
-		X.addRule(new RegularRule(f̅, g));
-		Y.addRule(new RegularRule(f, f));
+		X.addRule(new ConstantRule(f̅, g));
+		Y.addRule(new ConstantRule(f, f));
 		solvable(new NonLinearRule(new RegularRule(Y), new RegularRule(X, g̅, g̅, g̅)));
 	}
 	
