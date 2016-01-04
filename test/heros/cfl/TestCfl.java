@@ -155,6 +155,19 @@ public class TestCfl {
 	}
 	
 	@Test
+	public void regularWritingAndComsumingLoops2() {
+		// X: Y
+		// Y: Yg̅ | Zg̅
+		// Z: Zg | fggg
+		X.addRule(new RegularRule(Y));
+		Y.addRule(new RegularRule(Z, g̅));
+		Y.addRule(new RegularRule(Y, g̅));
+		Z.addRule(new RegularRule(Z, g));
+		Z.addRule(new ConstantRule(f, g, g, g));
+		solvable(consumeFOnX);
+	}
+	
+	@Test
 	public void regularNonLinear1() {
 		// X: Xg̅ | g̅
 		// Y: Yg | f
@@ -201,6 +214,19 @@ public class TestCfl {
 		Y.addRule(new ConstantRule(g̅));
 		Z.addRule(new RegularRule(Z, g));
 		Z.addRule(new ConstantRule(f, g));
+		solvable(consumeFOnX);
+	}
+	
+	@Test
+	public void regularNonLinear4() {
+		// X: ZY
+		// Y: Yg̅ | g̅
+		// Z: Zg | fggg
+		X.addRule(new NonLinearRule(new RegularRule(Z), new RegularRule(Y)));
+		Y.addRule(new RegularRule(Y, g̅));
+		Y.addRule(new ConstantRule(g̅));
+		Z.addRule(new RegularRule(Z, g));
+		Z.addRule(new ConstantRule(f, g, g, g));
 		solvable(consumeFOnX);
 	}
 	

@@ -10,12 +10,9 @@
  ******************************************************************************/
 package heros.cfl;
 
-import java.util.Collection;
 import java.util.List;
-import java.util.Set;
 
 import com.google.common.collect.Lists;
-import com.google.common.collect.Sets;
 
 import fj.data.Option;
 
@@ -37,51 +34,58 @@ public class SearchTreeNode {
 		return rule.isPossible();
 	}
 
-	public Collection<? extends SearchTreeNode> expand(final Option<SearchTreeViewer> treeViewer) {
+	public void expand(final Option<SearchTreeViewer> treeViewer) {
 		assert childs == null;
 		
-		List<RuleApplication> list = rule.accept(new RuleVisitor<List<RuleApplication>>() {
+		childs = Lists.newLinkedList();
+		rule.accept(new ExpandingVisitor() {
 			@Override
-			public List<RuleApplication> visit(ContextFreeRule contextFreeRule) {
-				throw new IllegalStateException();
-			}
-
-			@Override
-			public List<RuleApplication> visit(NonLinearRule nonLinearRule) {
-				List<RuleApplication> result = Lists.newLinkedList();
-				List<RuleApplication> rightApplied = nonLinearRule.getRight().accept(this);
-				for(RuleApplication appl : rightApplied) {
-					if(appl.result.containsNonTerminals())
-						result.add(new RuleApplication(appl.nonTerminal, appl.appliedRule, new NonLinearRule(nonLinearRule.getLeft(), appl.result)));
-					else
-						result.add(new RuleApplication(appl.nonTerminal, appl.appliedRule, nonLinearRule.getLeft().append(appl.result.getTerminals())));
-				}
-				return result;
-			}
-
-			@Override
-			public List<RuleApplication> visit(RegularRule regularRule) {
-				final List<RuleApplication> result = Lists.newLinkedList();
-				for(Rule rule : regularRule.getNonTerminal().getRules()) {
-					result.add(new RuleApplication(regularRule.getNonTerminal(), rule, regularRule.applyForNonTerminal(rule)));
-				}				
-				return result;
-			}
-
-			@Override
-			public List<RuleApplication> visit(ConstantRule constantRule) {
-				throw new IllegalStateException();
+			protected void newResult(RuleApplication appl) {
+				SearchTreeNode newChild = new SearchTreeNode(appl.result);
+				childs.add(newChild);
+				notifyListenersAboutNewChild(newChild);
+				if(treeViewer.isSome())
+					treeViewer.some().add(SearchTreeNode.this, newChild, appl);
 			}
 		});
-		childs = Lists.newLinkedList();
-		for(RuleApplication appl : list) {
-			SearchTreeNode newChild = new SearchTreeNode(appl.result);
-			childs.add(newChild);
-			notifyListenersAboutNewChild(newChild);
-			if(treeViewer.isSome())
-				treeViewer.some().add(SearchTreeNode.this, newChild, appl);
+	}
+
+	private static abstract class ExpandingVisitor implements RuleVisitor<Void> {
+		
+		protected abstract void newResult(RuleApplication appl);
+		
+		@Override
+		public Void visit(ContextFreeRule contextFreeRule) {
+			throw new IllegalStateException();
 		}
-		return childs;
+
+		@Override
+		public Void visit(final NonLinearRule nonLinearRule) {
+			final ExpandingVisitor outer = this;
+			nonLinearRule.getRight().accept(new ExpandingVisitor() {
+				@Override
+				protected void newResult(RuleApplication appl) {
+					if(appl.result.containsNonTerminals())
+						outer.newResult(new RuleApplication(appl.nonTerminal, appl.appliedRule, new NonLinearRule(nonLinearRule.getLeft(), appl.result)));
+					else
+						outer.newResult(new RuleApplication(appl.nonTerminal, appl.appliedRule, nonLinearRule.getLeft().append(appl.result.getTerminals())));
+				}
+			});
+			return null;
+		}
+
+		@Override
+		public Void visit(RegularRule regularRule) {
+			for(Rule rule : regularRule.getNonTerminal().getRules()) {
+				newResult(new RuleApplication(regularRule.getNonTerminal(), rule, regularRule.applyForNonTerminal(rule)));
+			}				
+			return null;
+		}
+
+		@Override
+		public Void visit(ConstantRule constantRule) {
+			throw new IllegalStateException();
+		}
 	}
 	
 	protected void notifyListenersAboutNewChild(SearchTreeNode child) {

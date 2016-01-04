@@ -45,7 +45,6 @@ public class SearchTree {
 			if(!visited.add(current))
 				continue;
 			
-			
 			if(current.isSolution()) {
 				return SolverResult.Solvable;
 			}
@@ -75,9 +74,13 @@ public class SearchTree {
 		if(treeViewer.isSome())
 			treeViewer.some().removePrefixIteratorAssociation(node);
 		
-		for(SearchTreeNode child : node.expand(treeViewer)) {
-			worklist.add(child);
-		}
+		node.addSubTreeListener(new SubTreeListener() {
+			@Override
+			public void newChildren(SearchTreeNode parent, SearchTreeNode child) {
+				worklist.add(child);
+			}
+		});
+		node.expand(treeViewer);
 	}
 	
 	private static class PrefixGuard {
