@@ -270,6 +270,14 @@ public class TestCfl {
 		solvable(new NonLinearRule(new RegularRule(Y), new RegularRule(X, g̅, g̅, g̅)));
 	}
 	
+	@Test
+	public void regularMultipleConsumers() {
+		// X: Xf | f
+		X.addRule(new RegularRule(X, f));
+		X.addRule(new ConstantRule(f));
+		solvable(new RegularRule(X, f̅, f̅, f̅));
+	}
+	
 	private void solvable(Rule rule) {
 		assertResult(Solvable, rule);
 	}

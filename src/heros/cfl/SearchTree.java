@@ -10,6 +10,8 @@
  ******************************************************************************/
 package heros.cfl;
 
+import heros.cfl.TerminalUtil.BalanceResult;
+
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -38,9 +40,9 @@ public class SearchTree {
 		if(treeViewer.isSome())
 			treeViewer.some().add(null, root, null);
 	}
-	
+
 	public SolverResult search() {
-		outer: while(!worklist.isEmpty()) {
+		while(!worklist.isEmpty()) {
 			SearchTreeNode current = worklist.remove(0);
 			if(!visited.add(current))
 				continue;
@@ -87,8 +89,9 @@ public class SearchTree {
 		
 		private SearchTreeNode guard;
 		private Terminal[] suffix;
-		private boolean reduced = false;
+		private boolean reducedToEmpty = false;
 		private List<PrefixGuardListener> listeners;
+		private Set<Terminal[]> reducedToConstant;
 
 		private PrefixGuard(SearchTreeNode guard, Terminal[] suffix) {
 			this.guard = guard;
@@ -96,32 +99,58 @@ public class SearchTree {
 		}
 
 		public void addReductionListener(final PrefixGuardListener postfixSubTreeListener) {
-			if(reduced)
-				postfixSubTreeListener.reduced();
+			if(reducedToEmpty)
+				postfixSubTreeListener.reducedToEmpty();
 			else if(listeners == null) {
 				listeners = Lists.newLinkedList();
 				listeners.add(postfixSubTreeListener);
 				guard.addSubTreeListener(new SubTreeListener() {
+
 					@Override
 					public void newChildren(SearchTreeNode parent, SearchTreeNode child) {
-						if(guard==child || reduced) 
+						if(guard==child || reducedToEmpty) 
 							return;
-						if(child.containsSuffix(suffix))
+						if(child.containsSuffix(suffix)) {
 							child.addSubTreeListener(this);
-						else {
-							reduced = true;
+							if(isConstantReduction(child)) {
+								if(reducedToConstant == null)
+									reducedToConstant = Sets.newHashSet();
+								if(reducedToConstant.add(child.getRule().getTerminals()))
+									notifyListenersAboutConstantResult(child.getRule().getTerminals());
+							}
+						} else {
+							reducedToEmpty = true;
 							notifyListeners();
 						}						
 					}
+
+					private boolean isConstantReduction(SearchTreeNode child) {
+						if(!(child.getRule() instanceof ConstantRule))
+							return false;
+						
+						if(child.getRule().isPossible())
+							return true;
+						
+						return TerminalUtil.isBalanced(((ConstantRule) child.getRule()).getTerminals()) == BalanceResult.MORE_CONSUMERS;
+					}
 				});
 			}
-			else
+			else {
 				listeners.add(postfixSubTreeListener);
+				if(reducedToConstant != null)
+					for(Terminal[] constant : reducedToConstant)
+						postfixSubTreeListener.reducedToConstant(constant);
+			}
 		}
 		
+		private void notifyListenersAboutConstantResult(Terminal[] constant) {
+			for(PrefixGuardListener listener : listeners) 
+				listener.reducedToConstant(constant);
+		}
+
 		private void notifyListeners() {
 			for(PrefixGuardListener listener : listeners) {
-				listener.reduced();
+				listener.reducedToEmpty();
 			}
 			listeners = null;
 		}
@@ -137,8 +166,67 @@ public class SearchTree {
 			this.prefixIterator = prefixIterator;
 		}
 
-		public void reduced() {
+		public void reducedToConstant(final Terminal[] constant) {
+			node.getRule().accept(new ReducedToConstantVisitor(constant) {
+				@Override
+				protected void newResult(RuleApplication appl) {
+					if(appl.result == null)
+						return;
+					
+					SearchTreeNode newChild = new SearchTreeNode(appl.result);
+					if(treeViewer.isSome())
+						treeViewer.some().add(node, newChild, appl);
+					
+					worklist.add(newChild);
+				}
+			});
+		}
+
+		public void reducedToEmpty() {
 			checkPrefixesThenExpand(prefixIterator, node);
+		}
+	}
+	
+	private static abstract class ReducedToConstantVisitor implements RuleVisitor<Void> {
+		
+		private Terminal[] constant;
+
+		public ReducedToConstantVisitor(Terminal[] constant) {
+			this.constant = constant;
+		}
+		
+		protected abstract void newResult(RuleApplication appl);
+		
+		@Override
+		public Void visit(ContextFreeRule contextFreeRule) {
+			throw new IllegalStateException();
+		}
+
+		@Override
+		public Void visit(final NonLinearRule nonLinearRule) {
+			final ReducedToConstantVisitor outer = this;
+			nonLinearRule.getRight().accept(new ReducedToConstantVisitor(constant) {
+				@Override
+				protected void newResult(RuleApplication appl) {
+					if(appl.result == null)
+						outer.newResult(new RuleApplication(appl.nonTerminal, appl.appliedRule, nonLinearRule.getLeft().append(constant)));
+					else
+						outer.newResult(new RuleApplication(appl.nonTerminal, appl.appliedRule, 
+								new NonLinearRule(nonLinearRule.getLeft(), appl.result)));
+				}
+			});
+			return null;
+		}
+
+		@Override
+		public Void visit(RegularRule regularRule) {
+			newResult(new RuleApplication(regularRule.getNonTerminal(), new ConstantRule(constant), null));
+			return null;
+		}
+
+		@Override
+		public Void visit(ConstantRule constantRule) {
+			throw new IllegalStateException();
 		}
 	}
 }

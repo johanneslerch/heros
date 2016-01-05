@@ -188,4 +188,8 @@ public class SearchTreeNode {
 			return false;
 		return true;
 	}
+
+	public Rule getRule() {
+		return rule;
+	}
 }
