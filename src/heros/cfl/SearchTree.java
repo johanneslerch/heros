@@ -66,8 +66,13 @@ public class SearchTree {
 		while(iterator.hasNext()) {
 			RegularRule prefixRule = iterator.next();
 			if(prefixGuard.containsKey(prefixRule)) {
-				prefixGuard.get(prefixRule).addReductionListener(new PrefixGuardListener(node, iterator));
-				return;
+				PrefixGuard currentGuard = prefixGuard.get(prefixRule);
+				if(currentGuard.isBetterSuitedThan(iterator.suffix())) {
+					currentGuard.addReductionListener(new PrefixGuardListener(node, iterator));
+					return;
+				} else {
+					currentGuard.swapNode(node, iterator.suffix());
+				}
 			}
 			else
 				prefixGuard.put(prefixRule, new PrefixGuard(node, iterator.suffix()));
@@ -92,10 +97,53 @@ public class SearchTree {
 		private boolean reducedToEmpty = false;
 		private List<PrefixGuardListener> listeners;
 		private Set<Terminal[]> reducedToConstant;
+		private SubTreeListener subTreeListener;
 
 		private PrefixGuard(SearchTreeNode guard, Terminal[] suffix) {
 			this.guard = guard;
 			this.suffix = suffix;
+			this.subTreeListener = new SubTreeListener() {
+
+				@Override
+				public void newChildren(SearchTreeNode parent, SearchTreeNode child) {
+					if(PrefixGuard.this.guard==child || reducedToEmpty) 
+						return;
+					if(child.containsSuffix(PrefixGuard.this.suffix)) {
+						child.addSubTreeListener(this);
+						if(isConstantReduction(child)) {
+							if(reducedToConstant == null)
+								reducedToConstant = Sets.newHashSet();
+							if(reducedToConstant.add(child.getRule().getTerminals()))
+								notifyListenersAboutConstantResult(child.getRule().getTerminals());
+						}
+					} else {
+						reducedToEmpty = true;
+						notifyListeners();
+					}						
+				}
+
+				private boolean isConstantReduction(SearchTreeNode child) {
+					if(!(child.getRule() instanceof ConstantRule))
+						return false;
+					
+					if(child.getRule().isPossible())
+						return true;
+					
+					return TerminalUtil.isBalanced(((ConstantRule) child.getRule()).getTerminals()) == BalanceResult.MORE_CONSUMERS;
+				}
+			};
+		}
+
+		public void swapNode(SearchTreeNode newGuard, Terminal[] newSuffix) {
+			this.guard.removeSubTreeListener(subTreeListener);
+			this.guard = newGuard;
+			this.suffix = newSuffix;
+			if(listeners != null)
+				this.guard.addSubTreeListener(subTreeListener);
+		}
+
+		public boolean isBetterSuitedThan(Terminal[] suffix) {
+			return this.suffix.length <= suffix.length;
 		}
 
 		public void addReductionListener(final PrefixGuardListener postfixSubTreeListener) {
@@ -104,36 +152,7 @@ public class SearchTree {
 			else if(listeners == null) {
 				listeners = Lists.newLinkedList();
 				listeners.add(postfixSubTreeListener);
-				guard.addSubTreeListener(new SubTreeListener() {
-
-					@Override
-					public void newChildren(SearchTreeNode parent, SearchTreeNode child) {
-						if(guard==child || reducedToEmpty) 
-							return;
-						if(child.containsSuffix(suffix)) {
-							child.addSubTreeListener(this);
-							if(isConstantReduction(child)) {
-								if(reducedToConstant == null)
-									reducedToConstant = Sets.newHashSet();
-								if(reducedToConstant.add(child.getRule().getTerminals()))
-									notifyListenersAboutConstantResult(child.getRule().getTerminals());
-							}
-						} else {
-							reducedToEmpty = true;
-							notifyListeners();
-						}						
-					}
-
-					private boolean isConstantReduction(SearchTreeNode child) {
-						if(!(child.getRule() instanceof ConstantRule))
-							return false;
-						
-						if(child.getRule().isPossible())
-							return true;
-						
-						return TerminalUtil.isBalanced(((ConstantRule) child.getRule()).getTerminals()) == BalanceResult.MORE_CONSUMERS;
-					}
-				});
+				guard.addSubTreeListener(subTreeListener);
 			}
 			else {
 				listeners.add(postfixSubTreeListener);

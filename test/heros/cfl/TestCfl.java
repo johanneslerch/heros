@@ -278,6 +278,16 @@ public class TestCfl {
 		solvable(new RegularRule(X, f̅, f̅, f̅));
 	}
 	
+	@Test
+	public void regularMultipleConsumers2() {
+		// X: Yg̅g̅g̅
+		// Y: Yg | f
+		X.addRule(new RegularRule(Y, g̅, g̅, g̅));
+		Y.addRule(new RegularRule(Y, g));
+		Y.addRule(new ConstantRule(f));
+		solvable(consumeFOnX);
+	}
+	
 	private void solvable(Rule rule) {
 		assertResult(Solvable, rule);
 	}

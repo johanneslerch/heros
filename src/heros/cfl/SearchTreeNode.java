@@ -150,6 +150,14 @@ public class SearchTreeNode {
 			}
 		});
 	}
+
+	public Rule getRule() {
+		return rule;
+	}
+
+	public void removeSubTreeListener(SubTreeListener listener) {
+		listeners.remove(listener);
+	}
 	
 	public void addSubTreeListener(SubTreeListener listener) {
 		if(listeners.add(listener) && childs!=null) {
@@ -189,7 +197,4 @@ public class SearchTreeNode {
 		return true;
 	}
 
-	public Rule getRule() {
-		return rule;
-	}
 }
