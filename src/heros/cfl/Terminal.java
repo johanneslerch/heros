@@ -15,4 +15,10 @@ public interface Terminal {
 	boolean isConsumer();
 
 	boolean isProducing(ConsumingTerminal consumingTerminal);
+
+	boolean isExclusion();
+
+	Object getRepresentation();
+
+	boolean isExcluding(Object representation);
 }

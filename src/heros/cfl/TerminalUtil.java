@@ -28,6 +28,15 @@ public class TerminalUtil {
 				else
 					return BalanceResult.MORE_CONSUMERS;
 			}
+			else if(terminals[i].isExclusion()) {
+				if(i+1 != terminals.length)
+					return BalanceResult.IMBALANCED;
+				int correspondingProducerIndex = 2*firstConsumer-i-1;
+				if(correspondingProducerIndex < 0)
+					return BalanceResult.MORE_CONSUMERS;
+				if(terminals[i].isExcluding(terminals[correspondingProducerIndex].getRepresentation()))
+					return BalanceResult.IMBALANCED;
+			}
 		}
 		return BalanceResult.BALANCED;
 	}
@@ -43,17 +52,43 @@ public class TerminalUtil {
 		if(left.length == 0)
 			return right;
 		
-		int skip = 0;
+		if(right[0].isExclusion()) {
+			assert right.length == 1;
+			if(left[left.length-1].isExclusion()) {
+				Terminal[] newTerminals = Arrays.copyOf(left, left.length);
+				newTerminals[left.length-1] = ((ExclusionTerminal) left[left.length-1]).merge((ExclusionTerminal) right[0]);
+				return newTerminals;
+			}
+		}
+		
+		int skipLeft = 0;
+		int skipRight = 0;
 		for(int i=0; i<right.length; i++) {
-			if(right[i].isConsumer() && left.length>i && left[left.length-i-1].isProducing((ConsumingTerminal) right[i]))  {
-				skip++;
+			assert right[i].isConsumer() || right[i].isExclusion();
+			if(right[i].isConsumer() && left.length>i)  {
+				ConsumingTerminal consumer = (ConsumingTerminal) right[i];
+				if(left[left.length-i-1].isProducing(consumer)) {
+					skipLeft++;
+					skipRight++;
+				}
+				else if(left[left.length-i-1].isExclusion() && !left[left.length-i-1].isExcluding(consumer.getRepresentation())) {
+					skipLeft++;
+				}
+				else
+					break;
+			}
+			else if(right[i].isExclusion() && left.length>i && !left[left.length-i-1].isConsumer()) {
+				if(right[i].isExcluding(left[left.length-i-1].getRepresentation()))
+					break;
+				else
+					skipRight++;
 			}
 			else
 				break;
 		}
 		
-		Terminal[] newTerminals = Arrays.copyOf(left, left.length+right.length -skip*2);
-		System.arraycopy(right, skip, newTerminals, left.length-skip, right.length-skip);
+		Terminal[] newTerminals = Arrays.copyOf(left, left.length-skipLeft + right.length-skipRight);
+		System.arraycopy(right, skipRight, newTerminals, left.length-skipLeft, right.length-skipRight);
 		return newTerminals;
 	}
 }

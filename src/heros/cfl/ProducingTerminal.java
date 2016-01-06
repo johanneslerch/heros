@@ -29,6 +29,21 @@ public class ProducingTerminal implements Terminal {
 	}
 
 	@Override
+	public boolean isExclusion() {
+		return false;
+	}
+	
+	@Override
+	public boolean isExcluding(Object representation) {
+		return false;
+	}
+	
+	@Override
+	public Object getRepresentation() {
+		return representation;
+	}
+	
+	@Override
 	public boolean isProducing(ConsumingTerminal consumingTerminal) {
 		return consumingTerminal.getRepresentation().equals(representation);
 	}

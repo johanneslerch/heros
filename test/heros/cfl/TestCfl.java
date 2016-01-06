@@ -21,10 +21,13 @@ public class TestCfl {
 
 	ProducingTerminal f = new ProducingTerminal("f");
 	ConsumingTerminal f̅ = new ConsumingTerminal("f");
+	ExclusionTerminal not_f = new ExclusionTerminal("f");
 	ProducingTerminal g = new ProducingTerminal("g");
 	ConsumingTerminal g̅ = new ConsumingTerminal("g");
+	ExclusionTerminal not_g = new ExclusionTerminal("g");
 	ProducingTerminal h = new ProducingTerminal("h");
 	ConsumingTerminal h̄ = new ConsumingTerminal("h");
+	ExclusionTerminal not_h = new ExclusionTerminal("h");
 	ProducingTerminal i = new ProducingTerminal("i");
 
 	NonTerminal X = new NonTerminal("X");
@@ -283,6 +286,28 @@ public class TestCfl {
 		// X: Yg̅g̅g̅
 		// Y: Yg | f
 		X.addRule(new RegularRule(Y, g̅, g̅, g̅));
+		Y.addRule(new RegularRule(Y, g));
+		Y.addRule(new ConstantRule(f));
+		solvable(consumeFOnX);
+	}
+	
+	@Test
+	public void regularExclusionUnsolvable() {
+		// X: Y¬f | Xg̅
+		// Y: Yf | f
+		X.addRule(new RegularRule(Y, not_f));
+		X.addRule(new RegularRule(X, g̅));
+		Y.addRule(new RegularRule(Y, f));
+		Y.addRule(new ConstantRule(f));
+		unsolvable(consumeFOnX);
+	}
+	
+	@Test
+	public void regularExclusionSolvable() {
+		// X: Y¬f | Xg̅
+		// Y: Yg | f
+		X.addRule(new RegularRule(Y, not_f));
+		X.addRule(new RegularRule(X, g̅));
 		Y.addRule(new RegularRule(Y, g));
 		Y.addRule(new ConstantRule(f));
 		solvable(consumeFOnX);

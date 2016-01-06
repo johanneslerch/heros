@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2015 Johannes Lerch.
+ * Copyright (c) 2016 Johannes Lerch.
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the GNU Lesser Public License v2.1
  * which accompanies this distribution, and is available at
@@ -10,47 +10,68 @@
  ******************************************************************************/
 package heros.cfl;
 
-public class ConsumingTerminal implements Terminal {
+import java.util.HashSet;
+import java.util.Set;
 
-	private Object representation;
+import com.google.common.base.Joiner;
+import com.google.common.collect.Sets;
 
-	public ConsumingTerminal(Object representation) {
+public class ExclusionTerminal implements Terminal {
+
+	private Set<Object> representation;
+	
+	public ExclusionTerminal(Set<Object> representation) {
 		this.representation = representation;
+	}
+	
+	public ExclusionTerminal(Object... representation) {
+		if(representation.length == 0)
+			throw new IllegalArgumentException();
+		this.representation = Sets.newHashSet(representation);
+	}
+	
+	@Override
+	public boolean isConsumer() {
+		return false;
 	}
 
 	@Override
-	public String toString() {
-		String string = representation.toString();
-		char[] result = new char[string.length()*2];
-		for(int i=0; i<string.length(); i++) {
-			result[i*2+1] = '\u0305';
-			result[i*2] = string.charAt(i);
-		}
-		return new String(result);
-	}
-
 	public Object getRepresentation() {
 		return representation;
 	}
-
-	@Override
-	public boolean isConsumer() {
-		return true;
-	}
-
-	@Override
-	public boolean isExclusion() {
-		return false;
-	}
-
+	
 	@Override
 	public boolean isExcluding(Object representation) {
-		return false;
+		return this.representation.contains(representation);
+	}
+	
+	@Override
+	public boolean isExclusion() {
+		return true;
 	}
 	
 	@Override
 	public boolean isProducing(ConsumingTerminal consumingTerminal) {
 		return false;
+	}
+
+	public ExclusionTerminal merge(ExclusionTerminal exclusionTerminal) {
+		HashSet<Object> set = Sets.newHashSet(representation);
+		set.addAll(exclusionTerminal.representation);
+		return new ExclusionTerminal(set);
+	}
+	
+	@Override
+	public String toString() {
+		String result = "¬"; 
+		if(representation.size() > 1) {
+			result += "{";
+			result += Joiner.on(",").join(representation);
+			result += "}";
+		}
+		else
+			result += representation.iterator().next();
+		return result;
 	}
 
 	@Override
@@ -69,7 +90,7 @@ public class ConsumingTerminal implements Terminal {
 			return false;
 		if (getClass() != obj.getClass())
 			return false;
-		ConsumingTerminal other = (ConsumingTerminal) obj;
+		ExclusionTerminal other = (ExclusionTerminal) obj;
 		if (representation == null) {
 			if (other.representation != null)
 				return false;
@@ -77,4 +98,5 @@ public class ConsumingTerminal implements Terminal {
 			return false;
 		return true;
 	}
+
 }
