@@ -64,7 +64,6 @@ public class TerminalUtil {
 		int skipLeft = 0;
 		int skipRight = 0;
 		for(int i=0; i<right.length; i++) {
-			assert right[i].isConsumer() || right[i].isExclusion();
 			if(right[i].isConsumer() && left.length>i)  {
 				ConsumingTerminal consumer = (ConsumingTerminal) right[i];
 				if(left[left.length-i-1].isProducing(consumer)) {
