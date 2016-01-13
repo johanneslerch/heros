@@ -321,6 +321,37 @@ public class TestCfl {
 		solvable(consumeFOnX);
 	}
 	
+	@Test
+	public void contextFreeConstantSubstitutionUnsolvable() {
+		//X: gX | g̅
+		X.addRule(new ContextFreeRule(new Terminal[] {g}, X, new Terminal[0]));
+		X.addRule(new ConstantRule(g̅));
+		unsolvable(consumeFOnX);
+	}
+	
+	@Test
+	public void hardPcpInstance() {
+		//X: fgggXg̅ | gfXg̅ | fXf̅g̅f̅ | ggXg̅g̅f̅ | fgg | g̅f̅ | f̅
+		X.addRule(new ContextFreeRule(new Terminal[] {f, g, g, g}, X, new Terminal[] {g̅}));
+		X.addRule(new ContextFreeRule(new Terminal[] {g, f}, X, new Terminal[] {g̅}));
+		X.addRule(new ContextFreeRule(new Terminal[] {f}, X, new Terminal[] {f̅, g̅, f̅}));
+		X.addRule(new ConstantRule(f, g, g));
+		X.addRule(new ConstantRule(g̅, f̅));
+		X.addRule(new ConstantRule(f̅));
+		solvable(new NonLinearRule(new ConstantRule(h), new RegularRule(X,h̄)));
+	}
+	
+	@Test
+	public void nonLinearContextFree() {
+		//X: YX | f̅Xg̅ | g
+		//Y: Xg̅ | f
+		X.addRule(new NonLinearRule(new RegularRule(Y), new RegularRule(X)));
+		X.addRule(new ContextFreeRule(new Terminal[] {f̅}, X, new Terminal[] {g̅}));
+		Y.addRule(new RegularRule(X, g̅));
+		Y.addRule(new ConstantRule(f));
+		solvable(consumeFOnX);
+	}
+	
 	private void solvable(Rule rule) {
 		assertResult(Solvable, rule);
 	}

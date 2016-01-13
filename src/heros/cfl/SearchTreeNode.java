@@ -101,8 +101,7 @@ public class SearchTreeNode {
 			
 			@Override
 			public PrefixIterator visit(final RegularRule regularRule) {
-				final Terminal[] terminals = regularRule.getTerminals();
-				return new PrefixIterator(regularRule, terminals);
+				return new PrefixIterator(regularRule);
 			}
 			
 			@Override
@@ -112,7 +111,7 @@ public class SearchTreeNode {
 			
 			@Override
 			public PrefixIterator visit(ContextFreeRule contextFreeRule) {
-				throw new IllegalStateException();
+				return new PrefixIterator(contextFreeRule.getNonTerminal(), contextFreeRule.getRightTerminals());
 			}
 
 			@Override

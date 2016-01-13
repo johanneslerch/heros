@@ -15,13 +15,18 @@ import java.util.Iterator;
 
 final class PrefixIterator implements Iterator<RegularRule> {
 	
-	private final RegularRule regularRule;
 	private final Terminal[] terminals;
 	private int index = 0;
+	private NonTerminal nonTerminal;
 
-	PrefixIterator(RegularRule regularRule, Terminal[] terminals) {
-		this.regularRule = regularRule;
+	PrefixIterator(NonTerminal nonTerminal, Terminal[] terminals) {
 		this.terminals = terminals;
+		this.nonTerminal = nonTerminal;
+	}
+
+	PrefixIterator(RegularRule regularRule) {
+		this.nonTerminal = regularRule.getNonTerminal();
+		this.terminals = regularRule.getTerminals();
 	}
 
 	@Override
@@ -40,6 +45,6 @@ final class PrefixIterator implements Iterator<RegularRule> {
 	}
 
 	public RegularRule current() {
-		return new RegularRule(regularRule.getNonTerminal(), Arrays.copyOf(terminals, index));
+		return new RegularRule(nonTerminal, Arrays.copyOf(terminals, index));
 	}
 }
