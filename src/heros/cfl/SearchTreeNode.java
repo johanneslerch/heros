@@ -20,7 +20,7 @@ public class SearchTreeNode {
 
 	private Rule rule;
 	private List<SubTreeListener> listeners = Lists.newLinkedList();
-	private List<SearchTreeNode> childs;
+	private List<SearchTreeNode> childs = Lists.newLinkedList();
 
 	public SearchTreeNode(Rule rule) {
 		this.rule = rule;
@@ -35,19 +35,21 @@ public class SearchTreeNode {
 	}
 
 	public void expand(final Option<SearchTreeViewer> treeViewer) {
-		assert childs == null;
-		
-		childs = Lists.newLinkedList();
 		rule.accept(new ExpandingVisitor() {
 			@Override
 			protected void newResult(RuleApplication appl) {
-				SearchTreeNode newChild = new SearchTreeNode(appl.result);
-				childs.add(newChild);
-				notifyListenersAboutNewChild(newChild);
-				if(treeViewer.isSome())
-					treeViewer.some().add(SearchTreeNode.this, newChild, appl);
+				newChild(appl, treeViewer);
 			}
 		});
+	}
+	
+	SearchTreeNode newChild(RuleApplication appl, Option<SearchTreeViewer> treeViewer) {
+		SearchTreeNode newChild = new SearchTreeNode(appl.result);
+		childs.add(newChild);
+		notifyListenersAboutNewChild(newChild);
+		if(treeViewer.isSome())
+			treeViewer.some().add(SearchTreeNode.this, newChild, appl);
+		return newChild;
 	}
 
 	private static abstract class ExpandingVisitor implements RuleVisitor<Void> {
@@ -66,9 +68,9 @@ public class SearchTreeNode {
 				@Override
 				protected void newResult(RuleApplication appl) {
 					if(appl.result.containsNonTerminals())
-						outer.newResult(new RuleApplication(appl.nonTerminal, appl.appliedRule, new NonLinearRule(nonLinearRule.getLeft(), appl.result)));
+						outer.newResult(new RuleApplication(appl.substitutedPlaceholder, appl.appliedRule, new NonLinearRule(nonLinearRule.getLeft(), appl.result)));
 					else
-						outer.newResult(new RuleApplication(appl.nonTerminal, appl.appliedRule, nonLinearRule.getLeft().append(appl.result.getTerminals())));
+						outer.newResult(new RuleApplication(appl.substitutedPlaceholder, appl.appliedRule, nonLinearRule.getLeft().append(appl.result.getTerminals())));
 				}
 			});
 			return null;

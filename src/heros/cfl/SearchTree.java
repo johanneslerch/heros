@@ -179,6 +179,7 @@ public class SearchTree {
 
 		private SearchTreeNode node;
 		private PrefixIterator prefixIterator;
+		private boolean notified;
 
 		public PrefixGuardListener(SearchTreeNode node, PrefixIterator prefixIterator) {
 			this.node = node;
@@ -186,31 +187,32 @@ public class SearchTree {
 		}
 
 		public void reducedToConstant(final Terminal[] constant) {
-			node.getRule().accept(new ReducedToConstantVisitor(constant) {
+			node.getRule().accept(new ReducedToConstantVisitor(prefixIterator.current(), constant) {
 				@Override
 				protected void newResult(RuleApplication appl) {
 					if(appl.result == null)
 						return;
 					
-					SearchTreeNode newChild = new SearchTreeNode(appl.result);
-					if(treeViewer.isSome())
-						treeViewer.some().add(node, newChild, appl);
-					
-					worklist.add(newChild);
+					worklist.add(node.newChild(appl, treeViewer));
 				}
 			});
 		}
 
 		public void reducedToEmpty() {
-			checkPrefixesThenExpand(prefixIterator, node);
+			if(!notified) {
+				notified=true;
+				checkPrefixesThenExpand(prefixIterator, node);
+			}
 		}
 	}
 	
 	private static abstract class ReducedToConstantVisitor implements RuleVisitor<Void> {
 		
 		private Terminal[] constant;
+		private RegularRule prefix;
 
-		public ReducedToConstantVisitor(Terminal[] constant) {
+		public ReducedToConstantVisitor(RegularRule prefix, Terminal[] constant) {
+			this.prefix = prefix;
 			this.constant = constant;
 		}
 		
@@ -224,13 +226,13 @@ public class SearchTree {
 		@Override
 		public Void visit(final NonLinearRule nonLinearRule) {
 			final ReducedToConstantVisitor outer = this;
-			nonLinearRule.getRight().accept(new ReducedToConstantVisitor(constant) {
+			nonLinearRule.getRight().accept(new ReducedToConstantVisitor(prefix, constant) {
 				@Override
 				protected void newResult(RuleApplication appl) {
 					if(appl.result == null)
-						outer.newResult(new RuleApplication(appl.nonTerminal, appl.appliedRule, nonLinearRule.getLeft().append(constant)));
+						outer.newResult(new RuleApplication(appl.substitutedPlaceholder, appl.appliedRule, nonLinearRule.getLeft().append(constant)));
 					else
-						outer.newResult(new RuleApplication(appl.nonTerminal, appl.appliedRule, 
+						outer.newResult(new RuleApplication(appl.substitutedPlaceholder, appl.appliedRule, 
 								new NonLinearRule(nonLinearRule.getLeft(), appl.result)));
 				}
 			});
@@ -239,7 +241,7 @@ public class SearchTree {
 
 		@Override
 		public Void visit(RegularRule regularRule) {
-			newResult(new RuleApplication(regularRule.getNonTerminal(), new ConstantRule(constant), null));
+			newResult(new RuleApplication(prefix, new ConstantRule(constant), null));
 			return null;
 		}
 

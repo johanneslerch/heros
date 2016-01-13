@@ -313,6 +313,14 @@ public class TestCfl {
 		solvable(consumeFOnX);
 	}
 	
+	@Test
+	public void contextFreeConstantSubstitution() {
+		//X: fX | f̅
+		X.addRule(new ContextFreeRule(new Terminal[] {f}, X, new Terminal[0]));
+		X.addRule(new ConstantRule(f̅));
+		solvable(consumeFOnX);
+	}
+	
 	private void solvable(Rule rule) {
 		assertResult(Solvable, rule);
 	}

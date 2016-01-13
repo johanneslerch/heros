@@ -12,12 +12,18 @@ package heros.cfl;
 
 public class RuleApplication {
 
-	public final NonTerminal nonTerminal;
+	public final Rule substitutedPlaceholder;
 	public final Rule appliedRule;
 	public final Rule result;
 	
-	public RuleApplication(NonTerminal nonTerminal, Rule rule, Rule result) {
-		this.nonTerminal = nonTerminal;
+	public RuleApplication(NonTerminal substitutedPlaceholder, Rule rule, Rule result) {
+		this.substitutedPlaceholder = new RegularRule(substitutedPlaceholder);
+		this.appliedRule = rule;
+		this.result = result;
+	}
+	
+	public RuleApplication(Rule substitutedPlaceholder, Rule rule, Rule result) {
+		this.substitutedPlaceholder = substitutedPlaceholder;
 		this.appliedRule = rule;
 		this.result = result;
 	}
@@ -26,7 +32,7 @@ public class RuleApplication {
 	public int hashCode() {
 		final int prime = 31;
 		int result = 1;
-		result = prime * result + ((nonTerminal == null) ? 0 : nonTerminal.hashCode());
+		result = prime * result + ((substitutedPlaceholder == null) ? 0 : substitutedPlaceholder.hashCode());
 		result = prime * result + ((this.result == null) ? 0 : this.result.hashCode());
 		result = prime * result + ((appliedRule == null) ? 0 : appliedRule.hashCode());
 		return result;
@@ -41,10 +47,10 @@ public class RuleApplication {
 		if (getClass() != obj.getClass())
 			return false;
 		RuleApplication other = (RuleApplication) obj;
-		if (nonTerminal == null) {
-			if (other.nonTerminal != null)
+		if (substitutedPlaceholder == null) {
+			if (other.substitutedPlaceholder != null)
 				return false;
-		} else if (!nonTerminal.equals(other.nonTerminal))
+		} else if (!substitutedPlaceholder.equals(other.substitutedPlaceholder))
 			return false;
 		if (result == null) {
 			if (other.result != null)
@@ -61,6 +67,6 @@ public class RuleApplication {
 	
 	@Override
 	public String toString() {
-		return nonTerminal + "→"+appliedRule;
+		return substitutedPlaceholder + "→"+appliedRule;
 	}
 }
