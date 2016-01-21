@@ -21,6 +21,8 @@ public interface Rule {
 	<T> T accept(RuleVisitor<T> ruleVisitor);
 
 	Rule append(Terminal... terminals);
+	
+	Rule append(Rule rule);
 
 	boolean containsNonTerminals();
 

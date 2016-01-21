@@ -53,6 +53,30 @@ public class ContextFreeRule implements Rule {
 		return new NonLinearRule(new ConstantRule(leftTerminals), new RegularRule(nonTerminal, TerminalUtil.append(rightTerminals, terminals)));
 	}
 
+	@Override
+	public Rule append(Rule rule) {
+		return rule.accept(new RuleVisitor<Rule>() {
+			@Override
+			public Rule visit(ContextFreeRule contextFreeRule) {
+				return new NonLinearRule(ContextFreeRule.this, contextFreeRule);
+			}
+
+			@Override
+			public Rule visit(NonLinearRule nonLinearRule) {
+				return new NonLinearRule(ContextFreeRule.this, nonLinearRule);
+			}
+
+			@Override
+			public Rule visit(RegularRule regularRule) {
+				return new NonLinearRule(ContextFreeRule.this, regularRule);
+			}
+
+			@Override
+			public Rule visit(ConstantRule constantRule) {
+				return append(constantRule.getTerminals());
+			}
+		});
+	}
 
 	public NonTerminal getNonTerminal() {
 		return nonTerminal;
@@ -70,6 +94,10 @@ public class ContextFreeRule implements Rule {
 	
 	public Terminal[] getRightTerminals() {
 		return rightTerminals;
+	}
+	
+	public Terminal[] getLeftTerminals() {
+		return leftTerminals;
 	}
 	
 	@Override
@@ -107,4 +135,5 @@ public class ContextFreeRule implements Rule {
 			return false;
 		return true;
 	}
+	
 }

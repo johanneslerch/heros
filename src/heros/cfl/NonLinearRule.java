@@ -40,6 +40,31 @@ public class NonLinearRule implements Rule {
 	public Rule append(Terminal... terminals) {
 		return new NonLinearRule(left, right.append(terminals));
 	}
+	
+	@Override
+	public Rule append(Rule rule) {
+		return rule.accept(new RuleVisitor<Rule>() {
+			@Override
+			public Rule visit(ContextFreeRule contextFreeRule) {
+				return new NonLinearRule(NonLinearRule.this, contextFreeRule);
+			}
+
+			@Override
+			public Rule visit(NonLinearRule nonLinearRule) {
+				return new NonLinearRule(NonLinearRule.this, nonLinearRule);
+			}
+
+			@Override
+			public Rule visit(RegularRule regularRule) {
+				return new NonLinearRule(NonLinearRule.this, regularRule);
+			}
+
+			@Override
+			public Rule visit(ConstantRule constantRule) {
+				return append(constantRule.getTerminals());
+			}
+		});
+	}
 
 	public Rule getLeft() {
 		return left;
@@ -61,7 +86,7 @@ public class NonLinearRule implements Rule {
 
 	@Override
 	public String toString() {
-		return left.toString()+right.toString();
+		return "("+left.toString()+","+right.toString()+")";
 	}
 	
 	@Override

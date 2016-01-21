@@ -79,6 +79,31 @@ public class RegularRule implements Rule {
 	public Rule append(Terminal... terminals) {
 		return new RegularRule(nonTerminal, constantRule.append(terminals));
 	}
+	
+	@Override
+	public Rule append(Rule rule) {
+		return rule.accept(new RuleVisitor<Rule>() {
+			@Override
+			public Rule visit(ContextFreeRule contextFreeRule) {
+				return new NonLinearRule(RegularRule.this, contextFreeRule);
+			}
+
+			@Override
+			public Rule visit(NonLinearRule nonLinearRule) {
+				return new NonLinearRule(RegularRule.this, nonLinearRule);
+			}
+
+			@Override
+			public Rule visit(RegularRule regularRule) {
+				return new NonLinearRule(RegularRule.this, regularRule);
+			}
+
+			@Override
+			public Rule visit(ConstantRule constantRule) {
+				return append(constantRule.getTerminals());
+			}
+		});
+	}
 
 	@Override
 	public int hashCode() {

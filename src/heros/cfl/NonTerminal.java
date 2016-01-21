@@ -12,19 +12,26 @@ package heros.cfl;
 
 import java.util.Collection;
 import java.util.List;
+import java.util.Set;
 
 import com.google.common.collect.Lists;
+import com.google.common.collect.Sets;
 
 public class NonTerminal {
 
 	private Object representation;
-	private List<Rule> rules = Lists.newLinkedList();
+	private Set<Rule> rules = Sets.newHashSet();
 
 	public NonTerminal(Object representation) {
 		this.representation = representation;
 	}
 
 	public void addRule(Rule rule) {
+		if(rule instanceof RegularRule) {
+			RegularRule regRule = (RegularRule) rule;
+			if(regRule.getNonTerminal() == this && regRule.getTerminals().length == 0)
+				return;
+		}
 		rules.add(rule);
 	}
 
@@ -39,5 +46,11 @@ public class NonTerminal {
 
 	public Object getRepresentation() {
 		return representation;
+	}
+
+	public Collection<Rule> dropRules() {
+		Set<Rule> tmp = rules;
+		rules = Sets.newHashSet();
+		return tmp;
 	}
 }

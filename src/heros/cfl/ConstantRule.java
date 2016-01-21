@@ -56,6 +56,32 @@ public class ConstantRule implements Rule {
 	}
 
 	@Override
+	public Rule append(Rule rule) {
+		return rule.accept(new RuleVisitor<Rule>(){
+			@Override
+			public Rule visit(ContextFreeRule contextFreeRule) {
+				return new ContextFreeRule(TerminalUtil.append(terminals, contextFreeRule.getLeftTerminals()), 
+						contextFreeRule.getNonTerminal(), contextFreeRule.getRightTerminals());
+			}
+
+			@Override
+			public Rule visit(NonLinearRule nonLinearRule) {
+				return new NonLinearRule(append(nonLinearRule.getLeft()), nonLinearRule.getRight());
+			}
+
+			@Override
+			public Rule visit(RegularRule regularRule) {
+				return new ContextFreeRule(terminals, regularRule.getNonTerminal(), regularRule.getTerminals());
+			}
+
+			@Override
+			public Rule visit(ConstantRule constantRule) {
+				return append(constantRule.getTerminals());
+			}
+		});
+	}
+
+	@Override
 	public boolean containsNonTerminals() {
 		return false;
 	}
