@@ -30,6 +30,8 @@ public class TerminalUtil {
 					result = BalanceResult.MORE_CONSUMERS;
 			}
 			else if(terminals[i].isExclusion()) {
+				if(firstConsumer < 0)
+					firstConsumer = i;
 				if(i+1 != terminals.length)
 					return BalanceResult.IMBALANCED;
 				int correspondingProducerIndex = 2*firstConsumer-i-1;
