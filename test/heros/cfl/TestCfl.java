@@ -347,8 +347,20 @@ public class TestCfl {
 		//Y: Xg̅ | f
 		X.addRule(new NonLinearRule(new RegularRule(Y), new RegularRule(X)));
 		X.addRule(new ContextFreeRule(new Terminal[] {f̅}, X, new Terminal[] {g̅}));
+		X.addRule(new ConstantRule(g));
 		Y.addRule(new RegularRule(X, g̅));
 		Y.addRule(new ConstantRule(f));
+		solvable(consumeFOnX);
+	}
+	
+	@Test
+	public void nonApproximatedContextFreeRule() {
+		//X: f̅hhYg | ffXg̅
+		//Y: Yh̄ | h̄
+		X.addRule(new ContextFreeRule(new Terminal[] {f̅, h, h}, Y, new Terminal[] {g}));
+		X.addRule(new ContextFreeRule(new Terminal[] {f, f}, X, new Terminal[] {g̅}));
+		Y.addRule(new RegularRule(Y, h̄));
+		Y.addRule(new ConstantRule(h̄));
 		solvable(consumeFOnX);
 	}
 	
@@ -366,9 +378,10 @@ public class TestCfl {
 
 	private void assertResult(SolverResult expected, Rule rule) {
 		SearchTreeViewer treeViewer = new SearchTreeViewer();
+		new RegularOverApproximizer().approximate(rule);
 		SearchTree searchTree = new SearchTree(rule, Option.some(treeViewer));
 		SolverResult actual = searchTree.search();
-		
+
 		System.out.println(treeViewer);
 		if(!expected.equals(actual)) {
 			fail(rule+" should be "+expected+", but was "+actual+". Given the rule set:\n"+new ToStringRuleVisitor(rule));

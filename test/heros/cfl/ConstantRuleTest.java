@@ -80,6 +80,13 @@ public class ConstantRuleTest {
 	}
 	
 	@Test
+	public void consumerProducerConsumer() {
+		sut = new ConstantRule(f̅, h, f̅);
+		assertFalse(sut.isPossible());
+		assertFalse(new RegularRule(new NonTerminal("X"), sut).isPossible());
+	}
+	
+	@Test
 	public void appendMatch() {
 		sut = new ConstantRule(f);
 		actual = sut.append(f̅);

@@ -58,7 +58,10 @@ public class SearchTreeNode {
 		
 		@Override
 		public Void visit(ContextFreeRule contextFreeRule) {
-			throw new IllegalStateException();
+			for(Rule rule : contextFreeRule.getNonTerminal().getRules()) {
+				newResult(new RuleApplication(contextFreeRule.getNonTerminal(), rule, contextFreeRule.applyForNonTerminal(rule)));
+			}				
+			return null;
 		}
 
 		@Override
@@ -125,7 +128,7 @@ public class SearchTreeNode {
 		return rule.accept(new RuleVisitor<Boolean>() {
 			@Override
 			public Boolean visit(ContextFreeRule contextFreeRule) {
-				throw new IllegalStateException();
+				return visit(new ConstantRule(contextFreeRule.getRightTerminals()));
 			}
 
 			@Override
@@ -162,7 +165,7 @@ public class SearchTreeNode {
 	
 	public void addSubTreeListener(SubTreeListener listener) {
 		if(listeners.add(listener) && childs!=null) {
-			for(SearchTreeNode child : childs) {
+			for(SearchTreeNode child : Lists.newLinkedList(childs)) {
 				listener.newChildren(this, child);
 			}
 		}

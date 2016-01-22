@@ -50,7 +50,9 @@ public class ContextFreeRule implements Rule {
 
 	@Override
 	public Rule append(Terminal... terminals) {
-		return new NonLinearRule(new ConstantRule(leftTerminals), new RegularRule(nonTerminal, TerminalUtil.append(rightTerminals, terminals)));
+		if(terminals.length == 0)
+			return this;
+		return new ContextFreeRule(leftTerminals, nonTerminal, TerminalUtil.append(rightTerminals, terminals));
 	}
 
 	@Override
@@ -74,6 +76,32 @@ public class ContextFreeRule implements Rule {
 			@Override
 			public Rule visit(ConstantRule constantRule) {
 				return append(constantRule.getTerminals());
+			}
+		});
+	}
+	
+
+	public Rule applyForNonTerminal(Rule rule) {
+		return rule.accept(new RuleVisitor<Rule>() {
+			@Override
+			public Rule visit(ContextFreeRule contextFreeRule) {
+				return new ContextFreeRule(TerminalUtil.append(leftTerminals, contextFreeRule.getLeftTerminals()), 
+						contextFreeRule.getNonTerminal(), TerminalUtil.append(contextFreeRule.getRightTerminals(), rightTerminals));
+			}
+
+			@Override
+			public Rule visit(NonLinearRule nonLinearRule) {
+				return new NonLinearRule(new ConstantRule(leftTerminals), nonLinearRule.append(rightTerminals));
+			}
+
+			@Override
+			public Rule visit(RegularRule regularRule) {
+				return new NonLinearRule(new ConstantRule(leftTerminals), regularRule.append(rightTerminals));
+			}
+
+			@Override
+			public Rule visit(ConstantRule constantRule) {
+				return new ConstantRule(TerminalUtil.append(TerminalUtil.append(leftTerminals, constantRule.getTerminals()), rightTerminals));
 			}
 		});
 	}

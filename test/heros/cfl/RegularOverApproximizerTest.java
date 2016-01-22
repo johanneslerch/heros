@@ -116,6 +116,33 @@ public class RegularOverApproximizerTest {
 		assertRules(Zprime, ε, new RegularRule(Xprime, j));
 	}
 	
+	@Test
+	public void nonLinearContextFree() {
+		X.addRule(new NonLinearRule(new RegularRule(Y), new RegularRule(X)));
+		X.addRule(new ContextFreeRule(new Terminal[] {h}, X, new Terminal[] {i}));
+		X.addRule(new ConstantRule(g));
+		Y.addRule(new RegularRule(X, i));
+		Y.addRule(new ConstantRule(f));
+		approximizer.approximate(new RegularRule(Y));
+		assertRules(X, new RegularRule(X, i), new RegularRule(Xprime, g));
+		assertRules(Xprime, ε, new RegularRule(Xprime, h), new RegularRule(Y), new RegularRule(Yprime));
+		assertRules(Y, new RegularRule(X, i), new RegularRule(Yprime, f));
+		assertRules(Yprime, ε, new RegularRule(Xprime));
+	}
+	
+	@Test
+	public void nonApproximatedContextFreeRule() {
+		X.addRule(new ContextFreeRule(new Terminal[] {f}, Y, new Terminal[] {g}));
+		X.addRule(new ContextFreeRule(new Terminal[] {k}, X, new Terminal[] {h}));
+		Y.addRule(new RegularRule(Y, i));
+		Y.addRule(new ConstantRule(j));
+		approximizer.approximate(new RegularRule(X));
+		assertRules(X, new NonLinearRule(new RegularRule(Xprime), new ContextFreeRule(new Terminal[] {f}, Y, new Terminal[] {g})),
+				new RegularRule(X, h));
+		assertRules(Xprime, ε, new RegularRule(Xprime, k));
+		assertRules(Y, new RegularRule(Y, i), new ConstantRule(j));
+	}
+	
 	private void assertRules(NonTerminal nt, Rule... rules) {
 		assertEquals("Expected rules "+Arrays.toString(rules)+", but got "+nt.getRules()+" for "+nt+".", rules.length, nt.getRules().size());
 		for(Rule r : rules) 

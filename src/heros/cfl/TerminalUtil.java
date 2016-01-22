@@ -15,6 +15,7 @@ import java.util.Arrays;
 public class TerminalUtil {
 
 	public static BalanceResult isBalanced(Terminal...terminals) {
+		BalanceResult result = BalanceResult.BALANCED;
 		int firstConsumer = -1;
 		for(int i=0; i<terminals.length; i++) {
 			if(terminals[i].isConsumer()) {
@@ -26,7 +27,7 @@ public class TerminalUtil {
 						return BalanceResult.IMBALANCED;
 				}	
 				else
-					return BalanceResult.MORE_CONSUMERS;
+					result = BalanceResult.MORE_CONSUMERS;
 			}
 			else if(terminals[i].isExclusion()) {
 				if(i+1 != terminals.length)
@@ -37,8 +38,10 @@ public class TerminalUtil {
 				if(terminals[i].isExcluding(terminals[correspondingProducerIndex].getRepresentation()))
 					return BalanceResult.IMBALANCED;
 			}
+			else
+				firstConsumer = -1;
 		}
-		return BalanceResult.BALANCED;
+		return result;
 	}
 	
 	public static enum BalanceResult {
