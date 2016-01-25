@@ -31,7 +31,7 @@ public class ContextFreeRule implements Rule {
 	
 	@Override
 	public boolean isSolved() {
-		return false;
+		return new ConstantRule(rightTerminals).isSolved();
 	}
 
 	@Override

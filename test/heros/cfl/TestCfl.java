@@ -72,11 +72,12 @@ public class TestCfl {
 	@Test
 	public void regularProduceConsumedTerminals() {
 		// X: X -g | Y g
-		// Y: Y f
+		// Y: Y f | f
 		// solvable X-f ?
 		X.addRule(new RegularRule(X, g̅));
 		X.addRule(new RegularRule(Y, g));
 		Y.addRule(new RegularRule(Y, f));
+		Y.addRule(new ConstantRule(f));
 		solvable(consumeFOnX);
 	}
 	
@@ -379,7 +380,7 @@ public class TestCfl {
 	private void assertResult(SolverResult expected, Rule rule) {
 		SearchTreeViewer treeViewer = new SearchTreeViewer();
 		new RegularOverApproximizer().approximate(rule);
-		SearchTree searchTree = new SearchTree(rule, Option.some(treeViewer));
+		SearchTree searchTree = new SearchTree(rule, Option.some(treeViewer), false);
 		SolverResult actual = searchTree.search();
 
 		System.out.println(treeViewer);

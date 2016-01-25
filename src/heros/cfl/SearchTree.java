@@ -29,9 +29,11 @@ public class SearchTree {
 	private Set<SearchTreeNode> visited = Sets.newHashSet();
 	private Option<SearchTreeViewer> treeViewer;
 	private Map<RegularRule, PrefixGuard> prefixGuard = Maps.newHashMap();
+	private boolean requireConstantSolution;
 
-	public SearchTree(Rule rootRule, Option<SearchTreeViewer> treeViewer) {
+	public SearchTree(Rule rootRule, Option<SearchTreeViewer> treeViewer, boolean requireConstantSolution) {
 		this.treeViewer = treeViewer;
+		this.requireConstantSolution = requireConstantSolution;
 		this.root = new SearchTreeNode(rootRule);
 		worklist.add(root);
 		if(treeViewer.isSome())
@@ -44,7 +46,7 @@ public class SearchTree {
 			if(!visited.add(current))
 				continue;
 			
-			if(current.isSolution()) {
+			if(isSolution(current)) {
 				return SolverResult.Solvable;
 			}
 			
@@ -57,6 +59,13 @@ public class SearchTree {
 			}
 		}
 		return SolverResult.NotSolvable;
+	}
+	
+	private boolean isSolution(SearchTreeNode node) {
+		if(requireConstantSolution)
+			return node.getRule() instanceof ConstantRule && node.isSolution();
+		else
+			return node.isSolution();
 	}
 	
 	private void checkPrefixesThenExpand(PrefixIterator iterator, SearchTreeNode node) {

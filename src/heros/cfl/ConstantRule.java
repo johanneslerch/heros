@@ -35,7 +35,7 @@ public class ConstantRule implements Rule {
 	@Override
 	public boolean isSolved() {
 		for(Terminal t : terminals)
-			if(t.isConsumer())
+			if(t.isConsumer() || t.isExclusion())
 				return false;
 		return true;
 	}
