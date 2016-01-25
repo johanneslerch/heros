@@ -126,7 +126,7 @@ public class RegularOverApproximizer {
 	private void rewrite(Set<NonTerminal> scc) {
 		for(final NonTerminal current : scc) {
 			final NonTerminal currentPrime = endStates.getOrCreate(current);
-			for(Rule rule : current.dropRules()) {
+			for(Rule rule : current.removeAllRules()) {
 				Pair<NonTerminal, Rule> result = rule.accept(new RewriteVisitor(scc, endStates, current, new ConstantRule()));
 				result.getO1().addRule(new RegularRule(currentPrime).append(result.getO2()));
 			}

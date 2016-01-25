@@ -30,6 +30,9 @@ public class SearchTree {
 	private Option<SearchTreeViewer> treeViewer;
 	private Map<RegularRule, PrefixGuard> prefixGuard = Maps.newHashMap();
 	private boolean requireConstantSolution;
+	private List<SearchTreeResultListener> listeners = Lists.newLinkedList();
+	private boolean solved;
+	private boolean running;
 
 	public SearchTree(Rule rootRule, Option<SearchTreeViewer> treeViewer, boolean requireConstantSolution) {
 		this.treeViewer = treeViewer;
@@ -39,15 +42,29 @@ public class SearchTree {
 		if(treeViewer.isSome())
 			treeViewer.some().add(null, root, null);
 	}
+	
+	public void addListener(SearchTreeResultListener listener) {
+		listeners.add(listener);
+		if(solved)
+			listener.solved();
+	}
 
-	public SolverResult search() {
+	public void search() {
+		if(solved || running)
+			return;
+		running = true;
+		
 		while(!worklist.isEmpty()) {
 			SearchTreeNode current = worklist.remove(0);
 			if(!visited.add(current))
 				continue;
 			
 			if(isSolution(current)) {
-				return SolverResult.Solvable;
+				solved = true;
+				for(SearchTreeResultListener listener: listeners)
+					listener.solved();
+				running = false;
+				return;
 			}
 			
 			if(current.isPossible()) {
@@ -58,7 +75,13 @@ public class SearchTree {
 				checkPrefixesThenExpand(prefixIterator, current);
 			}
 		}
-		return SolverResult.NotSolvable;
+		running = false;
+	}
+	
+	private void addToWorklist(SearchTreeNode node) {
+		worklist.add(node);
+		if(!solved && !running)
+			search();
 	}
 	
 	private boolean isSolution(SearchTreeNode node) {
@@ -90,7 +113,7 @@ public class SearchTree {
 		node.addSubTreeListener(new SubTreeListener() {
 			@Override
 			public void newChildren(SearchTreeNode parent, SearchTreeNode child) {
-				worklist.add(child);
+				addToWorklist(child);
 			}
 		});
 		node.expand(treeViewer);
@@ -199,7 +222,7 @@ public class SearchTree {
 					if(appl.result == null)
 						return;
 					
-					worklist.add(node.newChild(appl, treeViewer));
+					addToWorklist(node.newChild(appl, treeViewer));
 				}
 			});
 		}

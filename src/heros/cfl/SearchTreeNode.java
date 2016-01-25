@@ -15,6 +15,7 @@ import java.util.List;
 import com.google.common.collect.Lists;
 
 import fj.data.Option;
+import fj.function.Effect1;
 
 public class SearchTreeNode {
 
@@ -57,10 +58,13 @@ public class SearchTreeNode {
 		protected abstract void newResult(RuleApplication appl);
 		
 		@Override
-		public Void visit(ContextFreeRule contextFreeRule) {
-			for(Rule rule : contextFreeRule.getNonTerminal().getRules()) {
-				newResult(new RuleApplication(contextFreeRule.getNonTerminal(), rule, contextFreeRule.applyForNonTerminal(rule)));
-			}				
+		public Void visit(final ContextFreeRule contextFreeRule) {
+			contextFreeRule.getNonTerminal().foreachRule(new Effect1<Rule>() {
+				@Override
+				public void f(Rule rule) {
+					newResult(new RuleApplication(contextFreeRule.getNonTerminal(), rule, contextFreeRule.applyForNonTerminal(rule)));
+				}
+			});
 			return null;
 		}
 
@@ -80,10 +84,13 @@ public class SearchTreeNode {
 		}
 
 		@Override
-		public Void visit(RegularRule regularRule) {
-			for(Rule rule : regularRule.getNonTerminal().getRules()) {
-				newResult(new RuleApplication(regularRule.getNonTerminal(), rule, regularRule.applyForNonTerminal(rule)));
-			}				
+		public Void visit(final RegularRule regularRule) {
+			regularRule.getNonTerminal().foreachRule(new Effect1<Rule>() {
+				@Override
+				public void f(Rule rule) {
+					newResult(new RuleApplication(regularRule.getNonTerminal(), rule, regularRule.applyForNonTerminal(rule)));
+				}
+			});
 			return null;
 		}
 

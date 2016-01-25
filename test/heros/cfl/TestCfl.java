@@ -10,10 +10,15 @@
  ******************************************************************************/
 package heros.cfl;
 
+import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
-import static heros.cfl.SolverResult.*;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
 
 import org.junit.Test;
+import org.mockito.Mockito;
+import org.mockito.exceptions.base.MockitoAssertionError;
 
 import fj.data.Option;
 
@@ -365,27 +370,47 @@ public class TestCfl {
 		solvable(consumeFOnX);
 	}
 	
+	@Test
+	public void lateRule() {
+		SearchTreeResultListener listener = delayed(consumeFOnX);
+		verify(listener, never()).solved();
+		X.addRule(new ConstantRule(f));
+		verify(listener).solved();
+	}
+	
+	//TODO more late rule tests
+	//TODO tests for removing rules
+	
 	private void solvable(Rule rule) {
-		assertResult(Solvable, rule);
+		SearchTreeResultListener listener = delayed(rule);
+		try {
+			Mockito.verify(listener).solved();
+		} catch(MockitoAssertionError e) {
+			throw new AssertionError(rule+" should be solvable, but was not. Given rule set:\n"+new ToStringRuleVisitor(rule), e);
+		}
 	}
 	
-	private void unsolvable(Rule rule) {
-		assertResult(NotSolvable, rule);
+	private void unsolvable(final Rule rule) {
+		runSearch(new SearchTreeResultListener() {
+			@Override
+			public void solved() {
+				fail(rule+" should not be solvable, but was solved. Given rule set:\n"+new ToStringRuleVisitor(rule));
+			}
+		}, rule);
 	}
 	
-	private void unknown(Rule rule) {
-		assertResult(Unknown, rule);
+	private SearchTreeResultListener delayed(Rule rule) {
+		SearchTreeResultListener listener = mock(SearchTreeResultListener.class);
+		runSearch(listener, rule);
+		return listener;
 	}
-
-	private void assertResult(SolverResult expected, Rule rule) {
+	
+	private void runSearch(SearchTreeResultListener listener, Rule rule) {
 		SearchTreeViewer treeViewer = new SearchTreeViewer();
 		new RegularOverApproximizer().approximate(rule);
 		SearchTree searchTree = new SearchTree(rule, Option.some(treeViewer), false);
-		SolverResult actual = searchTree.search();
-
+		searchTree.addListener(listener);
+		searchTree.search();
 		System.out.println(treeViewer);
-		if(!expected.equals(actual)) {
-			fail(rule+" should be "+expected+", but was "+actual+". Given the rule set:\n"+new ToStringRuleVisitor(rule));
-		}
 	}
 }
