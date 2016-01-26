@@ -31,6 +31,10 @@ public class SearchTreeViewer {
 		tree.put(parent, new Pair<RuleApplication, SearchTreeNode>(ruleAppl, child));
 	}
 
+	public void remove(SearchTreeNode parent, SearchTreeNode child, RuleApplication ruleAppl) {
+		tree.remove(parent, new Pair<RuleApplication, SearchTreeNode>(ruleAppl, child));
+	}
+
 	@Override
 	public String toString() {
 		Set<SearchTreeNode> visited = Sets.newHashSet();

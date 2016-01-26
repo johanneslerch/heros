@@ -28,10 +28,12 @@ public class RegularOverApproximizerTest {
 	ProducingTerminal j = new ProducingTerminal("j");
 	ProducingTerminal k = new ProducingTerminal("k");
 
+	NonTerminal W = new NonTerminal("W");
 	NonTerminal X = new NonTerminal("X");
 	NonTerminal Y = new NonTerminal("Y");
 	NonTerminal Z = new NonTerminal("Z");
 	
+	NonTerminal Wprime = approximizer.createNonTerminalPrime(W);
 	NonTerminal Xprime = approximizer.createNonTerminalPrime(X);
 	NonTerminal Yprime = approximizer.createNonTerminalPrime(Y);
 	NonTerminal Zprime = approximizer.createNonTerminalPrime(Z);
@@ -141,6 +143,105 @@ public class RegularOverApproximizerTest {
 				new RegularRule(X, h));
 		assertRules(Xprime, ε, new RegularRule(Xprime, k));
 		assertRules(Y, new RegularRule(Y, i), new ConstantRule(j));
+	}
+	
+	@Test
+	public void delayedNonCyclic() {
+		X.addRule(new RegularRule(Y, f));
+		approximizer.approximate(new RegularRule(X));
+		Y.addRule(new ConstantRule(g));
+		assertRules(X, new RegularRule(Y, f));
+		assertRules(Y, new ConstantRule(g));
+	}
+	
+	@Test
+	public void delayedRuleOutOfApproximatedScc() {
+		X.addRule(new ContextFreeRule(new Terminal[] {f}, Y, new Terminal[] {g}));
+		Y.addRule(new RegularRule(X));
+		Y.addRule(new ConstantRule(g));
+		approximizer.approximate(new RegularRule(X));
+		Y.addRule(new RegularRule(Z));
+		
+		assertRules(X, new RegularRule(Y, g));
+		assertRules(Y, new RegularRule(X), new RegularRule(Yprime, g), new NonLinearRule(new RegularRule(Yprime), new RegularRule(Z)));
+		assertRules(Xprime, ε, new RegularRule(Yprime));
+		assertRules(Yprime, ε, new RegularRule(Xprime, f));
+	}
+	
+	@Test
+	public void delayedRuleInApproximatedScc() {
+		X.addRule(new ContextFreeRule(new Terminal[] {f}, Y, new Terminal[] {g}));
+		Y.addRule(new RegularRule(X));
+		Y.addRule(new ConstantRule(g));
+		approximizer.approximate(new RegularRule(X));
+		Y.addRule(new ContextFreeRule(new Terminal[] {h}, X, new Terminal[] {i}));
+		
+		assertRules(X, new RegularRule(Y, g));
+		assertRules(Y, new RegularRule(X), new RegularRule(Yprime, g), new RegularRule(X, i));
+		assertRules(Xprime, ε, new RegularRule(Yprime), new RegularRule(Yprime, h));
+		assertRules(Yprime, ε, new RegularRule(Xprime, f));
+	}
+	
+	@Test
+	public void delayedRuleIntoApproximatedScc() {
+		X.addRule(new ContextFreeRule(new Terminal[] {f}, Y, new Terminal[] {g}));
+		Y.addRule(new RegularRule(X));
+		Y.addRule(new ConstantRule(g));
+		approximizer.approximate(new RegularRule(X));
+		Z.addRule(new RegularRule(X));
+		
+		assertRules(X, new RegularRule(Y, g));
+		assertRules(Y, new RegularRule(X), new RegularRule(Yprime, g));
+		assertRules(Xprime, ε, new RegularRule(Yprime));
+		assertRules(Yprime, ε, new RegularRule(Xprime, f));
+		assertRules(Z, new RegularRule(X));
+	}
+	
+	@Test
+	public void delayedRuleNotLeftLinearInScc() {
+		X.addRule(new RegularRule(Y, f));
+		Y.addRule(new RegularRule(X, h));
+		Y.addRule(new ConstantRule(g));
+		approximizer.approximate(new RegularRule(X));
+		X.addRule(new ContextFreeRule(new Terminal[] {f}, Y, new Terminal[] {g}));
+		
+		assertRules(X, new RegularRule(Y, f), new RegularRule(Y, g));
+		assertRules(Y, new RegularRule(X, h), new RegularRule(Yprime, g));
+		assertRules(Xprime, ε, new RegularRule(Yprime));
+		assertRules(Yprime, ε, new RegularRule(Xprime, f));
+	}
+	
+	@Test
+	public void delayedRuleExtendingApproximatedScc() {
+		X.addRule(new ContextFreeRule(new Terminal[] {f}, Y, new Terminal[] {g}));
+		Y.addRule(new RegularRule(X));
+		Y.addRule(new ConstantRule(g));
+		Y.addRule(new ContextFreeRule(new Terminal[] {k}, Z, new Terminal[] {h}));
+		approximizer.approximate(new RegularRule(X));
+		Z.addRule(new ContextFreeRule(new Terminal[]{j}, X, new Terminal[] {i}));
+		
+		assertRules(X, new RegularRule(Y, g));
+		assertRules(Xprime, ε, new RegularRule(Yprime), new RegularRule(Zprime, j));
+		assertRules(Y, new RegularRule(X), new RegularRule(Yprime, g), new RegularRule(Z, h));
+		assertRules(Yprime, ε, new RegularRule(Xprime, f));
+		assertRules(Z, new RegularRule(X, i));
+		assertRules(Zprime, ε, new RegularRule(Yprime, k));
+	}
+	
+	@Test
+	public void delayedRuleConnectingTwoApproximatedSccs() {
+		W.addRule(new ContextFreeRule(new Terminal[] {f}, X, new Terminal[] {g}));
+		X.addRule(new ContextFreeRule(new Terminal[] {h}, W, new Terminal[] {i}));
+		X.addRule(new ContextFreeRule(new Terminal[] {j}, Y, new Terminal[] {k}));
+		Y.addRule(new ContextFreeRule(new Terminal[] {g}, Z, new Terminal[] {f}));
+		Z.addRule(new ContextFreeRule(new Terminal[] {h}, Y, new Terminal[] {k}));
+		approximizer.approximate(new RegularRule(X));
+		Y.addRule(new ContextFreeRule(new Terminal[] {j}, X, new Terminal[] {g}));
+		
+		assertRules(W, new RegularRule(X, g));
+		assertRules(X, new RegularRule(W, i), new RegularRule(Y, k));
+		assertRules(Y, new RegularRule(X, g), new RegularRule(Z, f));
+		assertRules(Z, new RegularRule(Y, k));
 	}
 	
 	private void assertRules(NonTerminal nt, Rule... rules) {

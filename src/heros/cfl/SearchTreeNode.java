@@ -10,9 +10,14 @@
  ******************************************************************************/
 package heros.cfl;
 
-import java.util.List;
+import heros.cfl.NonTerminal.Listener;
 
+import java.util.List;
+import java.util.Map.Entry;
+
+import com.google.common.collect.HashMultimap;
 import com.google.common.collect.Lists;
+import com.google.common.collect.Multimap;
 
 import fj.data.Option;
 import fj.function.Effect1;
@@ -22,6 +27,7 @@ public class SearchTreeNode {
 	private Rule rule;
 	private List<SubTreeListener> listeners = Lists.newLinkedList();
 	private List<SearchTreeNode> childs = Lists.newLinkedList();
+	private Multimap<NonTerminal, NonTerminal.Listener> ownListeners = HashMultimap.create();
 
 	public SearchTreeNode(Rule rule) {
 		this.rule = rule;
@@ -44,8 +50,8 @@ public class SearchTreeNode {
 		});
 	}
 	
-	SearchTreeNode newChild(RuleApplication appl, Option<SearchTreeViewer> treeViewer) {
-		SearchTreeNode newChild = new SearchTreeNode(appl.result);
+	SearchTreeNode newChild(final RuleApplication appl, final Option<SearchTreeViewer> treeViewer) {
+		final SearchTreeNode newChild = new SearchTreeNode(appl.result);
 		childs.add(newChild);
 		notifyListenersAboutNewChild(newChild);
 		if(treeViewer.isSome())
@@ -53,13 +59,13 @@ public class SearchTreeNode {
 		return newChild;
 	}
 
-	private static abstract class ExpandingVisitor implements RuleVisitor<Void> {
+	private abstract class ExpandingVisitor implements RuleVisitor<Void> {
 		
 		protected abstract void newResult(RuleApplication appl);
 		
 		@Override
 		public Void visit(final ContextFreeRule contextFreeRule) {
-			contextFreeRule.getNonTerminal().foreachRule(new Effect1<Rule>() {
+			foreachRule(contextFreeRule.getNonTerminal(), new Effect1<Rule>() {
 				@Override
 				public void f(Rule rule) {
 					newResult(new RuleApplication(contextFreeRule.getNonTerminal(), rule, contextFreeRule.applyForNonTerminal(rule)));
@@ -85,7 +91,7 @@ public class SearchTreeNode {
 
 		@Override
 		public Void visit(final RegularRule regularRule) {
-			regularRule.getNonTerminal().foreachRule(new Effect1<Rule>() {
+			foreachRule(regularRule.getNonTerminal(), new Effect1<Rule>() {
 				@Override
 				public void f(Rule rule) {
 					newResult(new RuleApplication(regularRule.getNonTerminal(), rule, regularRule.applyForNonTerminal(rule)));
@@ -97,6 +103,25 @@ public class SearchTreeNode {
 		@Override
 		public Void visit(ConstantRule constantRule) {
 			throw new IllegalStateException();
+		}
+	}
+	
+	private void foreachRule(NonTerminal nonTerminal, final Effect1<Rule> effect) {
+		Listener listener = new Listener() {
+			@Override
+			public void addedRule(NonTerminal nt, Rule rule) {
+				effect.f(rule);
+			}
+
+			@Override
+			public void removedRule(NonTerminal nt, Rule rule) {
+			}
+			
+		};
+		nonTerminal.addListener(listener );
+		ownListeners.put(nonTerminal, listener);
+		for(Rule rule : nonTerminal.getRules()) {
+			effect.f(rule);
 		}
 	}
 	
@@ -177,6 +202,15 @@ public class SearchTreeNode {
 			}
 		}
 	}
+
+	public void detach() {
+		childs = null;
+		listeners = null;
+		for(Entry<NonTerminal, Listener> entry : ownListeners.entries()) {
+			entry.getKey().removeListener(entry.getValue());
+		}
+		ownListeners = null;
+	}
 	
 	@Override
 	public String toString() {
@@ -207,5 +241,4 @@ public class SearchTreeNode {
 			return false;
 		return true;
 	}
-
 }

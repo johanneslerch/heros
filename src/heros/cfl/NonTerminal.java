@@ -14,11 +14,8 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Set;
 
-import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
-
-import fj.function.Effect1;
 
 public class NonTerminal {
 
@@ -36,10 +33,11 @@ public class NonTerminal {
 			if(regRule.getNonTerminal() == this && regRule.getTerminals().length == 0)
 				return;
 		}
-		for(Listener listener : listeners) {
+		
+		rules.add(rule);
+		for(Listener listener : Lists.newLinkedList(listeners)) {
 			listener.addedRule(this, rule);
 		}
-		rules.add(rule);
 	}
 	
 	public void removeRule(Rule rule) {
@@ -68,22 +66,6 @@ public class NonTerminal {
 		return rules;
 	}
 	
-	public void foreachRule(final Effect1<Rule> e) {
-		addListener(new Listener() {
-			@Override
-			public void addedRule(NonTerminal nt, Rule rule) {
-				e.f(rule);
-			}
-			
-			@Override
-			public void removedRule(NonTerminal nt, Rule rule) {
-			}
-		});
-		
-		for(Rule r : Lists.newLinkedList(rules))
-			e.f(r);
-	}
-
 	public Object getRepresentation() {
 		return representation;
 	}
@@ -94,6 +76,10 @@ public class NonTerminal {
 	
 	public void removeListener(Listener listener) {
 		listeners.remove(listener);
+	}
+	
+	List<Listener> getListeners() {
+		return listeners;
 	}
 	
 	public static interface Listener {

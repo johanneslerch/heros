@@ -10,19 +10,24 @@
  ******************************************************************************/
 package heros.cfl;
 
+import com.google.common.base.Optional;
+
 public class RuleApplication {
 
+	public final Optional<NonTerminal> nonTerminal;
 	public final Rule substitutedPlaceholder;
 	public final Rule appliedRule;
 	public final Rule result;
 	
 	public RuleApplication(NonTerminal substitutedPlaceholder, Rule rule, Rule result) {
+		this.nonTerminal = Optional.of(substitutedPlaceholder);
 		this.substitutedPlaceholder = new RegularRule(substitutedPlaceholder);
 		this.appliedRule = rule;
 		this.result = result;
 	}
 	
 	public RuleApplication(Rule substitutedPlaceholder, Rule rule, Rule result) {
+		this.nonTerminal = Optional.absent();
 		this.substitutedPlaceholder = substitutedPlaceholder;
 		this.appliedRule = rule;
 		this.result = result;

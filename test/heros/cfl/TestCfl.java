@@ -17,6 +17,7 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 
 import org.junit.Test;
+import org.junit.rules.TestWatcher;
 import org.mockito.Mockito;
 import org.mockito.exceptions.base.MockitoAssertionError;
 
@@ -39,6 +40,9 @@ public class TestCfl {
 	NonTerminal Y = new NonTerminal("Y");
 	NonTerminal Z = new NonTerminal("Z");
 	RegularRule consumeFOnX = new RegularRule(X, f̅);
+	private SearchTreeResultListener listener;
+	private SearchTreeViewer treeViewer;
+	private Rule challenge;
 	
 	
 	@Test
@@ -371,23 +375,81 @@ public class TestCfl {
 	}
 	
 	@Test
-	public void lateRule() {
-		SearchTreeResultListener listener = delayed(consumeFOnX);
-		verify(listener, never()).solved();
-		X.addRule(new ConstantRule(f));
-		verify(listener).solved();
+	public void reproducableNonLinearRule() {
+		X.addRule(new ConstantRule(g̅, g̅, g̅));
+		Y.addRule(new ConstantRule(g));
+		Y.addRule(new ConstantRule(f));
+		X.addRule(new NonLinearRule(new RegularRule(Y), new RegularRule(X)));
+		solvable(consumeFOnX);
 	}
 	
-	//TODO more late rule tests
-	//TODO tests for removing rules
+	@Test
+	public void delayedConstantRule() {
+		delayed(consumeFOnX);
+		assertUnsolved();
+		X.addRule(new ConstantRule(f));
+		assertSolved();
+	}
+	
+	@Test
+	public void delayedNonLinearRule() {
+		X.addRule(new ConstantRule(g̅, g̅, g̅));
+		Y.addRule(new ConstantRule(g));
+		Y.addRule(new ConstantRule(f));
+		delayed(consumeFOnX);
+		assertUnsolved();
+		X.addRule(new NonLinearRule(new RegularRule(Y), new RegularRule(X)));
+		assertSolved();
+	}
+	
+	@Test
+	public void delayedRegularRule() {
+		delayed(consumeFOnX);
+		assertUnsolved();
+		X.addRule(new RegularRule(X, f));
+		assertSolved();
+	}
+	
+	@Test
+	public void delayedContextFreeRule() {
+		delayed(consumeFOnX);
+		assertUnsolved();
+		X.addRule(new ContextFreeRule(new Terminal[] {h}, X, new Terminal[] {f}));
+		assertSolved();
+	}
+	
+	@Test
+	public void delayedRemoveRule() {
+		X.addRule(new RegularRule(Y));
+		delayed(consumeFOnX);
+		assertUnsolved();
+		X.removeRule(new RegularRule(Y));
+		assertUnsolved();
+		Y.addRule(new ConstantRule(f));
+		assertUnsolved();
+	}
+	
+	@Test
+	public void delayedRequiresApproximation() {
+		delayed(consumeFOnX);
+		assertUnsolved();
+		X.addRule(new ContextFreeRule(new Terminal[] {f}, X, new Terminal[] {g̅}));
+		assertSolved();
+	}
+	
+	
+	/* --------------------------------------------------------*/
 	
 	private void solvable(Rule rule) {
-		SearchTreeResultListener listener = delayed(rule);
+		delayed(rule);
 		try {
 			Mockito.verify(listener).solved();
 		} catch(MockitoAssertionError e) {
 			throw new AssertionError(rule+" should be solvable, but was not. Given rule set:\n"+new ToStringRuleVisitor(rule), e);
 		}
+		assertTrue(X.getListeners().isEmpty());
+		assertTrue(Y.getListeners().isEmpty());
+		assertTrue(Z.getListeners().isEmpty());
 	}
 	
 	private void unsolvable(final Rule rule) {
@@ -399,18 +461,41 @@ public class TestCfl {
 		}, rule);
 	}
 	
-	private SearchTreeResultListener delayed(Rule rule) {
-		SearchTreeResultListener listener = mock(SearchTreeResultListener.class);
+	private void assertUnsolved() {
+		try {
+			verify(listener, never()).solved();
+		} catch(MockitoAssertionError e) {
+			throw new AssertionError(challenge+" should not be solvable, but was solved. Given rule set:\n"+new ToStringRuleVisitor(challenge), e);
+		}
+	}
+	
+	private void assertSolved() {
+		try {
+			verify(listener).solved();
+		} catch(MockitoAssertionError e) {
+			throw new AssertionError(challenge+" should be solvable, but was not. Given rule set:\n"+new ToStringRuleVisitor(challenge), e);
+		}
+	}
+	
+	private void delayed(Rule rule) {
+		listener = mock(SearchTreeResultListener.class);
 		runSearch(listener, rule);
-		return listener;
 	}
 	
 	private void runSearch(SearchTreeResultListener listener, Rule rule) {
-		SearchTreeViewer treeViewer = new SearchTreeViewer();
+		this.challenge = rule;
+		treeViewer = new SearchTreeViewer();
 		new RegularOverApproximizer().approximate(rule);
 		SearchTree searchTree = new SearchTree(rule, Option.some(treeViewer), false);
 		searchTree.addListener(listener);
 		searchTree.search();
-		System.out.println(treeViewer);
 	}
+	
+	@org.junit.Rule
+	public TestWatcher watcher = new TestWatcher() {
+		protected void failed(Throwable e, org.junit.runner.Description description) {
+			System.err.println("---failed: "+description.getMethodName()+" ----");
+			System.err.println(treeViewer);
+		};
+	};
 }

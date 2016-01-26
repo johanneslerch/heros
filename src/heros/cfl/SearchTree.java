@@ -60,10 +60,7 @@ public class SearchTree {
 				continue;
 			
 			if(isSolution(current)) {
-				solved = true;
-				for(SearchTreeResultListener listener: listeners)
-					listener.solved();
-				running = false;
+				solved();
 				return;
 			}
 			
@@ -78,6 +75,21 @@ public class SearchTree {
 		running = false;
 	}
 	
+	private void solved() {
+		solved = true;
+		for(SearchTreeResultListener listener: listeners)
+			listener.solved();
+		running = false;
+		
+		visited.addAll(worklist);
+		worklist = null;
+		for(SearchTreeNode node : visited) {
+			node.detach();
+		}
+		visited = null;
+		prefixGuard = null;
+	}
+
 	private void addToWorklist(SearchTreeNode node) {
 		worklist.add(node);
 		if(!solved && !running)
