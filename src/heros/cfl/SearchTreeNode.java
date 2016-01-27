@@ -45,6 +45,9 @@ public class SearchTreeNode {
 		rule.accept(new ExpandingVisitor() {
 			@Override
 			protected void newResult(RuleApplication appl) {
+				if(childs==null)
+					return;
+				
 				newChild(appl, treeViewer);
 			}
 		});

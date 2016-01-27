@@ -11,13 +11,16 @@
 package heros.cfl;
 
 import heros.utilities.DefaultValueMap;
+import heros.utilities.EdgeBuilder;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Map;
 import java.util.Set;
 import java.util.Stack;
 
+import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 
@@ -36,23 +39,27 @@ public class StrongConnectedComponentDetector {
 	public StrongConnectedComponentDetector(NonTerminal... entryPoints) {
 		for(NonTerminal current : entryPoints)
 			if(indicesI.getOrCreate(current) == 0)
-				dfs(current);
+				dfs(current, getEdgeTargets(current));
 	}
 
 	public StrongConnectedComponentDetector(Collection<NonTerminal> entryPoints) {
 		for(NonTerminal current : entryPoints)
 			if(indicesI.getOrCreate(current) == 0)
-				dfs(current);
+				dfs(current, getEdgeTargets(current));
 	}
 
-	private void dfs(NonTerminal v) {
+	public StrongConnectedComponentDetector(Edge edge) {
+		dfs(edge.source, edge.targets);
+	}
+
+	private void dfs(NonTerminal v, Iterable<NonTerminal> targets) {
 		stackS.push(v);
 		indicesI.put(v, stackS.size());
 		stackB.push(stackS.size());
 		
-		for(NonTerminal w : getEdgeTargets(v)) {
+		for(NonTerminal w : targets) {
 			if(indicesI.getOrCreate(w) == 0) {
-				dfs(w);
+				dfs(w, getEdgeTargets(w));
 			}
 			else {
 				while(indicesI.getOrCreate(w) < stackB.peek())
@@ -107,5 +114,40 @@ public class StrongConnectedComponentDetector {
 
 	public Collection<Set<NonTerminal>> results() {
 		return results;
+	}
+	
+	public static class Edge {
+		public final NonTerminal source;
+		public final Set<NonTerminal> targets;
+		
+		public Edge(NonTerminal source, NonTerminal... targets) {
+			this.source = source;
+			this.targets = Sets.newHashSet(targets);
+		}
+
+		public Edge(NonTerminal source, Set<NonTerminal> targets) {
+			this.source = source;
+			this.targets = targets;
+		}
+	}
+	
+	public static EdgeBuilder from(final NonTerminal source) {
+		return new EdgeBuilder() {
+			@Override
+			public Edge to(NonTerminal... targets) {
+				return new Edge(source, targets);
+			}
+
+			@Override
+			public Edge to(Set<NonTerminal> targets) {
+				return new Edge(source, targets);
+			}
+		};
+	}
+	
+	public static interface EdgeBuilder {
+		Edge to(NonTerminal... targets);
+
+		Edge to(Set<NonTerminal> targets);
 	}
 }
