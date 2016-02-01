@@ -129,14 +129,6 @@ public class ConstantRuleTest {
 		assertEquals(TerminalUtil.BalanceResult.MORE_CONSUMERS, TerminalUtil.isBalanced(actual.getTerminals()));
 	}
 	
-	@Ignore("cannot happen")
-	@Test
-	public void appendExclusionAndProducing() {
-		sut = new ConstantRule(not_f);
-		actual = sut.append(g);
-		assertEquals(new ConstantRule(g), actual);
-	}
-	
 	@Test
 	public void appendProducingAndExclusionMismatch() {
 		sut = new ConstantRule(f);

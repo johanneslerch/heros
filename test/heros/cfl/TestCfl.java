@@ -421,18 +421,6 @@ public class TestCfl {
 	}
 	
 	@Test
-	@Ignore("remove not implemented")
-	public void delayedRemoveRule() {
-		X.addRule(new RegularRule(Y));
-		delayed(consumeFOnX);
-		assertUnsolved();
-		X.removeRule(new RegularRule(Y));
-		assertUnsolved();
-		Y.addRule(new ConstantRule(f));
-		assertUnsolved();
-	}
-	
-	@Test
 	public void delayedRequiresApproximation() {
 		X.addRule(new ConstantRule());
 		delayed(consumeFOnX);
