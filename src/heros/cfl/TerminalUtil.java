@@ -95,4 +95,12 @@ public class TerminalUtil {
 		System.arraycopy(right, skipRight, newTerminals, left.length-skipLeft, right.length-skipRight);
 		return newTerminals;
 	}
+
+	public static boolean containsConstraints(Terminal[] terminals) {
+		for(Terminal t : terminals) {
+			if(t.isConsumer() || t.isExclusion())
+				return true;
+		}
+		return false;
+	}
 }
