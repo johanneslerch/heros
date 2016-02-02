@@ -27,7 +27,7 @@ public class SearchTreeNode {
 	private Rule rule;
 	private List<SubTreeListener> listeners = Lists.newLinkedList();
 	private List<SearchTreeNode> childs = Lists.newLinkedList();
-	private Multimap<NonTerminal, NonTerminal.Listener> ownListeners = HashMultimap.create();
+	Multimap<NonTerminal, NonTerminal.Listener> ownListeners = HashMultimap.create();
 
 	public SearchTreeNode(Rule rule) {
 		this.rule = rule;
@@ -42,6 +42,8 @@ public class SearchTreeNode {
 	}
 
 	public void expand(final Option<SearchTreeViewer> treeViewer) {
+		if(childs == null)
+			return;
 		rule.accept(new ExpandingVisitor() {
 			@Override
 			protected void newResult(RuleApplication appl) {

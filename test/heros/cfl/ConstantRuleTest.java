@@ -158,4 +158,32 @@ public class ConstantRuleTest {
 		assertEquals(new ConstantRule(f̅, not_g), actual);
 		assertEquals(TerminalUtil.BalanceResult.MORE_CONSUMERS, TerminalUtil.isBalanced(actual.getTerminals()));
 	}
+	
+	@Test
+	public void appendExclusionAndProducing() {
+		sut = new ConstantRule(not_g);
+		actual = sut.append(f);
+		assertEquals(new ConstantRule(not_g, f), actual);
+	}
+	
+	@Test
+	public void appendProducingExcludingProducing() {
+		sut = new ConstantRule(f);
+		actual = sut.append(not_g, g);
+		assertEquals(new ConstantRule(f, g), actual);
+	}
+	
+	@Test
+	public void appendConsumingExclusionAndExclusionProducing() {
+		sut = new ConstantRule(f̅, not_g);
+		actual = sut.append(not_f, g);
+		assertEquals(new ConstantRule(f̅, not_fg, g), actual);
+	}
+	
+	@Test
+	public void appendConsumerExclusionProduce() {
+		sut = new ConstantRule(f̅);
+		actual = sut.append(not_f, g);
+		assertEquals(new ConstantRule(f̅, not_f, g), actual);
+	}
 }

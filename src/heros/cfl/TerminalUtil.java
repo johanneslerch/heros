@@ -14,6 +14,9 @@ import java.util.Arrays;
 
 public class TerminalUtil {
 
+	/**
+	 * Precondition: sequence of terminals has been reduced already.
+	 */
 	public static BalanceResult isBalanced(Terminal...terminals) {
 		BalanceResult result = BalanceResult.BALANCED;
 		int firstConsumer = -1;
@@ -30,15 +33,12 @@ public class TerminalUtil {
 					result = BalanceResult.MORE_CONSUMERS;
 			}
 			else if(terminals[i].isExclusion()) {
-				if(firstConsumer < 0)
-					firstConsumer = i;
-				if(i+1 != terminals.length)
+				if(i>0 && terminals[i-1] instanceof ProducingTerminal && terminals[i].isExcluding(terminals[i-1].getRepresentation()))
 					return BalanceResult.IMBALANCED;
-				int correspondingProducerIndex = 2*firstConsumer-i-1;
-				if(correspondingProducerIndex < 0)
+				if(i+1 < terminals.length && terminals[i+1].isConsumer() && terminals[i].isExcluding(terminals[i+1].getRepresentation()))
+					return BalanceResult.IMBALANCED;
+				else
 					return BalanceResult.MORE_CONSUMERS;
-				if(terminals[i].isExcluding(terminals[correspondingProducerIndex].getRepresentation()))
-					return BalanceResult.IMBALANCED;
 			}
 			else
 				firstConsumer = -1;
@@ -57,15 +57,6 @@ public class TerminalUtil {
 		if(left.length == 0)
 			return right;
 		
-		if(right[0].isExclusion()) {
-			assert right.length == 1;
-			if(left[left.length-1].isExclusion()) {
-				Terminal[] newTerminals = Arrays.copyOf(left, left.length);
-				newTerminals[left.length-1] = ((ExclusionTerminal) left[left.length-1]).merge((ExclusionTerminal) right[0]);
-				return newTerminals;
-			}
-		}
-		
 		int skipLeft = 0;
 		int skipRight = 0;
 		for(int i=0; i<right.length; i++) {
@@ -82,7 +73,14 @@ public class TerminalUtil {
 					break;
 			}
 			else if(right[i].isExclusion() && left.length>i && !left[left.length-i-1].isConsumer()) {
-				if(right[i].isExcluding(left[left.length-i-1].getRepresentation()))
+				if(left[left.length-i-1].isExclusion()) {
+					skipRight++;
+					Terminal[] newTerminals = Arrays.copyOf(left, left.length-skipLeft + right.length-skipRight);
+					System.arraycopy(right, skipRight, newTerminals, left.length-skipLeft, right.length-skipRight);
+					newTerminals[left.length-i-1] = ((ExclusionTerminal) left[left.length-i-1]).merge((ExclusionTerminal) right[i]);
+					return newTerminals;
+				}
+				else if(right[i].isExcluding(left[left.length-i-1].getRepresentation()))
 					break;
 				else
 					skipRight++;

@@ -11,6 +11,7 @@
 package heros.cfl;
 
 import heros.cfl.TerminalUtil.BalanceResult;
+import heros.utilities.DefaultValueMap;
 
 import java.util.List;
 import java.util.Map;
@@ -26,9 +27,9 @@ public class SearchTree {
 
 	private SearchTreeNode root;
 	private List<SearchTreeNode> worklist = Lists.newLinkedList();
-	private Set<SearchTreeNode> visited = Sets.newHashSet();
+	private Map<Rule, SearchTreeNode> visited = Maps.newHashMap();
 	private Option<SearchTreeViewer> treeViewer;
-	private Map<RegularRule, PrefixGuard> prefixGuard = Maps.newHashMap();
+	private Map<RegularRule, PrefixGuard> prefixGuards = Maps.newHashMap();
 	private List<SearchTreeResultListener> listeners = Lists.newLinkedList();
 	private boolean solved;
 	private boolean running;
@@ -65,8 +66,10 @@ public class SearchTree {
 		
 		while(!worklist.isEmpty()) {
 			SearchTreeNode current = worklist.remove(0);
-			if(!visited.add(current))
+			if(visited.containsKey(current.getRule()))
 				continue;
+			else
+				visited.put(current.getRule(), current);
 			
 			if(resultChecker.isSolution(current.getRule())) {
 				solved();
@@ -88,13 +91,18 @@ public class SearchTree {
 		solved = true;
 		running = false;
 		
-		visited.addAll(worklist);
+		for(SearchTreeNode node : worklist) {
+			if(visited.containsKey(node.getRule()))
+				assert node.ownListeners.isEmpty();
+			else
+				visited.put(node.getRule(), node);
+		}
 		worklist = null;
-		for(SearchTreeNode node : visited) {
+		for(SearchTreeNode node : visited.values()) {
 			node.detach();
 		}
 		visited = null;
-		prefixGuard = null;
+		prefixGuards = null;
 
 		for(SearchTreeResultListener listener: listeners)
 			listener.solved();
@@ -111,17 +119,17 @@ public class SearchTree {
 	private void checkPrefixesThenExpand(PrefixIterator iterator, SearchTreeNode node) {
 		while(iterator.hasNext()) {
 			RegularRule prefixRule = iterator.next();
-			if(prefixGuard.containsKey(prefixRule)) {
-				PrefixGuard currentGuard = prefixGuard.get(prefixRule);
+			if(prefixGuards.containsKey(prefixRule)) {
+				PrefixGuard currentGuard = prefixGuards.get(prefixRule);
 				if(currentGuard.isBetterSuitedThan(iterator.suffix())) {
 					currentGuard.addReductionListener(new PrefixGuardListener(node, iterator));
 					return;
 				} else {
 					currentGuard.swapNode(node, iterator.suffix());
 				}
-			}
-			else
-				prefixGuard.put(prefixRule, new PrefixGuard(node, iterator.suffix()));
+			} else
+				if(createPrefixGuard(iterator, node, prefixRule))
+					return;
 		}
 
 		if(treeViewer.isSome())
@@ -134,6 +142,54 @@ public class SearchTree {
 			}
 		});
 		node.expand(treeViewer);
+	}
+
+	private boolean createPrefixGuard(final PrefixIterator iterator, final SearchTreeNode node, final RegularRule prefixRule) {
+		return node.getRule().accept(new RuleVisitor<Boolean>() {
+			@Override
+			public Boolean visit(ContextFreeRule contextFreeRule) {
+				prefixGuards.put(prefixRule, new PrefixGuard(node, iterator.suffix()));
+				return false;
+			}
+
+			@Override
+			public Boolean visit(NonLinearRule nonLinearRule) {
+				if(nonLinearRule.getRight() instanceof NonLinearRule)
+					nonLinearRule.getRight().accept(this);
+				else {
+					boolean isNew = !visited.containsKey(nonLinearRule.getRight());
+					SearchTreeNode prefixNode = isNew ? new SearchTreeNode(nonLinearRule.getRight()) : visited.get(nonLinearRule.getRight());
+					PrefixGuard guard = new PrefixGuard(prefixNode, iterator.suffix());
+					prefixGuards.put(prefixRule, guard);
+					guard.addReductionListener(new PrefixGuardListener(node, iterator));
+					
+					if(isNew) {
+						if(treeViewer.isSome())
+							treeViewer.some().addAuxiliaryComputation(prefixNode);
+						visited.put(nonLinearRule.getRight(), prefixNode);
+						prefixNode.addSubTreeListener(new SubTreeListener() {
+							@Override
+							public void newChildren(SearchTreeNode parent, SearchTreeNode child) {
+								addToWorklist(child);
+							}
+						});
+						prefixNode.expand(treeViewer);
+					}
+				}
+				return true;
+			}
+
+			@Override
+			public Boolean visit(RegularRule regularRule) {
+				prefixGuards.put(prefixRule, new PrefixGuard(node, iterator.suffix()));
+				return false;
+			}
+
+			@Override
+			public Boolean visit(ConstantRule constantRule) {
+				throw new IllegalStateException();
+			}
+		});
 	}
 	
 	private static class PrefixGuard {
@@ -233,15 +289,8 @@ public class SearchTree {
 		}
 
 		public void reducedToConstant(final Terminal[] constant) {
-			node.getRule().accept(new ReducedToConstantVisitor(prefixIterator.current(), constant) {
-				@Override
-				protected void newResult(RuleApplication appl) {
-					if(appl.result == null)
-						return;
-					
-					addToWorklist(node.newChild(appl, treeViewer));
-				}
-			});
+			Rule result = node.getRule().accept(new ReplaceSuffixByConstant(constant));
+			addToWorklist(node.newChild(new RuleApplication(prefixIterator.current(), new ConstantRule(constant), result), treeViewer));
 		}
 
 		public void reducedToEmpty() {
@@ -252,47 +301,46 @@ public class SearchTree {
 		}
 	}
 	
-	private static abstract class ReducedToConstantVisitor implements RuleVisitor<Void> {
+	private static class ReplaceSuffixByConstant implements RuleVisitor<Rule> {
 		
 		private Terminal[] constant;
-		private RegularRule prefix;
 
-		public ReducedToConstantVisitor(RegularRule prefix, Terminal[] constant) {
-			this.prefix = prefix;
+		public ReplaceSuffixByConstant(Terminal[] constant) {
 			this.constant = constant;
 		}
 		
-		protected abstract void newResult(RuleApplication appl);
-		
 		@Override
-		public Void visit(ContextFreeRule contextFreeRule) {
-			throw new IllegalStateException();
+		public Rule visit(ContextFreeRule contextFreeRule) {
+			return new ConstantRule(TerminalUtil.append(contextFreeRule.getLeftTerminals(), constant));
 		}
 
 		@Override
-		public Void visit(final NonLinearRule nonLinearRule) {
-			final ReducedToConstantVisitor outer = this;
-			nonLinearRule.getRight().accept(new ReducedToConstantVisitor(prefix, constant) {
-				@Override
-				protected void newResult(RuleApplication appl) {
-					if(appl.result == null)
-						outer.newResult(new RuleApplication(appl.substitutedPlaceholder, appl.appliedRule, nonLinearRule.getLeft().append(constant)));
-					else
-						outer.newResult(new RuleApplication(appl.substitutedPlaceholder, appl.appliedRule, 
-								new NonLinearRule(nonLinearRule.getLeft(), appl.result)));
-				}
-			});
-			return null;
+		public Rule visit(final NonLinearRule nonLinearRule) {
+			Rule result = nonLinearRule.getRight().accept(this);
+			return nonLinearRule.getLeft().append(result);
+//			
+//			
+//			final ReducedToConstantVisitor outer = this;
+//			nonLinearRule.getRight().accept(new ReducedToConstantVisitor(prefix, constant) {
+//				@Override
+//				protected void newResult(RuleApplication appl) {
+//					if(appl.result == null)
+//						outer.newResult(new RuleApplication(appl.substitutedPlaceholder, appl.appliedRule, nonLinearRule.getLeft().append(constant)));
+//					else
+//						outer.newResult(new RuleApplication(appl.substitutedPlaceholder, appl.appliedRule, 
+//								new NonLinearRule(nonLinearRule.getLeft(), appl.result)));
+//				}
+//			});
+//			return null;
 		}
 
 		@Override
-		public Void visit(RegularRule regularRule) {
-			newResult(new RuleApplication(prefix, new ConstantRule(constant), null));
-			return null;
+		public Rule visit(RegularRule regularRule) {
+			return new ConstantRule(constant);
 		}
 
 		@Override
-		public Void visit(ConstantRule constantRule) {
+		public Rule visit(ConstantRule constantRule) {
 			throw new IllegalStateException();
 		}
 	}

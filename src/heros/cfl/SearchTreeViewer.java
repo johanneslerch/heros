@@ -42,6 +42,10 @@ public class SearchTreeViewer {
 		append(-1, result, visited, null, null);
 		return result.toString();
 	}
+	
+	public void addAuxiliaryComputation(SearchTreeNode node) {
+		tree.put(null, new Pair<RuleApplication, SearchTreeNode>(null, node));
+	}
 
 	private void append(int depth, StringBuilder result, Set<SearchTreeNode> visited, RuleApplication ruleApplication, SearchTreeNode parent) {
 		Collection<Pair<RuleApplication, SearchTreeNode>> childs = tree.get(parent);
@@ -78,4 +82,5 @@ public class SearchTreeViewer {
 	public void removePrefixIteratorAssociation(SearchTreeNode node) {
 		blockedByUnreducedPrefixes.remove(node);
 	}
+
 }

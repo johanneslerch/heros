@@ -36,7 +36,8 @@ public class NonTerminal {
 		
 		rules.add(rule);
 		for(Listener listener : Lists.newLinkedList(listeners)) {
-			listener.addedRule(this, rule);
+			if(listeners!=null)
+				listener.addedRule(this, rule);
 		}
 	}
 	

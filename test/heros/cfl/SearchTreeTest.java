@@ -365,7 +365,7 @@ public class SearchTreeTest {
 		solvable(consumeFOnX);
 	}
 	
-	@Test
+	@Test @Ignore
 	public void nonApproximatedContextFreeRule() {
 		//X: f̅hhYg | ffXg̅
 		//Y: Yh̄ | h̄
@@ -447,6 +447,22 @@ public class SearchTreeTest {
 		assertUnsolved();
 	}
 	
+	@Test
+	public void nonLinearRuleWithSameNonTerminal() {
+		X.addRule(new NonLinearRule(new ContextFreeRule(new Terminal[] {f}, Y, new Terminal[0]), new RegularRule(Y)));
+		Y.addRule(new ConstantRule());
+		solvable(consumeFOnX);
+	}
+	
+	@Test
+	public void nonLinearRuleWithSameNonTerminal2() {
+		X.addRule(new ContextFreeRule(new Terminal[] {f}, Y, new Terminal[0]));
+		Y.addRule(new RegularRule(Y, g));
+		Y.addRule(new NonLinearRule(new RegularRule(Z), new RegularRule(Z)));
+		Z.addRule(new ConstantRule());
+		solvable(new RegularRule(X, g̅, g̅, f̅));
+	}
+	
 	/* --------------------------------------------------------*/
 	
 	private void solvable(Rule rule) {
@@ -502,6 +518,11 @@ public class SearchTreeTest {
 	
 	@org.junit.Rule
 	public TestWatcher watcher = new TestWatcher() {
+		protected void succeeded(org.junit.runner.Description description) {
+			System.out.println("---succeeded: "+description.getMethodName()+" ----");
+			System.out.println(treeViewer);
+		};
+		
 		protected void failed(Throwable e, org.junit.runner.Description description) {
 			System.err.println("---failed: "+description.getMethodName()+" ----");
 			System.err.println(treeViewer);
