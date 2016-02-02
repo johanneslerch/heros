@@ -11,8 +11,11 @@
 package heros.cfl.solver;
 
 import fj.data.Option;
+import heros.cfl.CollectNonTerminalsRuleVisitor;
 import heros.cfl.ConstantRule;
+import heros.cfl.NonLinearRule;
 import heros.cfl.NonTerminal;
+import heros.cfl.ProducingTerminal;
 import heros.cfl.RegularRule;
 import heros.cfl.Rule;
 import heros.cfl.SearchTree;
@@ -79,9 +82,12 @@ public class PerAccessPathMethodAnalyzer<Field, Fact, Stmt, Method> {
 		this.method = method;
 		this.sourceFact = sourceFact;
 		this.context = context;
-		this.callEdgeResolver = new NonTerminal(method+": "+sourceFact);
-		if(isZeroSource())
+		if(isZeroSource()) {
+			callEdgeResolver = new NonTerminal("{ZERO:"+method+"}");
 			callEdgeResolver.addRule(new ConstantRule());
+		}
+		else
+			this.callEdgeResolver = new NonTerminal("{SP:"+method+": "+sourceFact+"}");
 	}
 	
 	Context<Field, Fact, Stmt, Method> getContext() {
@@ -133,7 +139,7 @@ public class PerAccessPathMethodAnalyzer<Field, Fact, Stmt, Method> {
 
 	@Override
 	public String toString() {
-		return callEdgeResolver+"; "+sourceFact;
+		return method+sourceFact.toString();
 	}
 
 	void processCall(WrappedFactAtStatement<Field,Fact, Stmt, Method> factAtStmt) {
@@ -260,11 +266,15 @@ public class PerAccessPathMethodAnalyzer<Field, Fact, Stmt, Method> {
 		for (final ConstrainedFact<Fact> targetFact : targetFacts) {
 			final Rule concatenatedRule = factAtStmt.getRule().append(targetFact.terminals);
 			if(TerminalUtil.containsConstraints(targetFact.terminals)) {
-				SearchTree searchTree = new SearchTree(new RegularRule(callEdgeResolver).append(concatenatedRule), 
-						Option.<SearchTreeViewer> none(), false);
+				final Rule candidateRule = new RegularRule(callEdgeResolver).append(concatenatedRule);
+				log("Checking for solutions: "+candidateRule);
+				context.approximizer.approximate(candidateRule);
+				SearchTree searchTree = new SearchTree(candidateRule, 
+						Option.<SearchTreeViewer> none(), context.resultChecker);
 				searchTree.addListener(new SearchTreeResultListener() {
 					@Override
 					public void solved() {
+						log("Solution found for: "+candidateRule);
 						scheduleEdgeTo(successors, new WrappedFact<Field, Fact, Stmt, Method>(targetFact.fact, concatenatedRule));
 					}
 				});
@@ -281,17 +291,32 @@ public class PerAccessPathMethodAnalyzer<Field, Fact, Stmt, Method> {
 			context.factHandler.merge(sourceFact, incEdge.getCalleeSourceFact().getFact());
 		} else 
 			bootstrapAtMethodStartPoints();
+		
+		log("Incoming Edge: "+incEdge);
 		incomingEdges.add(incEdge);
-		callEdgeResolver.addRule(incEdge.getCalleeSourceFact().getRule());
+		callEdgeResolver.addRule(new RegularRule(incEdge.getCallerAnalyzer().callEdgeResolver).append(incEdge.getCalleeSourceFact().getRule()));
+		applySummaries(incEdge);
 	}
 
 	void applySummary(final CallEdge<Field, Fact, Stmt, Method> incEdge, final WrappedFactAtStatement<Field, Fact, Stmt, Method> exitFact) {
-		SearchTree searchTree = new SearchTree(exitFact.getRule(), Option.<SearchTreeViewer>none(), true);
+		final NonTerminal callingCtx = new NonTerminal("{Calling Context}");
+		callingCtx.addRule(new RegularRule(incEdge.getCallerAnalyzer().callEdgeResolver).append(incEdge.getCalleeSourceFact().getRule()));
+		final Rule candidateRule = new RegularRule(callingCtx).append(exitFact.getRule());
+		log("Checking if summary can be applied for incoming edge: "+incEdge+" and constraint: "+candidateRule);
+		context.approximizer.approximate(candidateRule);
+		SearchTree searchTree = new SearchTree(candidateRule, Option.<SearchTreeViewer>none(), new SearchTree.SearchTreeResultChecker() {
+			@Override
+			public boolean isSolution(Rule rule) {
+				if(rule instanceof NonLinearRule && ((NonLinearRule) rule).getLeft().accept(new CollectNonTerminalsRuleVisitor()).contains(callingCtx))
+					return false;
+				else
+					return context.resultChecker.isSolution(rule);
+			}
+		});
 		searchTree.addListener(new SearchTreeResultListener() {
 			@Override
 			public void solved() {
-				//TODO: check if constant sub results can be resolved by incEdge
-				
+				log("Solution found, summary will be applied for "+incEdge+". Checked: "+candidateRule);
 				Collection<Stmt> returnSites = context.icfg.getReturnSitesOfCallAt(incEdge.getCallSite());
 				for(Stmt returnSite : returnSites) {
 					FlowFunction<Fact> flowFunction = context.flowFunctions.getReturnFlowFunction(incEdge.getCallSite(), method, exitFact.getStatement(), returnSite);

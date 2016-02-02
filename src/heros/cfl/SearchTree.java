@@ -29,14 +29,23 @@ public class SearchTree {
 	private Set<SearchTreeNode> visited = Sets.newHashSet();
 	private Option<SearchTreeViewer> treeViewer;
 	private Map<RegularRule, PrefixGuard> prefixGuard = Maps.newHashMap();
-	private boolean requireConstantSolution;
 	private List<SearchTreeResultListener> listeners = Lists.newLinkedList();
 	private boolean solved;
 	private boolean running;
+	private SearchTreeResultChecker resultChecker;
 
-	public SearchTree(Rule rootRule, Option<SearchTreeViewer> treeViewer, boolean requireConstantSolution) {
+	public SearchTree(Rule rootRule, Option<SearchTreeViewer> treeViewer) {
+		this(rootRule, treeViewer, new SearchTreeResultChecker() {
+			@Override
+			public boolean isSolution(Rule rule) {
+				return rule.isSolved();
+			}
+		});
+	}
+	
+	public SearchTree(Rule rootRule, Option<SearchTreeViewer> treeViewer, SearchTreeResultChecker resultChecker) {
 		this.treeViewer = treeViewer;
-		this.requireConstantSolution = requireConstantSolution;
+		this.resultChecker = resultChecker;
 		this.root = new SearchTreeNode(rootRule);
 		worklist.add(root);
 		if(treeViewer.isSome())
@@ -59,7 +68,7 @@ public class SearchTree {
 			if(!visited.add(current))
 				continue;
 			
-			if(isSolution(current)) {
+			if(resultChecker.isSolution(current.getRule())) {
 				solved();
 				return;
 			}
@@ -77,8 +86,6 @@ public class SearchTree {
 	
 	private void solved() {
 		solved = true;
-		for(SearchTreeResultListener listener: listeners)
-			listener.solved();
 		running = false;
 		
 		visited.addAll(worklist);
@@ -88,19 +95,17 @@ public class SearchTree {
 		}
 		visited = null;
 		prefixGuard = null;
+
+		for(SearchTreeResultListener listener: listeners)
+			listener.solved();
+		
+		listeners = null;
 	}
 
 	private void addToWorklist(SearchTreeNode node) {
 		worklist.add(node);
 		if(!solved && !running)
 			search();
-	}
-	
-	private boolean isSolution(SearchTreeNode node) {
-		if(requireConstantSolution)
-			return node.getRule() instanceof ConstantRule && node.isSolution();
-		else
-			return node.isSolution();
 	}
 	
 	private void checkPrefixesThenExpand(PrefixIterator iterator, SearchTreeNode node) {
@@ -290,5 +295,9 @@ public class SearchTree {
 		public Void visit(ConstantRule constantRule) {
 			throw new IllegalStateException();
 		}
+	}
+	
+	public static interface SearchTreeResultChecker {
+		public boolean isSolution(Rule rule);
 	}
 }

@@ -37,7 +37,7 @@ public class RegularOverApproximizer {
 		}
 	};
 	private Map<NonTerminal, Set<NonTerminal>> nonTerminalToScc = Maps.newHashMap();
-	private boolean isSourceApproximated;
+	private Set<NonTerminal> visited = Sets.newHashSet();
 	
 	public NonTerminal createNonTerminalPrime(NonTerminal nt) {
 		return endStates.getOrCreate(nt);
@@ -65,6 +65,7 @@ public class RegularOverApproximizer {
 			void _visit(ConstantRule constantRule) {
 			}
 		});
+		entryPoints.removeAll(visited);
 		Collection<Set<NonTerminal>> sccs = new StrongConnectedComponentDetector(entryPoints).results();
 		for(Set<NonTerminal> scc : sccs) {
 			if(containsNonLeftLinearRules(scc)) {
@@ -200,7 +201,7 @@ public class RegularOverApproximizer {
 	}
 
 	public void addRule(final NonTerminal sourceNonTerminal, Rule rule) {
-		isSourceApproximated = nonTerminalToScc.containsKey(sourceNonTerminal);
+		final boolean isSourceApproximated = nonTerminalToScc.containsKey(sourceNonTerminal);
 		rule.accept(new RuleVisitor<Void>() {
 			@Override
 			public Void visit(final ContextFreeRule contextFreeRule) {

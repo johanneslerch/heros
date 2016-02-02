@@ -24,7 +24,7 @@ import org.mockito.exceptions.base.MockitoAssertionError;
 
 import fj.data.Option;
 
-public class TestCfl {
+public class SearchTreeTest {
 
 	ProducingTerminal f = new ProducingTerminal("f");
 	ConsumingTerminal f̅ = new ConsumingTerminal("f");
@@ -42,7 +42,7 @@ public class TestCfl {
 	NonTerminal Z = new NonTerminal("Z");
 	RegularRule consumeFOnX = new RegularRule(X, f̅);
 	private SearchTreeResultListener listener;
-	private SearchTreeViewer treeViewer;
+	private SearchTreeViewer treeViewer = new SearchTreeViewer();
 	private Rule challenge;
 	private RegularOverApproximizer approximizer;
 	
@@ -429,6 +429,23 @@ public class TestCfl {
 		assertSolved();
 	}
 	
+	@Test
+	public void terminationWithCustomSolutionChecker() {
+		X.addRule(new RegularRule(X, g));
+		this.challenge = new NonLinearRule(new RegularRule(Y), new RegularRule(X));
+		approximizer = new RegularOverApproximizer();
+		approximizer.approximate(challenge);
+		listener = mock(SearchTreeResultListener.class);
+		SearchTree searchTree = new SearchTree(challenge, Option.some(treeViewer), new SearchTree.SearchTreeResultChecker() {
+			@Override
+			public boolean isSolution(Rule rule) {
+				return false;
+			}
+		});
+		searchTree.addListener(listener);
+		searchTree.search();
+		assertUnsolved();
+	}
 	
 	/* --------------------------------------------------------*/
 	
@@ -476,10 +493,9 @@ public class TestCfl {
 	
 	private void runSearch(SearchTreeResultListener listener, Rule rule) {
 		this.challenge = rule;
-		treeViewer = new SearchTreeViewer();
 		approximizer = new RegularOverApproximizer();
 		approximizer.approximate(rule);
-		SearchTree searchTree = new SearchTree(rule, Option.some(treeViewer), false);
+		SearchTree searchTree = new SearchTree(rule, Option.some(treeViewer));
 		searchTree.addListener(listener);
 		searchTree.search();
 	}

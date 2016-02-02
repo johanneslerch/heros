@@ -121,7 +121,7 @@ public class SearchTreeNode {
 			}
 			
 		};
-		nonTerminal.addListener(listener );
+		nonTerminal.addListener(listener);
 		ownListeners.put(nonTerminal, listener);
 		for(Rule rule : nonTerminal.getRules()) {
 			effect.f(rule);
@@ -130,6 +130,8 @@ public class SearchTreeNode {
 	
 	protected void notifyListenersAboutNewChild(SearchTreeNode child) {
 		for(SubTreeListener listener : Lists.newLinkedList(listeners)) {
+			if(listeners == null) //may be detached in the meanwhile
+				return;
 			listener.newChildren(this, child);
 		}
 	}
@@ -199,7 +201,7 @@ public class SearchTreeNode {
 	}
 	
 	public void addSubTreeListener(SubTreeListener listener) {
-		if(listeners.add(listener) && childs!=null) {
+		if(listeners != null && listeners.add(listener) && childs!=null) {
 			for(SearchTreeNode child : Lists.newLinkedList(childs)) {
 				listener.newChildren(this, child);
 			}

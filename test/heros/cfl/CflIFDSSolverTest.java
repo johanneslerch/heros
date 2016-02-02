@@ -1552,8 +1552,8 @@ public class CflIFDSSolverTest {
 				callSite("c").calls("foo", flow("1", "1")).retSite("f", kill("1")),
 				normalStmt("f", flow("1", readField("g"), "1")).succ("g").succ("js"),
 				normalStmt("g", flow(2, "1", readField("f"), "1")).succ("h"),
-				normalStmt("h", flow("1", readField("f"), "1")).succ("i"),
-				normalStmt("i", kill(0, "1")).succ("j"),
+				normalStmt("h", flow(2, "1", readField("f"), "1")).succ("i"),
+				normalStmt("i", kill(2, "1")).succ("j"),
 				normalStmt("js", flow("1", "1")).succ("js_inner1").succ("js_inner2").succ("g"),
 				normalStmt("js_inner1", flow("1", readField("f"), "1")).succ("js"),
 				normalStmt("js_inner2", flow("1", readField("g"), "1")).succ("js"));
@@ -2080,8 +2080,8 @@ public class CflIFDSSolverTest {
 				normalStmt("d", flow("1", "1")).succ("e1").succ("js"),
 				normalStmt("e1", flow("1", readField("f"), "1")).succ("e2"),
 				normalStmt("e2", flow("1", prependField("f"), "1")).succ("js"),
-				normalStmt("js", flow(2, "1", "1")).succ("js").succ("f"),
-				normalStmt("f", flow(2, "1", overwriteField("f"), "1")).succ("g"),
+				normalStmt("js", flow("1", "1")).succ("js").succ("f"),
+				normalStmt("f", flow("1", overwriteField("f"), "1")).succ("g"),
 				normalStmt("g", flow(0, "1", readField("z"), "1")).succ("h"),
 				normalStmt("h").succ("i"));
 		

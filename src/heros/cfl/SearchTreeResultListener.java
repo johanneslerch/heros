@@ -10,6 +10,8 @@
  ******************************************************************************/
 package heros.cfl;
 
+import fj.data.Option;
+
 public interface SearchTreeResultListener {
 
 	void solved();

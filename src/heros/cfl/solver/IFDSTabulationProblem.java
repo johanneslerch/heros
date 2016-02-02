@@ -12,6 +12,7 @@ package heros.cfl.solver;
 
 import heros.InterproceduralCFG;
 import heros.SolverConfiguration;
+import heros.cfl.SearchTree;
 import heros.solver.IFDSSolver;
 import heros.solver.Pair;
 
@@ -65,4 +66,5 @@ public interface IFDSTabulationProblem<N,FieldRef, D ,M, I extends Interprocedur
 	 */
 	D zeroValue();
 
+	SearchTree.SearchTreeResultChecker defaultSearchTreeResultChecker();
 }
