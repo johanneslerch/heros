@@ -12,6 +12,8 @@ package heros.cfl;
 
 import java.util.Arrays;
 
+import fj.data.Option;
+
 public class TerminalUtil {
 
 	/**
@@ -100,5 +102,60 @@ public class TerminalUtil {
 				return true;
 		}
 		return false;
+	}
+
+	public static BalanceResult isBalanced(Rule rule) {
+		return rule.accept(new RuleVisitor<BalanceResult>() {
+			@Override
+			public BalanceResult visit(ContextFreeRule contextFreeRule) {
+				return TerminalUtil.isBalanced(contextFreeRule.getRightTerminals());
+			}
+
+			@Override
+			public BalanceResult visit(NonLinearRule nonLinearRule) {
+				return nonLinearRule.getRight().accept(this);
+			}
+
+			@Override
+			public BalanceResult visit(RegularRule regularRule) {
+				return TerminalUtil.isBalanced(regularRule.getTerminals());
+			}
+
+			@Override
+			public BalanceResult visit(ConstantRule constantRule) {
+				return TerminalUtil.isBalanced(constantRule.getTerminals());
+			}
+		});
+	}
+
+	public static Option<Terminal> lastTerminal(Rule rule) {
+		return rule.accept(new RuleVisitor<Option<Terminal>>() {
+			private Option<Terminal> last(Terminal[] terminals) {
+				if(terminals.length > 0)
+					return Option.some(terminals[terminals.length-1]);
+				else
+					return Option.none();
+			}
+
+			@Override
+			public Option<Terminal> visit(ContextFreeRule contextFreeRule) {
+				return last(contextFreeRule.getRightTerminals());
+			}
+
+			@Override
+			public Option<Terminal> visit(NonLinearRule nonLinearRule) {
+				return nonLinearRule.getRight().accept(this);
+			}
+
+			@Override
+			public Option<Terminal> visit(RegularRule regularRule) {
+				return last(regularRule.getTerminals());
+			}
+
+			@Override
+			public Option<Terminal> visit(ConstantRule constantRule) {
+				return last(constantRule.getTerminals());
+			}
+		});
 	}
 }

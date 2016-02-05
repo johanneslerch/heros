@@ -265,7 +265,7 @@ public class PerAccessPathMethodAnalyzer<Field, Fact, Stmt, Method> {
 		Collection<ConstrainedFact<Fact>> targetFacts = flowFunction.computeTargets(factAtStmt.getFact());
 		for (final ConstrainedFact<Fact> targetFact : targetFacts) {
 			final Rule concatenatedRule = factAtStmt.getRule().append(targetFact.terminals);
-			if(TerminalUtil.containsConstraints(targetFact.terminals)) {
+			if(TerminalUtil.containsConstraints(targetFact.terminals) && TerminalUtil.containsConstraints(targetFact.terminals)) {
 				final Rule candidateRule = new RegularRule(callEdgeResolver).append(concatenatedRule);
 				log("Checking for solutions: "+candidateRule);
 				context.approximizer.approximate(candidateRule);
