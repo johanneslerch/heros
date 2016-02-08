@@ -85,4 +85,9 @@ public class TerminalUtilTest {
 	public void produceExcludeMatch() {
 		assertEquals(IMBALANCED, isBalanced(f, not_f));
 	}
+	
+	@Test
+	public void excludeProduceConsumeMismatch() {
+		assertEquals(IMBALANCED, isBalanced(not_f, f, g̅));
+	}
 }

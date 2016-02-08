@@ -40,7 +40,7 @@ public class TerminalUtil {
 				if(i+1 < terminals.length && terminals[i+1].isConsumer() && terminals[i].isExcluding(terminals[i+1].getRepresentation()))
 					return BalanceResult.IMBALANCED;
 				else
-					return BalanceResult.MORE_CONSUMERS;
+					result = BalanceResult.MORE_CONSUMERS;
 			}
 			else
 				firstConsumer = -1;

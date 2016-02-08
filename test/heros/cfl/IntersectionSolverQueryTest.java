@@ -413,6 +413,14 @@ public class IntersectionSolverQueryTest {
 	}
 	
 	@Test
+	public void delayedRegularRule2() {
+		delayed(new RegularRule(X, g));
+		assertUnsolved();
+		approximizer.addRule(X, new RegularRule(X, f));
+		assertSolved();
+	}
+	
+	@Test
 	public void delayedContextFreeRule() {
 		delayed(consumeFOnX);
 		assertUnsolved();

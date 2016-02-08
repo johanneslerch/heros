@@ -60,6 +60,12 @@ public class IntersectionSolverTest {
 		Z.addRule(new RegularRule(X, f));
 		assertSubstitution(new RegularRule(X, f), new RegularRule(X));
 	}
+	
+	@Test
+	public void terminateProducingLoop() {
+		X.addRule(new RegularRule(X, f));
+		assertSubstitution(new RegularRule(X, f, g), new RegularRule(X, g));
+	}
 
 	@Test
 	public void substitutionRequiresLoop() {

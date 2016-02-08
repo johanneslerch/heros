@@ -18,7 +18,9 @@ import heros.utilities.TestMethod;
 import heros.cfl.ConstantRule;
 import heros.cfl.ConsumingTerminal;
 import heros.cfl.ExclusionTerminal;
+import heros.cfl.NonTerminal;
 import heros.cfl.ProducingTerminal;
+import heros.cfl.RegularRule;
 import heros.cfl.Rule;
 import heros.cfl.TerminalUtil;
 import heros.cfl.SearchTree.SearchTreeResultChecker;
@@ -565,18 +567,14 @@ public class CflTestHelper {
 			}
 
 			@Override
-			public SearchTreeResultChecker defaultSearchTreeResultChecker() {
-				return new SearchTreeResultChecker() {
-					@Override
-					public boolean isSolution(Rule rule) {
-						if(rule.isSolved())
-							return true;
-						else if(rule instanceof ConstantRule) {
-							return TerminalUtil.isBalanced(((ConstantRule) rule).getTerminals()) != BalanceResult.IMBALANCED;
-						}
-						return false;
-					}
-				};
+			public NonTerminal zeroNonTerminal() {
+				NonTerminal nonTerminal = new NonTerminal("{ZERO}");
+				nonTerminal.addRule(new ConstantRule());
+				nonTerminal.addRule(new RegularRule(nonTerminal, new ProducingTerminal("f")));
+				nonTerminal.addRule(new RegularRule(nonTerminal, new ProducingTerminal("g")));
+				nonTerminal.addRule(new RegularRule(nonTerminal, new ProducingTerminal("h")));
+				nonTerminal.addRule(new RegularRule(nonTerminal, new ProducingTerminal("i")));
+				return nonTerminal;
 			}
 		};
 	}

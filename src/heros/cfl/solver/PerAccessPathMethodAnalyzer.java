@@ -40,7 +40,7 @@ public class PerAccessPathMethodAnalyzer<Field, Fact, Stmt, Method> {
 	private static final Logger logger = LoggerFactory.getLogger(PerAccessPathMethodAnalyzer.class);
 	private Fact sourceFact;
 	private Map<WrappedFactAtStatement<Field,Fact, Stmt, Method>, WrappedFactAtStatement<Field,Fact, Stmt, Method>> reachableStatements = Maps.newHashMap();
-	private List<WrappedFactAtStatement<Field, Fact, Stmt, Method>> summaries = Lists.newLinkedList();
+	private List<Summary<Field, Fact, Stmt, Method>> summaries = Lists.newLinkedList();
 	private Context<Field, Fact, Stmt, Method> context;
 	private Method method;
 	private DefaultValueMap<FactAtStatement<Fact, Stmt>, NonTerminal> returnSiteResolvers = new DefaultValueMap<FactAtStatement<Fact, Stmt>, NonTerminal>() {
@@ -80,8 +80,7 @@ public class PerAccessPathMethodAnalyzer<Field, Fact, Stmt, Method> {
 		this.sourceFact = sourceFact;
 		this.context = context;
 		if(isZeroSource()) {
-			callEdgeResolver = new NonTerminal("{ZERO:"+method+"}");
-			callEdgeResolver.addRule(new ConstantRule());
+			callEdgeResolver = context.zeroNonTerminal; 
 		}
 		else
 			this.callEdgeResolver = new NonTerminal("{SP:"+method+": "+sourceFact+"}");
@@ -167,11 +166,12 @@ public class PerAccessPathMethodAnalyzer<Field, Fact, Stmt, Method> {
 
 	void processExit(WrappedFactAtStatement<Field, Fact, Stmt, Method> factAtStmt) {
 		log("New Summary: "+factAtStmt);
-		if(!summaries.add(factAtStmt))
+		Summary<Field, Fact, Stmt, Method> summary = new Summary<Field, Fact, Stmt, Method>(context, factAtStmt);
+		if(!summaries.add(summary))
 			throw new AssertionError();
 		
 		for(CallEdge<Field, Fact, Stmt, Method> incEdge : incomingEdges) {
-			applySummary(incEdge, factAtStmt);
+			applySummary(incEdge, summary);
 		}
 
 		if(context.followReturnsPastSeeds && isZeroSource()) {
@@ -292,30 +292,38 @@ public class PerAccessPathMethodAnalyzer<Field, Fact, Stmt, Method> {
 		applySummaries(incEdge);
 	}
 
-	void applySummary(final CallEdge<Field, Fact, Stmt, Method> incEdge, final WrappedFactAtStatement<Field, Fact, Stmt, Method> exitFact) {
-		final NonTerminal callingCtx = new NonTerminal("{Calling Context}");
-		callingCtx.addRule(new RegularRule(incEdge.getCallerAnalyzer().callEdgeResolver).append(incEdge.getCalleeSourceFact().getRule()));
-		final Rule candidateRule = new RegularRule(callingCtx).append(exitFact.getRule());
-		log("Checking if summary can be applied for incoming edge: "+incEdge+" and constraint: "+candidateRule);
-		context.approximizer.approximate(candidateRule);
-		//FIXME: if exitFact.getRule() can be substituted to constant & solved, do not query
-		context.intersectionSolver.query(candidateRule, new QueryListener() {
-			@Override
-			public void solved() {
-				log("Solution found, summary will be applied for "+incEdge+". Checked: "+candidateRule);
-				Collection<Stmt> returnSites = context.icfg.getReturnSitesOfCallAt(incEdge.getCallSite());
-				for(Stmt returnSite : returnSites) {
-					FlowFunction<Fact> flowFunction = context.flowFunctions.getReturnFlowFunction(incEdge.getCallSite(), method, exitFact.getStatement(), returnSite);
-					Set<ConstrainedFact<Fact>> targets = flowFunction.computeTargets(exitFact.getFact());
-					for (ConstrainedFact<Fact> targetFact : targets) {
-						context.factHandler.restoreCallingContext(targetFact.fact, incEdge.getCallerCallSiteFact().getFact());
-						//TODO handle constraint
-						Rule concatenatedRule = exitFact.getRule().append(targetFact.terminals);
-						scheduleReturnEdge(incEdge, new WrappedFact<Field, Fact, Stmt, Method>(targetFact.fact, concatenatedRule), returnSite);
-					}
+	void applySummary(final CallEdge<Field, Fact, Stmt, Method> incEdge, final Summary<Field, Fact, Stmt, Method> summary) {
+		if(summary.requiresCallingContextCheck()) {
+			final NonTerminal callingCtx = new NonTerminal("{Calling Context}");
+			callingCtx.addRule(new RegularRule(incEdge.getCallerAnalyzer().callEdgeResolver).append(incEdge.getCalleeSourceFact().getRule()));
+			final Rule candidateRule = new RegularRule(callingCtx).append(summary.getRule());
+			log("Checking if summary can be applied for incoming edge: "+incEdge+" and constraint: "+candidateRule);
+			context.approximizer.approximate(candidateRule);
+			context.intersectionSolver.query(candidateRule, new QueryListener() {
+				@Override
+				public void solved() {
+					log("Solution found, summary will be applied for "+incEdge+". Checked: "+candidateRule);
+					applyUncheckedSummary(incEdge, summary);
 				}
+			});
+		}
+		else {
+			applyUncheckedSummary(incEdge, summary);
+		}
+	}
+	
+	private void applyUncheckedSummary(final CallEdge<Field, Fact, Stmt, Method> incEdge, final Summary<Field, Fact, Stmt, Method> summary) {
+		Collection<Stmt> returnSites = context.icfg.getReturnSitesOfCallAt(incEdge.getCallSite());
+		for(Stmt returnSite : returnSites) {
+			FlowFunction<Fact> flowFunction = context.flowFunctions.getReturnFlowFunction(incEdge.getCallSite(), method, summary.getStatement(), returnSite);
+			Set<ConstrainedFact<Fact>> targets = flowFunction.computeTargets(summary.getFact());
+			for (ConstrainedFact<Fact> targetFact : targets) {
+				context.factHandler.restoreCallingContext(targetFact.fact, incEdge.getCallerCallSiteFact().getFact());
+				//TODO handle constraint
+				Rule concatenatedRule = summary.getRule().append(targetFact.terminals);
+				scheduleReturnEdge(incEdge, new WrappedFact<Field, Fact, Stmt, Method>(targetFact.fact, concatenatedRule), returnSite);
 			}
-		});
+		}
 	}
 
 	public void scheduleUnbalancedReturnEdgeTo(WrappedFactAtStatement<Field, Fact, Stmt, Method> fact) {
@@ -328,13 +336,14 @@ public class PerAccessPathMethodAnalyzer<Field, Fact, Stmt, Method> {
 			@Override
 			public void run() {
 				NonTerminal resolver = callEdge.getCallerAnalyzer().returnSiteResolvers.getOrCreate(new FactAtStatement<Fact, Stmt>(fact.getFact(), returnSite));
-				context.approximizer.addRule(resolver, callEdge.getCalleeSourceFact().getRule().append(fact.getRule()));
+				Rule rule = callEdge.getCalleeSourceFact().getRule().append(fact.getRule());
+				context.approximizer.addRule(resolver, rule);
 			}
 		});
 	}
 
 	void applySummaries(CallEdge<Field, Fact, Stmt, Method> incEdge) {
-		for(WrappedFactAtStatement<Field, Fact, Stmt, Method> summary : summaries) {
+		for(Summary<Field, Fact, Stmt, Method> summary : summaries) {
 			applySummary(incEdge, summary);
 		}
 	}

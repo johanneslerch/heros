@@ -59,6 +59,26 @@ public class IntersectionSolver {
 		substitutions.getOrCreate(key).addListener(listener);
 	}
 	
+	public void constantCheck(Rule rule, final QueryListener listener) {
+		substitute(rule, new SubstitutionListener() {
+			private boolean solved = false;
+			
+			@Override
+			public void newProducingSubstitution(Rule rule, Guard guard) {
+				if(solved)
+					return;
+				
+				if(rule instanceof ConstantRule) {
+					solved = true;
+					listener.solved();
+				}
+				else {
+					substitute(rule, this);
+				}
+			}
+		});
+	}
+	
 	private class Query implements QueryListener {
 		
 		private boolean solved = false;
@@ -259,13 +279,14 @@ public class IntersectionSolver {
 						//id, consuming, or excluding rule
 						if(rule instanceof ConstantRule) {
 							Rule prefixedRule = prefix.append(rule);
-							if(!(prefixedRule instanceof ConstantRule))
+							if(!(prefixedRule instanceof ConstantRule)) {
 								IntersectionSolver.this.substitute(prefixedRule, new SubstitutionListener() {
 									@Override
 									public void newProducingSubstitution(Rule rule, Guard locGuard) {
 										addProducingSubstitution(rule, guard.dependOn(locGuard));
 									}
 								});
+							}
 						}
 						else {
 							final RulePair pair = RulePair.of(rule);
