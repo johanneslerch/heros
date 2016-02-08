@@ -56,7 +56,7 @@ public class IntersectionSolverTest {
 		X.addRule(new RegularRule(Y, g̅));
 		Y.addRule(new RegularRule(Z, g));
 		Z.addRule(new RegularRule(X, f));
-		assertSubstitution(new RegularRule(Z), new RegularRule(X));
+		assertSubstitution(new RegularRule(X, f), new RegularRule(X));
 	}
 
 	@Test
@@ -72,7 +72,17 @@ public class IntersectionSolverTest {
 		X.addRule(new ContextFreeRule(new Terminal[] {f}, Y, new Terminal[] {g̅}));
 		Y.addRule(new ContextFreeRule(new Terminal[] {h}, Z, new Terminal[] {g}));
 		Z.addRule(new RegularRule(X, f));
-		assertSubstitution(new ContextFreeRule(new Terminal[] {f, h}, Z, new Terminal[0]), new RegularRule(X));		
+		assertSubstitution(new ContextFreeRule(new Terminal[] {f, h}, X, new Terminal[] {f}), new RegularRule(X));		
+	}
+	
+	@Test
+	public void substitutionLinearized() {
+		X.addRule(new RegularRule(Y, f̅));
+		Y.addRule(new RegularRule(Y, g̅));
+		Y.addRule(new RegularRule(Z, g̅));
+		Z.addRule(new RegularRule(Z, g));
+		Z.addRule(new ConstantRule(f, g, g, g));
+		assertSubstitution(Lists.<Rule> newArrayList(new ConstantRule()), new RegularRule(X));
 	}
 	
 	@Test
@@ -82,7 +92,7 @@ public class IntersectionSolverTest {
 		Y.addRule(new ConstantRule(g̅));
 		Z.addRule(new RegularRule(Z, g));
 		Z.addRule(new ConstantRule(f, g, g, g));
-		assertSubstitution(Lists.<Rule> newArrayList(new RegularRule(Z)), new RegularRule(X));
+		assertSubstitution(Lists.<Rule> newArrayList(new ConstantRule()), new RegularRule(X));
 	}
 	
 	private void assertSubstitution(Rule expectation, Rule actual) {

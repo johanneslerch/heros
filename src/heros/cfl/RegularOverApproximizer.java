@@ -92,8 +92,7 @@ public class RegularOverApproximizer {
 
 					@Override
 					public Boolean visit(NonLinearRule nonLinearRule) {
-						ContainsNonTerminal ruleVisitor = new ContainsNonTerminal(scc);
-						return nonLinearRule.getLeft().accept(ruleVisitor) && nonLinearRule.getRight().accept(ruleVisitor);
+						return nonLinearRule.getRight().accept(new ContainsNonTerminal(scc)) || nonLinearRule.getLeft().accept(this);
 					}
 
 					@Override

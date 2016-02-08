@@ -149,6 +149,18 @@ public class RegularOverApproximizerTest {
 		assertRules(Y, new RegularRule(Y, i), new ConstantRule(j));
 	}
 	
+	@Test
+	public void reproducableNonLinearRule() {
+		X.addRule(new ConstantRule(h, h, h));
+		Y.addRule(new ConstantRule(g));
+		Y.addRule(new ConstantRule(f));
+		X.addRule(new NonLinearRule(new RegularRule(Y), new RegularRule(X)));
+		approximizer.approximate(new RegularRule(X));
+		assertRules(X, new RegularRule(Xprime, h, h, h));
+		assertRules(Xprime, ε, new NonLinearRule(new RegularRule(Xprime), new RegularRule(Y)));
+		assertRules(Y, new ConstantRule(g), new ConstantRule(f));
+	}
+	
 	
 	@Test
 	public void delayedConstantRuleInApproximatedScc() {
