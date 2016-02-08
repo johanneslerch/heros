@@ -429,6 +429,15 @@ public class IntersectionSolverQueryTest {
 		assertSolved();
 	}
 	
+	@Test
+	public void delayedRightLinearRule() {
+		X.addRule(new ConstantRule());
+		Y.addRule(new ConstantRule(g));
+		delayed(new NonLinearRule(new RegularRule(Y), new RegularRule(X)));
+		approximizer.addRule(X, new ContextFreeRule(new Terminal[] {f}, X, new Terminal[0]));
+		assertSolved();
+	}
+	
 //	@Test
 //	public void terminationWithCustomSolutionChecker() {
 //		X.addRule(new RegularRule(X, g));
@@ -475,9 +484,6 @@ public class IntersectionSolverQueryTest {
 		} catch(MockitoAssertionError e) {
 			throw new AssertionError(rule+" should be solvable, but was not. Given rule set:\n"+new ToStringRuleVisitor(rule), e);
 		}
-//		assertTrue(X.getListeners().isEmpty());
-//		assertTrue(Y.getListeners().isEmpty());
-//		assertTrue(Z.getListeners().isEmpty());
 	}
 	
 	private void unsolvable(final Rule rule) {

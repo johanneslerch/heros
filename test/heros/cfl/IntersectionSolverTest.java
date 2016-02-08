@@ -18,10 +18,12 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
+import heros.cfl.IntersectionSolver.Guard;
 import heros.cfl.IntersectionSolver.SubstitutionListener;
 
 import org.junit.Test;
 import org.mockito.ArgumentCaptor;
+import org.mockito.Mockito;
 import org.mockito.internal.verification.VerificationModeFactory;
 import org.mockito.verification.VerificationMode;
 
@@ -103,7 +105,7 @@ public class IntersectionSolverTest {
 		SubstitutionListener listener = mock(SubstitutionListener.class);
 		new IntersectionSolver().substitute(actual, listener);
 		ArgumentCaptor<Rule> captor = ArgumentCaptor.forClass(Rule.class);
-		verify(listener, VerificationModeFactory.atLeastOnce()).newProducingSubstitution(captor.capture());
+		verify(listener, VerificationModeFactory.atLeastOnce()).newProducingSubstitution(captor.capture(), Mockito.any(Guard.class));
 		assertEquals(expectation,captor.getAllValues());		
 	}	
 }

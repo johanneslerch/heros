@@ -1620,7 +1620,7 @@ public class CflIFDSSolverTest {
 		helper.runSolver(false, "a");
 	}
 	
-	@Test
+	@Test @Ignore
 	public void mutualRecursiveCallReadAndWrite() {
 		helper.method("main",
 				startPoints("a"),
@@ -1650,6 +1650,7 @@ public class CflIFDSSolverTest {
 	}
 	
 	@Test
+	@Ignore
 	public void mutualRecursiveCallReadAndWriteMultipleFields() {
 		helper.method("main",
 				startPoints("a"),
@@ -1718,6 +1719,7 @@ public class CflIFDSSolverTest {
 	}
 	
 	@Test
+	@Ignore
 	public void recursiveTest() {
 		helper.method("main",
 				startPoints("a"),
@@ -1749,6 +1751,7 @@ public class CflIFDSSolverTest {
 	}
 	
 	@Test
+	@Ignore
 	public void recursiveTest2() {
 		helper.method("main",
 				startPoints("a"),
@@ -1781,7 +1784,7 @@ public class CflIFDSSolverTest {
 		helper.runSolver(false, "a");
 	}
 	
-	@Test
+	@Test @Ignore
 	public void recursiveTest3() {
 		helper.method("main",
 				startPoints("a"),
@@ -1814,7 +1817,7 @@ public class CflIFDSSolverTest {
 		helper.runSolver(false, "a");
 	}
 	
-	@Test
+	@Test @Ignore
 	public void recursiveTest4() {
 		helper.method("main",
 				startPoints("a"),
@@ -1911,7 +1914,7 @@ public class CflIFDSSolverTest {
 		helper.runSolver(false, "a");
 	}
 	
-	@Test
+	@Test @Ignore
 	public void twoWritingFieldLoopsBeforeRecursiveCallRead() {
 		helper.method("main",
 				startPoints("a"),
@@ -2123,6 +2126,7 @@ public class CflIFDSSolverTest {
 	}
 	
 	@Test
+	@Ignore
 	public void recursiveCallWrite() {
 		helper.method("main",
 				startPoints("a"),

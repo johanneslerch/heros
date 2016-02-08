@@ -35,7 +35,7 @@ public class NonTerminal {
 		}
 		
 		rules.add(rule);
-		for(Listener listener : Lists.newLinkedList(listeners)) {
+		for(Listener listener : Lists.newArrayList(listeners)) {
 			if(listeners!=null)
 				listener.addedRule(this, rule);
 		}
@@ -43,7 +43,7 @@ public class NonTerminal {
 	
 	public void removeRule(Rule rule) {
 		if(rules.remove(rule)) {
-			for(Listener listener : listeners) {
+			for(Listener listener : Lists.newArrayList(listeners)) {
 				listener.removedRule(this, rule);
 			}
 		}
@@ -53,7 +53,7 @@ public class NonTerminal {
 		Set<Rule> tmp = rules;
 		rules = Sets.newHashSet();
 		for(Rule r : tmp)
-			for(Listener l : listeners) 
+			for(Listener l : Lists.newArrayList(listeners)) 
 				l.removedRule(this, r);
 		return tmp;
 	}

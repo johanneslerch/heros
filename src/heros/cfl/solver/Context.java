@@ -11,6 +11,7 @@
 package heros.cfl.solver;
 
 import heros.InterproceduralCFG;
+import heros.cfl.IntersectionSolver;
 import heros.cfl.RegularOverApproximizer;
 import heros.cfl.SearchTree.SearchTreeResultChecker;
 import heros.fieldsens.FactMergeHandler;
@@ -26,6 +27,7 @@ public abstract class Context<Field, Fact, Stmt, Method> {
 	public final FlowFunctions<Stmt, Fact, Method> flowFunctions;
 	public final SearchTreeResultChecker resultChecker;
 	public final RegularOverApproximizer approximizer;
+	public final IntersectionSolver intersectionSolver;
 	
 	Context(IFDSTabulationProblem<Stmt, Field, Fact, Method, ? extends InterproceduralCFG<Stmt, Method>> tabulationProblem, 
 			Scheduler scheduler, FactMergeHandler<Fact> factHandler) {
@@ -37,6 +39,7 @@ public abstract class Context<Field, Fact, Stmt, Method> {
 		this.factHandler = factHandler;
 		this.resultChecker = tabulationProblem.defaultSearchTreeResultChecker();
 		this.approximizer = new RegularOverApproximizer();
+		this.intersectionSolver = new IntersectionSolver();
 	}
 	
 	public abstract MethodAnalyzer<Field, Fact, Stmt, Method> getAnalyzer(Method method);
