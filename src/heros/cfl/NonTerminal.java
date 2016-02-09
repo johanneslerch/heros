@@ -34,15 +34,18 @@ public class NonTerminal {
 				return;
 		}
 		
-		rules.add(rule);
-		for(Listener listener : Lists.newArrayList(listeners)) {
-			if(listeners!=null)
-				listener.addedRule(this, rule);
+		if(rules.add(rule)) {
+			System.err.println(toString() +" addRule "+rule);
+			for(Listener listener : Lists.newArrayList(listeners)) {
+				if(listeners!=null)
+					listener.addedRule(this, rule);
+			}
 		}
 	}
 	
 	public void removeRule(Rule rule) {
 		if(rules.remove(rule)) {
+			System.err.println(toString() +" removeRule "+rule);
 			for(Listener listener : Lists.newArrayList(listeners)) {
 				listener.removedRule(this, rule);
 			}
@@ -50,6 +53,7 @@ public class NonTerminal {
 	}
 	
 	public Collection<Rule> removeAllRules() {
+		System.err.println(toString()+" remove all rules");
 		Set<Rule> tmp = rules;
 		rules = Sets.newHashSet();
 		for(Rule r : tmp)

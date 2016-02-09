@@ -158,4 +158,35 @@ public class TerminalUtil {
 			}
 		});
 	}
+
+	public static Rule removeTrailingProductions(Rule rule) {
+		return rule.accept(new RuleVisitor<Rule>() {
+			@Override
+			public Rule visit(ContextFreeRule contextFreeRule) {
+				return new ContextFreeRule(contextFreeRule.getLeftTerminals(), contextFreeRule.getNonTerminal(), removeTrailingProductions(contextFreeRule.getRightTerminals()));
+			}
+
+			@Override
+			public Rule visit(NonLinearRule nonLinearRule) {
+				return new NonLinearRule(nonLinearRule.getLeft(), nonLinearRule.getRight().accept(this));
+			}
+
+			@Override
+			public Rule visit(RegularRule regularRule) {
+				return new RegularRule(regularRule.getNonTerminal(), removeTrailingProductions(regularRule.getTerminals()));
+			}
+
+			@Override
+			public Rule visit(ConstantRule constantRule) {
+				return new ConstantRule(removeTrailingProductions(constantRule.getTerminals()));
+			}
+		});
+	}
+	
+	public static Terminal[] removeTrailingProductions(Terminal[] terminals) {
+		int newLength = terminals.length;
+		for(int i=terminals.length-1; i>=0 && terminals[i] instanceof ProducingTerminal; i--)
+			newLength--;
+		return Arrays.copyOf(terminals, newLength);
+	}
 }

@@ -79,7 +79,7 @@ public class StrongConnectedComponentDetector {
 		}
 	}
 
-	private Collection<NonTerminal> getEdgeTargets(NonTerminal v) {
+	private static Collection<NonTerminal> getEdgeTargets(NonTerminal v) {
 		final Set<NonTerminal> result = Sets.newHashSet();
 		for(Rule rule : v.getRules()) {
 			rule.accept(new RuleVisitor<Void>() {
@@ -123,11 +123,18 @@ public class StrongConnectedComponentDetector {
 		public Edge(NonTerminal source, NonTerminal... targets) {
 			this.source = source;
 			this.targets = Sets.newHashSet(targets);
+			if(this.targets.contains(source))
+				this.targets.addAll(getEdgeTargets(source));
 		}
 
 		public Edge(NonTerminal source, Set<NonTerminal> targets) {
 			this.source = source;
-			this.targets = targets;
+			if(targets.contains(source)) {
+				this.targets = Sets.newHashSet(targets);
+				this.targets.addAll(getEdgeTargets(source));
+			}
+			else
+				this.targets = targets;
 		}
 	}
 	

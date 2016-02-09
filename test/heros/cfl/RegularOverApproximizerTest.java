@@ -595,6 +595,21 @@ public class RegularOverApproximizerTest {
 		assertRules(Zprime, ε, new RegularRule(Wprime, h), new RegularRule(Y, f));
 	}
 	
+	@Test
+	public void delayedNonLeftLinearRuleAddedToScc() {
+		X.addRule(new RegularRule(Y));
+		X.addRule(new ConstantRule());
+		Y.addRule(new RegularRule(X));
+		Y.addRule(new ConstantRule());
+		approximizer.approximate(new RegularRule(X));
+		approximizer.addRule(X, new ContextFreeRule(new Terminal[] {f}, X, new Terminal[0]));
+		
+		assertRules(X, new RegularRule(Y), new RegularRule(Xprime));
+		assertRules(Xprime, ε, new RegularRule(Yprime), new RegularRule(Xprime, f));
+		assertRules(Y, new RegularRule(X), new RegularRule(Yprime));
+		assertRules(Yprime, ε, new RegularRule(Xprime));
+	}
+	
 	private void assertRules(NonTerminal nt, Rule... rules) {
 		assertEquals("Expected rules "+Arrays.toString(rules)+", but got "+nt.getRules()+" for "+nt+".", rules.length, nt.getRules().size());
 		for(Rule r : rules) 

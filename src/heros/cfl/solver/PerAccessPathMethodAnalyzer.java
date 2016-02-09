@@ -203,6 +203,7 @@ public class PerAccessPathMethodAnalyzer<Field, Fact, Stmt, Method> {
 	private void processCallToReturnEdge(WrappedFactAtStatement<Field, Fact, Stmt, Method> factAtStmt) {
 		if(isLoopStart(factAtStmt.getStatement())) {
 			context.approximizer.addRule(ctrFlowJoinResolvers.getOrCreate(factAtStmt.getAsFactAtStatement()), factAtStmt.getRule());
+			context.intersectionSolver.updateRules();
 		}
 		else {
 			processNonJoiningCallToReturnFlow(factAtStmt);
@@ -225,6 +226,7 @@ public class PerAccessPathMethodAnalyzer<Field, Fact, Stmt, Method> {
 	private void processNormalFlow(WrappedFactAtStatement<Field,Fact, Stmt, Method> factAtStmt) {
 		if(isLoopStart(factAtStmt.getStatement())) {
 			context.approximizer.addRule(ctrFlowJoinResolvers.getOrCreate(factAtStmt.getAsFactAtStatement()), factAtStmt.getRule());
+			context.intersectionSolver.updateRules();
 		}
 		else {
 			processNormalNonJoiningFlow(factAtStmt);
@@ -265,7 +267,6 @@ public class PerAccessPathMethodAnalyzer<Field, Fact, Stmt, Method> {
 			if(TerminalUtil.containsConstraints(targetFact.terminals) && TerminalUtil.containsConstraints(targetFact.terminals)) {
 				final Rule candidateRule = new RegularRule(callEdgeResolver).append(concatenatedRule);
 				log("Checking for solutions: "+candidateRule);
-				context.approximizer.approximate(candidateRule);
 				context.intersectionSolver.query(candidateRule, new QueryListener() {
 					@Override
 					public void solved() {
@@ -289,6 +290,7 @@ public class PerAccessPathMethodAnalyzer<Field, Fact, Stmt, Method> {
 		log("Incoming Edge: "+incEdge);
 		incomingEdges.add(incEdge);
 		context.approximizer.addRule(callEdgeResolver, new RegularRule(incEdge.getCallerAnalyzer().callEdgeResolver).append(incEdge.getCalleeSourceFact().getRule()));
+		context.intersectionSolver.updateRules();
 		applySummaries(incEdge);
 	}
 
@@ -298,8 +300,7 @@ public class PerAccessPathMethodAnalyzer<Field, Fact, Stmt, Method> {
 			callingCtx.addRule(new RegularRule(incEdge.getCallerAnalyzer().callEdgeResolver).append(incEdge.getCalleeSourceFact().getRule()));
 			final Rule candidateRule = new RegularRule(callingCtx).append(summary.getRule());
 			log("Checking if summary can be applied for incoming edge: "+incEdge+" and constraint: "+candidateRule);
-			context.approximizer.approximate(candidateRule);
-			context.intersectionSolver.query(candidateRule, new QueryListener() {
+			context.intersectionSolver.query(candidateRule, new QueryListener() { //FIXME: this is wrong? It might terminate inside the callee already
 				@Override
 				public void solved() {
 					log("Solution found, summary will be applied for "+incEdge+". Checked: "+candidateRule);
@@ -329,6 +330,7 @@ public class PerAccessPathMethodAnalyzer<Field, Fact, Stmt, Method> {
 	public void scheduleUnbalancedReturnEdgeTo(WrappedFactAtStatement<Field, Fact, Stmt, Method> fact) {
 		NonTerminal resolver = returnSiteResolvers.getOrCreate(fact.getAsFactAtStatement());
 		context.approximizer.addRule(resolver, fact.getRule());
+		context.intersectionSolver.updateRules();
 	}
 	
 	private void scheduleReturnEdge(final CallEdge<Field, Fact, Stmt, Method> callEdge, final WrappedFact<Field, Fact, Stmt, Method> fact, final Stmt returnSite) {
@@ -338,6 +340,7 @@ public class PerAccessPathMethodAnalyzer<Field, Fact, Stmt, Method> {
 				NonTerminal resolver = callEdge.getCallerAnalyzer().returnSiteResolvers.getOrCreate(new FactAtStatement<Fact, Stmt>(fact.getFact(), returnSite));
 				Rule rule = callEdge.getCalleeSourceFact().getRule().append(fact.getRule());
 				context.approximizer.addRule(resolver, rule);
+				context.intersectionSolver.updateRules();
 			}
 		});
 	}

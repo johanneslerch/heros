@@ -46,6 +46,11 @@ public class IntersectionSolver {
 			return new Substitution(key);
 		}
 	};
+	private TransactionalNonTerminalListener transactionalListener = new TransactionalNonTerminalListener();
+
+	public void updateRules() {
+		transactionalListener.endTransaction();
+	}
 	
 	public void query(Rule rule, QueryListener listener) {
 		queries.getOrCreate(rule).addListener(listener);
@@ -60,6 +65,7 @@ public class IntersectionSolver {
 	}
 	
 	public void constantCheck(Rule rule, final QueryListener listener) {
+		final Set<Rule> visited = Sets.newHashSet();
 		substitute(rule, new SubstitutionListener() {
 			private boolean solved = false;
 			
@@ -73,7 +79,10 @@ public class IntersectionSolver {
 					listener.solved();
 				}
 				else {
-					substitute(rule, this);
+					rule = TerminalUtil.removeTrailingProductions(rule);
+					if(visited.add(rule)) {
+						substitute(rule, this);
+					}
 				}
 			}
 		});
@@ -260,6 +269,10 @@ public class IntersectionSolver {
 			}
 		}
 		
+		private void debugRule(Rule rule) {
+			System.out.println(new ToStringRuleVisitor(rule));
+		}
+		
 		private void substitute(NonTerminal nt) {
 			forAllRules(nt, createEffect(key.prefix));
 		}
@@ -267,7 +280,7 @@ public class IntersectionSolver {
 		private Effect2<Rule, Guard> createEffect(final Rule prefix) {
 			return new Effect2<Rule, Guard> () {
 				@Override
-				public void f(Rule rule, final Guard guard) {
+				public void f(final Rule rule, final Guard guard) {
 					Option<Terminal> lastTerminal = TerminalUtil.lastTerminal(rule);
 					if(lastTerminal.isNone() && rule instanceof ConstantRule)
 						addProducingSubstitution(prefix, guard);
@@ -292,9 +305,9 @@ public class IntersectionSolver {
 							final RulePair pair = RulePair.of(rule);
 							IntersectionSolver.this.substitute(new SubstitutionKey(prefix, pair.substitutablePart), new SubstitutionListener() {
 								@Override
-								public void newProducingSubstitution(Rule rule, Guard locGuard) {
-									Rule substitutedRule = rule.append(pair.terminals);
-									if(TerminalUtil.isBalanced(substitutedRule) != BalanceResult.IMBALANCED)
+								public void newProducingSubstitution(Rule subRule, Guard locGuard) {
+									Rule substitutedRule = subRule.append(pair.terminals);
+									if(TerminalUtil.isBalanced(substitutedRule) != BalanceResult.IMBALANCED && !substitutedRule.equals(rule))
 										createEffect(new ConstantRule()).f(substitutedRule, guard.dependOn(locGuard));
 								}
 							});
@@ -305,18 +318,23 @@ public class IntersectionSolver {
 		}
 
 		private void forAllRules(NonTerminal nt, final Effect2<Rule, Guard> substituteEffect) {
-			nt.addListener(new NonTerminal.Listener() {
+			transactionalListener.addListener(nt, new NonTerminal.Listener() {
 				@Override
 				public void removedRule(NonTerminal nt, Rule rule) {
 				}
 				
 				@Override
 				public void addedRule(NonTerminal nt, Rule rule) {
-					substituteEffect.f(rule, new RuleGuard(nt, rule));
+					RuleGuard ruleGuard = new RuleGuard(rule);
+					transactionalListener.addListener(nt, ruleGuard);
+					substituteEffect.f(rule, ruleGuard);
 				}
 			});
-			for(Rule rule : Lists.newArrayList(nt.getRules()))
-				substituteEffect.f(rule, new RuleGuard(nt, rule));
+			for(Rule rule : Lists.newArrayList(nt.getRules())) {
+				RuleGuard ruleGuard = new RuleGuard(rule);
+				transactionalListener.addListener(nt, ruleGuard);
+				substituteEffect.f(rule, ruleGuard);
+			}
 		}
 
 		protected void addListener(SubstitutionListener listener) {
@@ -349,9 +367,8 @@ public class IntersectionSolver {
 		private Rule guardedRule;
 		private boolean isPossible = true;
 
-		public RuleGuard(NonTerminal nt, Rule rule) {
+		public RuleGuard(Rule rule) {
 			this.guardedRule = rule;
-			nt.addListener(this);
 		}
 
 		public boolean isStillPossible() {

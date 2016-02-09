@@ -11,24 +11,20 @@
 package heros.cfl;
 
 import static org.junit.Assert.assertEquals;
+import static org.mockito.Matchers.any;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
-
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
-
 import heros.cfl.IntersectionSolver.Guard;
 import heros.cfl.IntersectionSolver.SubstitutionListener;
 
+import java.util.List;
+
 import org.junit.Test;
 import org.mockito.ArgumentCaptor;
-import org.mockito.Mockito;
 import org.mockito.internal.verification.VerificationModeFactory;
-import org.mockito.verification.VerificationMode;
 
 import com.google.common.collect.Lists;
-import com.google.common.collect.Sets;
 
 public class IntersectionSolverTest {
 
@@ -103,6 +99,21 @@ public class IntersectionSolverTest {
 		assertSubstitution(Lists.<Rule> newArrayList(new ConstantRule()), new RegularRule(X));
 	}
 	
+	@Test
+	public void substitutionHiddenIdentityRule() {
+		X.addRule(new RegularRule(X, g̅));
+		X.addRule(new RegularRule(X, g̅, g));
+		assertSubstitution(new RegularRule(X, g̅, g), new RegularRule(X));
+	}
+	
+	@Test
+	public void substitutionHiddenIdentityRule2() {
+		X.addRule(new RegularRule(Y, g̅));
+		Y.addRule(new RegularRule(Z, g));
+		Z.addRule(new RegularRule(Y, g̅));
+		assertSubstitution(Lists.<Rule>newLinkedList(), new RegularRule(X));
+	}
+	
 	private void assertSubstitution(Rule expectation, Rule actual) {
 		assertSubstitution(Lists.newArrayList(expectation), actual);
 	}
@@ -110,8 +121,12 @@ public class IntersectionSolverTest {
 	private void assertSubstitution(List<Rule> expectation, Rule actual) {
 		SubstitutionListener listener = mock(SubstitutionListener.class);
 		new IntersectionSolver().substitute(actual, listener);
-		ArgumentCaptor<Rule> captor = ArgumentCaptor.forClass(Rule.class);
-		verify(listener, VerificationModeFactory.atLeastOnce()).newProducingSubstitution(captor.capture(), Mockito.any(Guard.class));
-		assertEquals(expectation,captor.getAllValues());		
+		if(expectation.isEmpty())
+			verify(listener, never()).newProducingSubstitution(any(Rule.class), any(Guard.class));
+		else {
+			ArgumentCaptor<Rule> captor = ArgumentCaptor.forClass(Rule.class);
+			verify(listener, VerificationModeFactory.atLeastOnce()).newProducingSubstitution(captor.capture(), any(Guard.class));
+			assertEquals(expectation,captor.getAllValues());
+		}
 	}	
 }

@@ -1400,7 +1400,7 @@ public class CflIFDSSolverTest {
 				callSite("c").calls("foo", flow("2", "3")).retSite("h", kill("2")),
 				normalStmt("h", flow("4", readField("g"), "5")).succ("i"),
 				normalStmt("i", flow("5", readField("g"), "5")).succ("j"),
-				normalStmt("j", kill("5")).succ("k")); //can read 2 g due to over-approximation
+				normalStmt("j", kill(0, "5")).succ("k")); //cannot read 2 g, because summary not generated
 		
 		helper.method("foo",
 				startPoints("d"),
@@ -1649,8 +1649,7 @@ public class CflIFDSSolverTest {
 		helper.runSolver(false, "a");
 	}
 	
-	@Test
-	@Ignore
+	@Test 
 	public void mutualRecursiveCallReadAndWriteMultipleFields() {
 		helper.method("main",
 				startPoints("a"),
@@ -1702,9 +1701,9 @@ public class CflIFDSSolverTest {
 				callSite("cs1").calls("foo", flow("1", "1")).calls("bar", flow("1", "1")).retSite("rs1", kill("1")),
 				normalStmt("rs1", flow("1", "1")).succ("d").succ("ep1"),
 				normalStmt("d", flow("1", prependField("x"), "1")).succ("ep1"),
-				exitStmt("ep1").returns(over("b"), to("g"), flow(2, "1", "1"))
-								.returns(over("cs1"), to("rs1"), flow(2, "1", "1"))
-								.returns(over("cs2"), to("rs2"), flow(2, "1", "1")));
+				exitStmt("ep1").returns(over("b"), to("g"), flow(3, "1", "1"))
+								.returns(over("cs1"), to("rs1"), flow(3, "1", "1"))
+								.returns(over("cs2"), to("rs2"), flow(3, "1", "1")));
 
 		helper.method("bar",
 				startPoints("e"),
@@ -1712,14 +1711,13 @@ public class CflIFDSSolverTest {
 				callSite("cs2").calls("foo", flow("1", "1")).calls("bar", flow("1", "1")).retSite("rs2", kill("1")),
 				normalStmt("rs2", flow("1", "1")).succ("f").succ("ep2"),
 				normalStmt("f", flow("1", readField("x"), "1")).succ("ep2"),
-				exitStmt("ep2").returns(over("cs1"), to("rs1"), flow(2, "1", "1"))
-								.returns(over("cs2"), to("rs2"), flow(2, "1", "1")));
+				exitStmt("ep2").returns(over("cs1"), to("rs1"), flow(3, "1", "1"))
+								.returns(over("cs2"), to("rs2"), flow(3, "1", "1")));
 	
 		helper.runSolver(false, "a");
 	}
 	
 	@Test
-	@Ignore
 	public void recursiveTest() {
 		helper.method("main",
 				startPoints("a"),
@@ -2126,7 +2124,6 @@ public class CflIFDSSolverTest {
 	}
 	
 	@Test
-	@Ignore
 	public void recursiveCallWrite() {
 		helper.method("main",
 				startPoints("a"),

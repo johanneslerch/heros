@@ -45,6 +45,7 @@ public class IntersectionSolverQueryTest {
 	private QueryListener listener;
 	private Rule challenge;
 	private RegularOverApproximizer approximizer;
+	private IntersectionSolver intersectionSolver = new IntersectionSolver();
 	
 	
 	@Test
@@ -390,6 +391,7 @@ public class IntersectionSolverQueryTest {
 		delayed(consumeFOnX);
 		assertUnsolved();
 		approximizer.addRule(X, new ConstantRule(f));
+		intersectionSolver.updateRules();
 		assertSolved();
 	}
 	
@@ -401,6 +403,7 @@ public class IntersectionSolverQueryTest {
 		delayed(consumeFOnX);
 		assertUnsolved();
 		approximizer.addRule(X, new NonLinearRule(new RegularRule(Y), new RegularRule(X)));
+		intersectionSolver.updateRules();
 		assertSolved();
 	}
 	
@@ -409,6 +412,7 @@ public class IntersectionSolverQueryTest {
 		delayed(consumeFOnX);
 		assertUnsolved();
 		approximizer.addRule(X, new RegularRule(X, f));
+		intersectionSolver.updateRules();
 		assertSolved();
 	}
 	
@@ -417,6 +421,7 @@ public class IntersectionSolverQueryTest {
 		delayed(new RegularRule(X, g));
 		assertUnsolved();
 		approximizer.addRule(X, new RegularRule(X, f));
+		intersectionSolver.updateRules();
 		assertSolved();
 	}
 	
@@ -425,6 +430,7 @@ public class IntersectionSolverQueryTest {
 		delayed(consumeFOnX);
 		assertUnsolved();
 		approximizer.addRule(X, new ContextFreeRule(new Terminal[] {h}, X, new Terminal[] {f}));
+		intersectionSolver.updateRules();
 		assertSolved();
 	}
 	
@@ -434,6 +440,7 @@ public class IntersectionSolverQueryTest {
 		delayed(consumeFOnX);
 		assertUnsolved();
 		approximizer.addRule(X, new ContextFreeRule(new Terminal[] {f}, X, new Terminal[] {g̅}));
+		intersectionSolver.updateRules();
 		assertSolved();
 	}
 	
@@ -443,6 +450,7 @@ public class IntersectionSolverQueryTest {
 		Y.addRule(new ConstantRule(g));
 		delayed(new NonLinearRule(new RegularRule(Y), new RegularRule(X)));
 		approximizer.addRule(X, new ContextFreeRule(new Terminal[] {f}, X, new Terminal[0]));
+		intersectionSolver.updateRules();
 		assertSolved();
 	}
 	
@@ -528,6 +536,6 @@ public class IntersectionSolverQueryTest {
 		this.challenge = rule;
 		approximizer = new RegularOverApproximizer();
 		approximizer.approximate(rule);
-		new IntersectionSolver().query(rule, listener);
+		intersectionSolver.query(rule, listener);
 	}
 }
