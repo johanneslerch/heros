@@ -1620,7 +1620,7 @@ public class CflIFDSSolverTest {
 		helper.runSolver(false, "a");
 	}
 	
-	@Test @Ignore
+	@Test 
 	public void mutualRecursiveCallReadAndWrite() {
 		helper.method("main",
 				startPoints("a"),
@@ -1749,7 +1749,6 @@ public class CflIFDSSolverTest {
 	}
 	
 	@Test
-	@Ignore
 	public void recursiveTest2() {
 		helper.method("main",
 				startPoints("a"),
@@ -1782,7 +1781,7 @@ public class CflIFDSSolverTest {
 		helper.runSolver(false, "a");
 	}
 	
-	@Test @Ignore
+	@Test 
 	public void recursiveTest3() {
 		helper.method("main",
 				startPoints("a"),
@@ -1815,7 +1814,7 @@ public class CflIFDSSolverTest {
 		helper.runSolver(false, "a");
 	}
 	
-	@Test @Ignore
+	@Test
 	public void recursiveTest4() {
 		helper.method("main",
 				startPoints("a"),
@@ -1852,16 +1851,15 @@ public class CflIFDSSolverTest {
 	}
 	
 	@Test
-	@Ignore
 	public void recursiveTest5() {
 		helper.method("main",
 				startPoints("a"),
 				normalStmt("a", flow("0", prependField("h"), "1")).succ("b"),
-				callSite("b").calls("foo", flow("1", "1")).retSite("c", flow(20, "1", "1")),
-				normalStmt("c", flow(20, "1", "1")).succ("d").succ("e").succ("f"),
+				callSite("b").calls("foo", flow("1", "1")).retSite("c", flow("1", "1")),
+				normalStmt("c", flow("1", "1")).succ("d").succ("e").succ("f"),
 				normalStmt("d", flow("1", readField("f"), "1")).succ("c"),
 				normalStmt("e", flow("1", readField("g"), "1")).succ("c"),
-				normalStmt("f", flow(20, "1", readField("h"), "1")).succ("g"),
+				normalStmt("f", flow("1", readField("h"), "1")).succ("g"),
 				normalStmt("g", kill("1")).succ("h"));
 		
 		helper.method("foo",
@@ -1870,27 +1868,26 @@ public class CflIFDSSolverTest {
 				normalStmt("foo_read", flow("1", readField("f"), "1")).succ("foo_write").succ("foo_cs").succ("foo_ep"),
 				normalStmt("foo_write", flow(2, "1", prependField("f"), "1")).succ("foo_cs").succ("foo_ep"),
 				callSite("foo_cs").calls("foo", flow(4, "1", "1")).calls("bar", flow(4, "1", "1")).retSite("foo_rs", kill(4, "1")),
-				normalStmt("foo_rs", flow(20, "1", "1")).succ("foo_ep"),
-				exitStmt("foo_ep").returns(over("b"), to("c"), flow(30, "1", "1"))
-								.returns(over("bar_cs"), to("bar_rs"), flow(90, "1", "1"))
-								.returns(over("foo_cs"), to("foo_rs"), flow(150, "1", "1")));
+				normalStmt("foo_rs", flow("1", "1")).succ("foo_ep"),
+				exitStmt("foo_ep").returns(over("b"), to("c"), flow(3, "1", "1"))
+								.returns(over("bar_cs"), to("bar_rs"), flow(16, "1", "1"))
+								.returns(over("foo_cs"), to("foo_rs"), flow(20, "1", "1")));
 
 		helper.method("bar",
 				startPoints("bar_sp"),
 				normalStmt("bar_sp", flow("1", "1")).succ("bar_read").succ("bar_write").succ("bar_cs").succ("bar_ep"),
 				normalStmt("bar_read", flow("1", readField("g"), "1")).succ("bar_write").succ("bar_cs").succ("bar_ep"),
 				normalStmt("bar_write", flow(2, "1", prependField("g"), "1")).succ("bar_cs").succ("bar_ep"),
-				callSite("bar_cs").calls("foo", flow(20, "1", "1")).calls("bar", flow(20, "1", "1")).retSite("bar_rs", kill(20, "1")),
-				normalStmt("bar_rs", flow(20, "1", "1")).succ("bar_ep"),
-				exitStmt("bar_ep").returns(over("b"), to("c"), flow(30, "1", "1"))
-								.returns(over("bar_cs"), to("bar_rs"), flow(50, "1", "1"))
-								.returns(over("foo_cs"), to("foo_rs"), flow(250, "1", "1")));
+				callSite("bar_cs").calls("foo", flow(4, "1", "1")).calls("bar", flow(4, "1", "1")).retSite("bar_rs", kill(4, "1")),
+				normalStmt("bar_rs", flow(1, "1", "1")).succ("bar_ep"),
+				exitStmt("bar_ep").returns(over("b"), to("c"), flow(0, "1", "1"))
+								.returns(over("bar_cs"), to("bar_rs"), flow(20, "1", "1"))
+								.returns(over("foo_cs"), to("foo_rs"), flow(16, "1", "1")));
 		
 		helper.runSolver(false, "a");
 	}
 	
 	@Test
-	@Ignore("requires to apply summaries of nested resolvers that dismissed an incoming edge (CallEdgeResolver.dismiss")
 	public void writeFieldInLoopBeforeRecursiveCallRead() {
 		helper.method("main",
 				startPoints("a"),
@@ -1906,13 +1903,13 @@ public class CflIFDSSolverTest {
 				startPoints("b"),
 				normalStmt("b", flow("1", readField("f"), "1")).succ("c").succ("d"),
 				callSite("c").calls("foo", flow("1", "1")).retSite("d", kill("1")),
-				exitStmt("d").returns(over("c"), to("d"), flow("1", prependField("h"), "1"))
-							.returns(over("main_cs"), to("main_rs"), flow("1", "1")));
+				exitStmt("d").returns(over("c"), to("d"), flow(2, "1", prependField("h"), "1"))
+							.returns(over("main_cs"), to("main_rs"), flow(2, "1", "1")));
 		
 		helper.runSolver(false, "a");
 	}
 	
-	@Test @Ignore
+	@Test 
 	public void twoWritingFieldLoopsBeforeRecursiveCallRead() {
 		helper.method("main",
 				startPoints("a"),
@@ -2144,7 +2141,6 @@ public class CflIFDSSolverTest {
 	}
 	
 	@Test
-	@Ignore
 	public void recursiveCallWriteAndRecursiveReadSameField() {
 		helper.method("main",
 				startPoints("a"),
