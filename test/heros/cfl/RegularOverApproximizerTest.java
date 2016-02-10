@@ -28,6 +28,7 @@ public class RegularOverApproximizerTest {
 	ProducingTerminal j = new ProducingTerminal("j");
 	ProducingTerminal k = new ProducingTerminal("k");
 
+	NonTerminal T = new NonTerminal("T");
 	NonTerminal U = new NonTerminal("U");
 	NonTerminal V = new NonTerminal("V");
 	NonTerminal W = new NonTerminal("W");
@@ -35,12 +36,13 @@ public class RegularOverApproximizerTest {
 	NonTerminal Y = new NonTerminal("Y");
 	NonTerminal Z = new NonTerminal("Z");
 	
-	NonTerminal Uprime = approximizer.createNonTerminalPrime(U);
-	NonTerminal Vprime = approximizer.createNonTerminalPrime(V);
-	NonTerminal Wprime = approximizer.createNonTerminalPrime(W);
-	NonTerminal Xprime = approximizer.createNonTerminalPrime(X);
-	NonTerminal Yprime = approximizer.createNonTerminalPrime(Y);
-	NonTerminal Zprime = approximizer.createNonTerminalPrime(Z);
+	NonTerminal Tprime = approximizer.prime.get(T);
+	NonTerminal Uprime = approximizer.prime.get(U);
+	NonTerminal Vprime = approximizer.prime.get(V);
+	NonTerminal Wprime = approximizer.prime.get(W);
+	NonTerminal Xprime = approximizer.prime.get(X);
+	NonTerminal Yprime = approximizer.prime.get(Y);
+	NonTerminal Zprime = approximizer.prime.get(Z);
 	
 	Rule ε = new ConstantRule();
 	
@@ -608,6 +610,44 @@ public class RegularOverApproximizerTest {
 		assertRules(Xprime, ε, new RegularRule(Yprime), new RegularRule(Xprime, f));
 		assertRules(Y, new RegularRule(X), new RegularRule(Yprime));
 		assertRules(Yprime, ε, new RegularRule(Xprime));
+	}
+	
+	@Test
+	public void delayedRegularClosingSccAffectingSourceSccWithoutNonLeftLinearRules() {
+		X.addRule(new RegularRule(W));
+		W.addRule(new RegularRule(X));
+		
+		Y.addRule(new RegularRule(Z));
+		Z.addRule(new RegularRule(U));
+		U.addRule(new ContextFreeRule(new Terminal[] {f}, X, new Terminal[0]));
+		approximizer.approximate(new RegularRule(X));
+		approximizer.addRule(X, new RegularRule(Y));
+		
+		assertRules(X, new RegularRule(Y), new RegularRule(W));
+		assertRules(Y, new RegularRule(Z));
+		assertRules(Z, new RegularRule(U));
+		assertRules(U, new RegularRule(X));
+		assertRules(W, new RegularRule(X));
+		assertRules(Xprime, ε, new RegularRule(Wprime), new RegularRule(Uprime, f));
+		assertRules(Yprime, ε, new RegularRule(Xprime));
+		assertRules(Zprime, ε, new RegularRule(Yprime));
+		assertRules(Uprime, ε, new RegularRule(Zprime));
+		assertRules(Wprime, ε, new RegularRule(Xprime));
+	}
+	
+	@Test
+	public void delayedNonLinearInExistingApproximatedScc() {
+		X.addRule(new RegularRule(Y));
+		X.addRule(new NonLinearRule(new RegularRule(Z), new RegularRule(Y)));
+		Y.addRule(new RegularRule(Z));
+		V.addRule(new RegularRule(X));
+		Z.addRule(new RegularRule(W));
+		W.addRule(new RegularRule(Z));
+		U.addRule(new RegularRule(T));
+		T.addRule(new RegularRule(Z));
+		approximizer.approximate(new RegularRule(X));
+		approximizer.addRule(Z, new ContextFreeRule(new Terminal[] {f}, V, new Terminal[0]));
+		approximizer.addRule(X, new NonLinearRule(new RegularRule(U), new RegularRule(Z)));
 	}
 	
 	private void assertRules(NonTerminal nt, Rule... rules) {

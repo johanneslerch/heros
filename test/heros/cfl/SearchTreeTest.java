@@ -24,6 +24,7 @@ import org.mockito.exceptions.base.MockitoAssertionError;
 
 import fj.data.Option;
 
+@Ignore
 public class SearchTreeTest {
 
 	ProducingTerminal f = new ProducingTerminal("f");

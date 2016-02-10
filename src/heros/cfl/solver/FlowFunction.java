@@ -10,9 +10,12 @@
  ******************************************************************************/
 package heros.cfl.solver;
 
+import heros.cfl.NonTerminal;
 import heros.cfl.Terminal;
+
 import java.util.Arrays;
 import java.util.LinkedHashSet;
+import java.util.Optional;
 import java.util.Set;
 
 /**
@@ -43,10 +46,18 @@ public interface FlowFunction<D> {
 	public static class ConstrainedFact<D> {
 		public final D fact;
 		public final Terminal[] terminals;
+		public final Optional<NonTerminal> nonTerminal;
 
 		public ConstrainedFact(D fact, Terminal... terminals) {
 			this.fact = fact;
 			this.terminals = terminals;
+			this.nonTerminal = Optional.empty();
+		}
+		
+		public ConstrainedFact(D fact, NonTerminal nonTerminal, Terminal...terminals) {
+			this.fact = fact;
+			this.terminals = terminals;
+			this.nonTerminal = Optional.of(nonTerminal);
 		}
 
 		@Override

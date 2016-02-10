@@ -20,27 +20,49 @@ import java.util.Set;
 
 import com.google.common.base.Optional;
 import com.google.common.base.Predicate;
+import com.google.common.collect.BiMap;
+import com.google.common.collect.HashBiMap;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
+
 import static heros.cfl.StrongConnectedComponentDetector.*;
 
 public class RegularOverApproximizer {
 
-	private final DefaultValueMap<NonTerminal, NonTerminal> endStates = new DefaultValueMap<NonTerminal, NonTerminal>() {
+	NonTerminalPrimeManager prime = new NonTerminalPrimeManager() {
+		private BiMap<NonTerminal, NonTerminal> endStates = HashBiMap.create();
+
 		@Override
-		protected NonTerminal createItem(NonTerminal key) {
-			NonTerminal result = new NonTerminal(key.getRepresentation() + "'");
-			result.addRule(new ConstantRule());
-			return result;
+		public NonTerminal get(NonTerminal nt) {
+			if(endStates.containsValue(nt))
+				return nt;
+			else if(!endStates.containsKey(nt)) {
+				NonTerminal value = new NonTerminal(nt.getRepresentation()+"'");
+				value.addRule(new ConstantRule());
+				endStates.put(nt, value);
+			}
+			return endStates.get(nt);
+		}
+
+		@Override
+		public boolean isPrime(NonTerminal nt) {
+			return endStates.containsValue(nt);
+		}
+
+		@Override
+		public NonTerminal getNonPrime(NonTerminal prime) {
+			return endStates.inverse().get(prime);
 		}
 	};
 	private Map<NonTerminal, Set<NonTerminal>> nonTerminalToScc = Maps.newHashMap();
 	private Set<NonTerminal> visited = Sets.newHashSet();
-	
-	public NonTerminal createNonTerminalPrime(NonTerminal nt) {
-		return endStates.getOrCreate(nt);
+
+	public static interface NonTerminalPrimeManager {
+		NonTerminal get(NonTerminal nt);
+		boolean isPrime(NonTerminal nt);
+		NonTerminal getNonPrime(NonTerminal prime);
 	}
 	
 	public void approximate(Rule root) {
@@ -148,9 +170,18 @@ public class RegularOverApproximizer {
 
 	private void rewriteRulesOf(final NonTerminal current, Set<NonTerminal> scc) {
 		for(Rule rule : current.removeAllRules()) {
-			Pair<NonTerminal, Rule> result = rule.accept(new RewriteVisitor(scc, endStates, current, new ConstantRule()));
-			result.getO1().addRule(new RegularRule(endStates.getOrCreate(current)).append(result.getO2()));
+			Pair<NonTerminal, Rule> result = rule.accept(new RewriteVisitor(scc, prime, current, new ConstantRule()));
+			result.getO1().addRule(new RegularRule(prime.get(current)).append(result.getO2()));
 		}
+	}
+	
+	private static boolean partOfScc(NonTerminalPrimeManager prime, Collection<NonTerminal> scc, NonTerminal nt) {
+		if(scc.contains(nt))
+			return true;
+		if(prime.isPrime(nt) && scc.contains(prime.getNonPrime(nt)))
+			return true;
+		else
+			return false;
 	}
 	
 	private static class RewriteVisitor implements RuleVisitor<Pair<NonTerminal, Rule>> {
@@ -158,20 +189,20 @@ public class RegularOverApproximizer {
 		private Set<NonTerminal> scc;
 		private NonTerminal current;
 		private Rule rest;
-		private DefaultValueMap<NonTerminal, NonTerminal> endStates;
+		private NonTerminalPrimeManager prime;
 		
-		public RewriteVisitor(Set<NonTerminal> scc,  DefaultValueMap<NonTerminal, NonTerminal> endStates, NonTerminal current, Rule rest) {
+		public RewriteVisitor(Set<NonTerminal> scc,  NonTerminalPrimeManager prime, NonTerminal current, Rule rest) {
 			this.scc = scc;
-			this.endStates = endStates;
+			this.prime = prime;
 			this.current = current;
 			this.rest = rest;
 		}
 		
 		@Override
 		public Pair<NonTerminal, Rule> visit(ContextFreeRule contextFreeRule) {
-			if(scc.contains(contextFreeRule.getNonTerminal())) {
+			if(partOfScc(prime, scc, contextFreeRule.getNonTerminal())) {
 				current.addRule(new RegularRule(contextFreeRule.getNonTerminal(), contextFreeRule.getRightTerminals()).append(rest));
-				return new Pair<NonTerminal, Rule>(endStates.getOrCreate(contextFreeRule.getNonTerminal()), new ConstantRule(contextFreeRule.getLeftTerminals()));
+				return new Pair<NonTerminal, Rule>(prime.get(contextFreeRule.getNonTerminal()), new ConstantRule(contextFreeRule.getLeftTerminals()));
 			} else {
 				return new Pair<NonTerminal, Rule>(current, contextFreeRule.append(rest));
 			}
@@ -180,14 +211,14 @@ public class RegularOverApproximizer {
 		@Override
 		public Pair<NonTerminal, Rule> visit(NonLinearRule nonLinearRule) {
 			Pair<NonTerminal, Rule> result = nonLinearRule.getRight().accept(this);
-			return nonLinearRule.getLeft().accept(new RewriteVisitor(scc, endStates, result.getO1(), result.getO2()));
+			return nonLinearRule.getLeft().accept(new RewriteVisitor(scc, prime, result.getO1(), result.getO2()));
 		}
 		
 		@Override
 		public Pair<NonTerminal, Rule> visit(RegularRule regularRule) {
-			if(scc.contains(regularRule.getNonTerminal())) {
+			if(partOfScc(prime, scc, regularRule.getNonTerminal())) {
 				current.addRule(regularRule.append(rest));
-				return new Pair<NonTerminal, Rule>(endStates.getOrCreate(regularRule.getNonTerminal()), new ConstantRule());
+				return new Pair<NonTerminal, Rule>(prime.get(regularRule.getNonTerminal()), new ConstantRule());
 			} else {
 				return new Pair<NonTerminal, Rule>(current, regularRule.append(rest));
 			}
@@ -201,6 +232,30 @@ public class RegularOverApproximizer {
 
 	public void addRule(final NonTerminal sourceNonTerminal, Rule rule) {
 		final boolean isSourceApproximated = nonTerminalToScc.containsKey(sourceNonTerminal);
+
+		ReadableRuleTransformer readableRuleTransformer = new ReadableRuleTransformer(prime);
+		String prevInfo = "Source Approximated: "+isSourceApproximated+"\n";
+		Collection<Set<NonTerminal>> sourceScc = new StrongConnectedComponentDetector(sourceNonTerminal).results();
+		for(Set<NonTerminal> scc : sourceScc) {
+			if(scc.contains(sourceNonTerminal)) {
+				prevInfo += "Prev Source SCC ("+readableRuleTransformer.map(nonTerminalToScc.getOrDefault(sourceNonTerminal, Sets.<NonTerminal>newHashSet()))+"):\n"+new ToStringRuleVisitor(readableRuleTransformer.map(scc).toArray(new NonTerminal[0])).toString()+"\n";
+			}
+		}
+		
+		Set<NonTerminal> target = rule.accept(new CollectNonTerminalsRuleVisitor());
+		if(target.size() == 1) {
+			Collection<Set<NonTerminal>> targetScc = new StrongConnectedComponentDetector(target).results();
+			for(Set<NonTerminal> scc : targetScc) {
+				for(NonTerminal t : target) {
+					if(scc.contains(t)) {
+						prevInfo += "Prev Target SCC ("+readableRuleTransformer.map(nonTerminalToScc.getOrDefault(t, Sets.<NonTerminal>newHashSet()))+"):\n"+new ToStringRuleVisitor(readableRuleTransformer.map(scc).toArray(new NonTerminal[0])).toString();
+						break;
+					}
+				}
+			}
+		}
+		System.out.println(prevInfo);
+		
 		rule.accept(new RuleVisitor<Void>() {
 			@Override
 			public Void visit(final ContextFreeRule contextFreeRule) {
@@ -210,14 +265,14 @@ public class RegularOverApproximizer {
 					if(sourceScc.contains(contextFreeRule.getNonTerminal())) {
 						//target was already part of source's scc
 						sourceNonTerminal.addRule(new RegularRule(contextFreeRule.getNonTerminal(), contextFreeRule.getRightTerminals()));
-						endStates.getOrCreate(contextFreeRule.getNonTerminal()).addRule(new RegularRule(endStates.getOrCreate(sourceNonTerminal), contextFreeRule.getLeftTerminals()));
+						prime.get(contextFreeRule.getNonTerminal()).addRule(new RegularRule(prime.get(sourceNonTerminal), contextFreeRule.getLeftTerminals()));
 					} else {
 						//new rule connects two different approximated sccs
 						Set<NonTerminal> newScc = Sets.newHashSet(sourceScc);
 						Set<NonTerminal> targetScc = nonTerminalToScc.get(contextFreeRule.getNonTerminal());
 						newScc.addAll(targetScc);
 						sourceNonTerminal.addRule(new RegularRule(contextFreeRule.getNonTerminal(), contextFreeRule.getRightTerminals()));
-						endStates.getOrCreate(contextFreeRule.getNonTerminal()).addRule(new RegularRule(endStates.getOrCreate(sourceNonTerminal), contextFreeRule.getLeftTerminals()));
+						prime.get(contextFreeRule.getNonTerminal()).addRule(new RegularRule(prime.get(sourceNonTerminal), contextFreeRule.getLeftTerminals()));
 						for(NonTerminal ntOfTargetScc : targetScc) {
 							updateApproximatedRules(ntOfTargetScc, sourceScc);
 						}
@@ -240,7 +295,7 @@ public class RegularOverApproximizer {
 									rewriteRulesOf(current, mergedScc);
 							}
 							sourceNonTerminal.addRule(new RegularRule(contextFreeRule.getNonTerminal(), contextFreeRule.getRightTerminals()));
-							endStates.getOrCreate(contextFreeRule.getNonTerminal()).addRule(new RegularRule(endStates.getOrCreate(sourceNonTerminal), contextFreeRule.getLeftTerminals()));
+							prime.get(contextFreeRule.getNonTerminal()).addRule(new RegularRule(prime.get(sourceNonTerminal), contextFreeRule.getLeftTerminals()));
 							storeScc(scc.get());
 						} else if(isTargetApproximated) {
 							for(NonTerminal current : scc.get()) {
@@ -251,17 +306,17 @@ public class RegularOverApproximizer {
 							}
 							storeScc(scc.get());
 							sourceNonTerminal.addRule(new RegularRule(contextFreeRule.getNonTerminal(), contextFreeRule.getRightTerminals()));
-							endStates.getOrCreate(contextFreeRule.getNonTerminal()).addRule(new RegularRule(endStates.getOrCreate(sourceNonTerminal), contextFreeRule.getLeftTerminals()));
+							prime.get(contextFreeRule.getNonTerminal()).addRule(new RegularRule(prime.get(sourceNonTerminal), contextFreeRule.getLeftTerminals()));
 						} else {
 							storeScc(scc.get());
 							rewrite(scc.get());
 							sourceNonTerminal.addRule(new RegularRule(contextFreeRule.getNonTerminal(), contextFreeRule.getRightTerminals()));
-							endStates.getOrCreate(contextFreeRule.getNonTerminal()).addRule(new RegularRule(endStates.getOrCreate(sourceNonTerminal), contextFreeRule.getLeftTerminals()));
+							prime.get(contextFreeRule.getNonTerminal()).addRule(new RegularRule(prime.get(sourceNonTerminal), contextFreeRule.getLeftTerminals()));
 						}
 					}
 					else {
 						if(isSourceApproximated)
-							sourceNonTerminal.addRule(new NonLinearRule(new RegularRule(endStates.getOrCreate(sourceNonTerminal), contextFreeRule.getLeftTerminals()), 
+							sourceNonTerminal.addRule(new NonLinearRule(new RegularRule(prime.get(sourceNonTerminal), contextFreeRule.getLeftTerminals()), 
 									new RegularRule(contextFreeRule.getNonTerminal(), contextFreeRule.getRightTerminals())));
 						else
 							sourceNonTerminal.addRule(contextFreeRule);
@@ -293,12 +348,12 @@ public class RegularOverApproximizer {
 							rewriteRulesOf(current, mergedScc);
 						}
 					}
-					Pair<NonTerminal, Rule> result = nonLinearRule.accept(new RewriteVisitor(mergedScc, endStates, sourceNonTerminal, new ConstantRule()));
-					result.getO1().addRule(new RegularRule(endStates.getOrCreate(sourceNonTerminal)).append(result.getO2()));
+					Pair<NonTerminal, Rule> result = nonLinearRule.accept(new RewriteVisitor(mergedScc, prime, sourceNonTerminal, new ConstantRule()));
+					result.getO1().addRule(new RegularRule(prime.get(sourceNonTerminal)).append(result.getO2()));
 					storeScc(mergedScc);
 				}
 				else if(isSourceApproximated) {
-					sourceNonTerminal.addRule(new NonLinearRule(new RegularRule(endStates.getOrCreate(sourceNonTerminal)), nonLinearRule));
+					sourceNonTerminal.addRule(new NonLinearRule(new RegularRule(prime.get(sourceNonTerminal)), nonLinearRule));
 				}
 				else {
 					sourceNonTerminal.addRule(nonLinearRule);
@@ -314,14 +369,14 @@ public class RegularOverApproximizer {
 					if(sourceScc.contains(regularRule.getNonTerminal())) {
 						//target was already part of source's scc
 						sourceNonTerminal.addRule(regularRule);
-						endStates.getOrCreate(regularRule.getNonTerminal()).addRule(new RegularRule(endStates.getOrCreate(sourceNonTerminal)));
+						prime.get(regularRule.getNonTerminal()).addRule(new RegularRule(prime.get(sourceNonTerminal)));
 					} else {
 						//new rule connects two different approximated sccs
 						Set<NonTerminal> newScc = Sets.newHashSet(sourceScc);
 						Set<NonTerminal> targetScc = nonTerminalToScc.get(regularRule.getNonTerminal());
 						newScc.addAll(targetScc);
 						sourceNonTerminal.addRule(regularRule);
-						endStates.getOrCreate(regularRule.getNonTerminal()).addRule(new RegularRule(endStates.getOrCreate(sourceNonTerminal)));
+						prime.get(regularRule.getNonTerminal()).addRule(new RegularRule(prime.get(sourceNonTerminal)));
 						for(NonTerminal ntOfTargetScc : targetScc) {
 							updateApproximatedRules(ntOfTargetScc, sourceScc);
 						}
@@ -344,7 +399,7 @@ public class RegularOverApproximizer {
 									rewriteRulesOf(current, mergedScc);
 							}
 							sourceNonTerminal.addRule(regularRule);
-							endStates.getOrCreate(regularRule.getNonTerminal()).addRule(new RegularRule(endStates.getOrCreate(sourceNonTerminal)));
+							prime.get(regularRule.getNonTerminal()).addRule(new RegularRule(prime.get(sourceNonTerminal)));
 							storeScc(mergedScc);
 						} else if(isTargetApproximated) {
 							for(NonTerminal current : scc.get()) {
@@ -354,14 +409,14 @@ public class RegularOverApproximizer {
 									rewriteRulesOf(current, scc.get());
 							}
 							sourceNonTerminal.addRule(regularRule);
-							endStates.getOrCreate(regularRule.getNonTerminal()).addRule(new RegularRule(endStates.getOrCreate(sourceNonTerminal)));
+							prime.get(regularRule.getNonTerminal()).addRule(new RegularRule(prime.get(sourceNonTerminal)));
 							storeScc(scc.get());
 						} else {
 							if(containsNonLeftLinearRules(scc.get())) {
 								storeScc(scc.get());
 								rewrite(scc.get());
 								sourceNonTerminal.addRule(regularRule);
-								endStates.getOrCreate(regularRule.getNonTerminal()).addRule(new RegularRule(endStates.getOrCreate(sourceNonTerminal)));
+								prime.get(regularRule.getNonTerminal()).addRule(new RegularRule(prime.get(sourceNonTerminal)));
 							}
 							else
 								sourceNonTerminal.addRule(regularRule);
@@ -369,7 +424,7 @@ public class RegularOverApproximizer {
 					}
 					else {
 						if(isSourceApproximated)
-							sourceNonTerminal.addRule(new NonLinearRule(new RegularRule(endStates.getOrCreate(sourceNonTerminal)), regularRule));
+							sourceNonTerminal.addRule(new NonLinearRule(new RegularRule(prime.get(sourceNonTerminal)), regularRule));
 						else
 							sourceNonTerminal.addRule(regularRule);
 					}
@@ -380,7 +435,7 @@ public class RegularOverApproximizer {
 			@Override
 			public Void visit(ConstantRule constantRule) {
 				if(isSourceApproximated)
-					sourceNonTerminal.addRule(new RegularRule(endStates.getOrCreate(sourceNonTerminal), constantRule));
+					sourceNonTerminal.addRule(new RegularRule(prime.get(sourceNonTerminal), constantRule));
 				else
 					sourceNonTerminal.addRule(constantRule);
 				return null;
@@ -398,7 +453,7 @@ public class RegularOverApproximizer {
 						public Void visit(NonLinearRule nonLinearRule) {
 							if(nonLinearRule.accept(new ContainsNonTerminal(newScc))) {
 								nonTerminal.removeRule(nonLinearRule);
-								Pair<NonTerminal, Rule> pair = nonLinearRule.accept(new RewriteVisitor(newScc, endStates, nonTerminal, new ConstantRule()));
+								Pair<NonTerminal, Rule> pair = nonLinearRule.accept(new RewriteVisitor(newScc, prime, nonTerminal, new ConstantRule()));
 								pair.getO1().addRule(pair.getO2());
 							}
 							return null;
@@ -418,5 +473,24 @@ public class RegularOverApproximizer {
 				}
 			}
 		});
+		assert regular(sourceNonTerminal, rule, prevInfo, readableRuleTransformer);
+	}
+
+	private boolean regular(NonTerminal sourceNonTerminal, Rule rule, String prevTargetScc, ReadableRuleTransformer readableRuleTransformer) {
+		Collection<Set<NonTerminal>> sccs = new StrongConnectedComponentDetector(nonTerminalToScc.keySet().toArray(new NonTerminal[0])).results();
+		for(Set<NonTerminal> scc : sccs) {
+			if(containsNonLeftLinearRules(scc)) {
+				Set<NonTerminal> mappedScc = readableRuleTransformer.map(scc);
+				throw new IllegalStateException(
+						"Added to "+sourceNonTerminal+" the rule "+rule+"\n"
+						+"Found SCC with non left linear rules: \n"
+						+new ToStringRuleVisitor(scc.toArray(new NonTerminal[0]))
+						+"\nMapped rule representation:\n"
+						+prevTargetScc+"\n"
+						+"added to "+readableRuleTransformer.map(sourceNonTerminal)+" the rule "+readableRuleTransformer.map(rule)+"\n"
+						+new ToStringRuleVisitor(mappedScc.toArray(new NonTerminal[0])));
+			}
+		}
+		return true;
 	}
 }

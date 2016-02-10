@@ -123,18 +123,13 @@ public class StrongConnectedComponentDetector {
 		public Edge(NonTerminal source, NonTerminal... targets) {
 			this.source = source;
 			this.targets = Sets.newHashSet(targets);
-			if(this.targets.contains(source))
-				this.targets.addAll(getEdgeTargets(source));
+			this.targets.addAll(getEdgeTargets(source));
 		}
 
 		public Edge(NonTerminal source, Set<NonTerminal> targets) {
 			this.source = source;
-			if(targets.contains(source)) {
-				this.targets = Sets.newHashSet(targets);
-				this.targets.addAll(getEdgeTargets(source));
-			}
-			else
-				this.targets = targets;
+			this.targets = Sets.newHashSet(targets);
+			this.targets.addAll(getEdgeTargets(source));
 		}
 	}
 	

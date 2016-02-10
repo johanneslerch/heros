@@ -73,8 +73,7 @@ public class StrongConnectedComponentDetectorTest {
 		edge(0,1);
 		edge(1,0);
 		edge(2,1);
-		//cuts graph at vertex 1
-		assertSccs(new StrongConnectedComponentDetector(new Edge(vertices[1], vertices[2])), scc(1,2)); 
+		assertSccs(new StrongConnectedComponentDetector(new Edge(vertices[1], vertices[2])), scc(0,1,2)); 
 	}
 	
 	@Test
@@ -102,7 +101,6 @@ public class StrongConnectedComponentDetectorTest {
 		edge(4,1);
 		edge(4,5);
 		edge(5,4);
-		//cuts graph at vertex 1
-		assertSccs(new StrongConnectedComponentDetector(from(vertices[1]).to(vertices[2], vertices[4])), scc(1,2,3,4,5));
+		assertSccs(new StrongConnectedComponentDetector(from(vertices[1]).to(vertices[2], vertices[4])), scc(0,1,2,3,4,5));
 	}
 }

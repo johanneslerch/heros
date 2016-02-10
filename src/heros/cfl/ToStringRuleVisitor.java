@@ -35,7 +35,7 @@ public class ToStringRuleVisitor implements RuleVisitor<Void> {
 	private void include(NonTerminal nt) {
 		if(!visited.add(nt))
 			return;
-		result.append(nt).append(": ");
+		result.append(nt).append(" → ");
 		
 		boolean first = true;
 		for(Rule rule : nt.getRules()) {
