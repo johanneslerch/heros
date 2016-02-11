@@ -10,7 +10,6 @@
  ******************************************************************************/
 package heros.cfl;
 
-import com.google.common.base.Optional;
 
 public interface Rule {
 
@@ -27,5 +26,7 @@ public interface Rule {
 	boolean containsNonTerminals();
 
 	Terminal[] getTerminals();
+
+	boolean isEmpty();
 
 }

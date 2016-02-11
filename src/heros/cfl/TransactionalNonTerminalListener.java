@@ -50,7 +50,9 @@ public class TransactionalNonTerminalListener implements NonTerminal.Listener {
 	
 	@Override
 	public void addedRule(NonTerminal nt, Rule rule) {
-		addEvents.add(new Event(nt, rule));
+		Event event = new Event(nt, rule);
+		if(!removeEvents.remove(event))
+			addEvents.add(event);
 	}
 
 	@Override

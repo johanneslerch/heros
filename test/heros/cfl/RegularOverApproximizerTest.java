@@ -12,10 +12,16 @@ package heros.cfl;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
+import heros.solver.Pair;
 
 import java.util.Arrays;
+import java.util.List;
 
 import org.junit.Test;
+
+import com.google.common.collect.Collections2;
+import com.google.common.collect.Lists;
+import com.google.common.collect.Sets;
 
 public class RegularOverApproximizerTest {
 
@@ -145,7 +151,7 @@ public class RegularOverApproximizerTest {
 		Y.addRule(new RegularRule(Y, i));
 		Y.addRule(new ConstantRule(j));
 		approximizer.approximate(new RegularRule(X));
-		assertRules(X, new NonLinearRule(new RegularRule(Xprime), new ContextFreeRule(new Terminal[] {f}, Y, new Terminal[] {g})),
+		assertRules(X, new NonLinearRule(new RegularRule(Xprime, f), new RegularRule(Y, new Terminal[] {g})),
 				new RegularRule(X, h));
 		assertRules(Xprime, ε, new RegularRule(Xprime, k));
 		assertRules(Y, new RegularRule(Y, i), new ConstantRule(j));
@@ -464,7 +470,7 @@ public class RegularOverApproximizerTest {
 		
 		assertRules(W, new RegularRule(X, i), new RegularRule(Y, j));
 		assertRules(X, new RegularRule(W, f), new NonLinearRule(new RegularRule(Y, f), new RegularRule(Z, g)));
-		assertRules(Y, new RegularRule(W, j), new NonLinearRule(new RegularRule(Yprime), new ContextFreeRule(new Terminal[] {h}, Z, new Terminal[] {j})));
+		assertRules(Y, new RegularRule(W, j), new NonLinearRule(new RegularRule(Yprime, h), new RegularRule(Z, new Terminal[] {j})));
 		assertRules(Wprime, ε, new RegularRule(Xprime), new RegularRule(Yprime, h));
 		assertRules(Xprime, ε, new RegularRule(Wprime, g));
 		assertRules(Yprime, ε, new RegularRule(Wprime, h), new RegularRule(Xprime));
@@ -553,7 +559,7 @@ public class RegularOverApproximizerTest {
 		approximizer.addRule(X, new NonLinearRule(new RegularRule(Y, f), new RegularRule(Z, g)));
 		
 		assertRules(U, new RegularRule(X, i));
-		assertRules(X, new RegularRule(U, g), new NonLinearRule(new RegularRule(Xprime), new NonLinearRule(new RegularRule(Y,f), new RegularRule(Z,g))));
+		assertRules(X, new RegularRule(U, g), new NonLinearRule( new NonLinearRule(new RegularRule(Xprime), new RegularRule(Y,f)), new RegularRule(Z,g)));
 		assertRules(Uprime, ε, new RegularRule(Xprime, f));
 		assertRules(Xprime, ε, new RegularRule(Uprime, h));
 		
@@ -648,6 +654,187 @@ public class RegularOverApproximizerTest {
 		approximizer.approximate(new RegularRule(X));
 		approximizer.addRule(Z, new ContextFreeRule(new Terminal[] {f}, V, new Terminal[0]));
 		approximizer.addRule(X, new NonLinearRule(new RegularRule(U), new RegularRule(Z)));
+	}
+	
+	@Test
+	public void nonLinearSccButOnlyLeftLinear() {
+		W.addRule(new ConstantRule(k));
+		W.addRule(new NonLinearRule(new RegularRule(W), new ContextFreeRule(new Terminal[] {f}, X, new Terminal[0])));
+		
+		assertRules(W, new ConstantRule(k), new NonLinearRule(new RegularRule(W), new ContextFreeRule(new Terminal[] {f}, X, new Terminal[0])));
+	}
+	
+	@Test
+	public void delayedNonLinearSccButOnlyLeftLinear() {
+		approximizer.addRule(W, new ConstantRule(k));
+		approximizer.addRule(W, new NonLinearRule(new RegularRule(W), new ContextFreeRule(new Terminal[] {f}, X, new Terminal[0])));
+		
+		assertRules(W, new ConstantRule(k), new NonLinearRule(new RegularRule(W), new ContextFreeRule(new Terminal[] {f}, X, new Terminal[0])));
+	}
+	
+	@Test
+	public void contextFreeRule() {
+		U.addRule(new ContextFreeRule(new Terminal[] {k}, Z, new Terminal[0]));
+		U.addRule(new ContextFreeRule(new Terminal[] {f}, U, new Terminal[0]));
+		approximizer.approximate(new RegularRule(U));
+		
+		assertRules(U, new NonLinearRule(new RegularRule(Uprime, k), new RegularRule(Z)));
+		assertRules(Uprime, ε, new RegularRule(Uprime, f));
+	}
+
+	@Test
+	public void nonLinearRuleNesting() {
+		approximizer.addRule(X, new ContextFreeRule(new Terminal[] {g}, X, new Terminal[0]));
+		approximizer.addRule(X, new NonLinearRule(new RegularRule(V, j), new RegularRule(U)));
+		assertRules(X, new NonLinearRule(new NonLinearRule(new RegularRule(Xprime), new RegularRule(V, j)), new RegularRule(U)));
+	}
+	
+	@Test
+	public void complexNonLinearRule() {
+		// Y → <hVf> | <hWh>
+		// V → (Wg,((<kYh>,<kUf>),(((<jXj>,(V,Y)),(Y,(<hY>,<gW>))),<iY>)))
+		// W → j
+		Y.addRule(new ContextFreeRule(new Terminal[] {h}, V, new Terminal[] {f}));
+		Y.addRule(new ContextFreeRule(new Terminal[] {h}, W, new Terminal[] {h}));
+		V.addRule(new NonLinearRule(
+				new RegularRule(W, g),
+				new NonLinearRule(
+						new NonLinearRule(
+								new ContextFreeRule(new Terminal[] {k}, Y, new Terminal[] {h}),
+								new ContextFreeRule(new Terminal[] {k}, U, new Terminal[] {f})),
+						new NonLinearRule(
+								new NonLinearRule(
+										new NonLinearRule(
+												new ContextFreeRule(new Terminal[] {j}, X, new Terminal[] {j}),
+												new NonLinearRule(new RegularRule(V), new RegularRule(Y))),
+										new NonLinearRule(
+												new RegularRule(Y),
+												new NonLinearRule(
+														new ContextFreeRule(new Terminal[] {h}, Y, new Terminal[] {}),
+														new ContextFreeRule(new Terminal[] {g}, W, new Terminal[] {})))),
+								new ContextFreeRule(new Terminal[] {i}, Y, new Terminal[] {})))));			
+		W.addRule(new ConstantRule(j));
+		approximizer.approximate(new RegularRule(Y));
+		assertRules(Y, new RegularRule(V, f), new NonLinearRule(new RegularRule(Yprime, h), new RegularRule(W, h)));
+		assertRules(V, new RegularRule(Y));
+		assertRules(Yprime, ε, 
+				// YgWi
+				new NonLinearRule(new RegularRule(Y, g), new RegularRule(W, i)),
+				// Yh
+				new RegularRule(Y, h),
+				new RegularRule(Y),
+				new RegularRule(V),
+				// V'Wgk
+				new NonLinearRule(new RegularRule(Vprime), new RegularRule(W, g, k)));
+		assertRules(Vprime, ε, new RegularRule(Yprime, h),
+				// YhkUfjXj
+				new NonLinearRule(new NonLinearRule(new RegularRule(Y, h, k), new RegularRule(U, f)), 
+						new ContextFreeRule(new Terminal[] {j}, X, new Terminal[] {j})));
+		assertRules(Wprime, ε);
+	}
+	
+	@Test
+	public void delayedComplexNonLinearRule() {
+		// Y → <hVf> | <hWh>
+		// V → (Wg,((<kYh>,<kUf>),(((<jXj>,(V,Y)),(Y,(<hY>,<gW>))),<iY>)))
+		// W → j
+		approximizer.addRule(Y, new ContextFreeRule(new Terminal[] {h}, W, new Terminal[] {h}));
+		approximizer.addRule(V, new NonLinearRule(
+				new RegularRule(W, g),
+				new NonLinearRule(
+						new NonLinearRule(
+								new ContextFreeRule(new Terminal[] {k}, Y, new Terminal[] {h}),
+								new ContextFreeRule(new Terminal[] {k}, U, new Terminal[] {f})),
+						new NonLinearRule(
+								new NonLinearRule(
+										new NonLinearRule(
+												new ContextFreeRule(new Terminal[] {j}, X, new Terminal[] {j}),
+												new NonLinearRule(new RegularRule(V), new RegularRule(Y))),
+										new NonLinearRule(
+												new RegularRule(Y),
+												new NonLinearRule(
+														new ContextFreeRule(new Terminal[] {h}, Y, new Terminal[] {}),
+														new ContextFreeRule(new Terminal[] {g}, W, new Terminal[] {})))),
+								new ContextFreeRule(new Terminal[] {i}, Y, new Terminal[] {})))));			
+		
+		assertRules(Y, new ContextFreeRule(new Terminal[] {h}, W, new Terminal[] {h}));
+		assertRules(V, // VYYhYgWiY
+				new NonLinearRule(
+					new NonLinearRule(
+							new NonLinearRule(
+									new NonLinearRule(new RegularRule(V), new RegularRule(Y)),
+									new RegularRule(Y, h)),
+							new RegularRule(Y)),
+					new NonLinearRule(
+							new ContextFreeRule(new Terminal[] {g}, W, new Terminal[0]),
+							new ContextFreeRule(new Terminal[] {i}, Y, new Terminal[0])))
+				);
+		assertRules(Yprime, ε);
+		assertRules(Vprime, ε,
+				// V'WgkYhkUfjXj
+				new NonLinearRule(
+						new NonLinearRule(
+								new NonLinearRule(new RegularRule(Vprime), new RegularRule(W, g, k)),
+								new RegularRule(Y, h)),
+						new NonLinearRule(
+								new ContextFreeRule(new Terminal[] {k}, U, new Terminal[] {f}),
+								new ContextFreeRule(new Terminal[] {j}, X, new Terminal[] {j}))));
+		assertRules(Wprime, ε);
+		
+		approximizer.addRule(Y, new ContextFreeRule(new Terminal[] {h}, V, new Terminal[] {f}));
+		approximizer.addRule(W, new ConstantRule(j));
+		
+		assertRules(Y, new RegularRule(V, f), new NonLinearRule(new RegularRule(Yprime, h), new RegularRule(W, h)));
+		assertRules(V, new RegularRule(Y));
+		assertRules(Vprime, ε, new RegularRule(Yprime, h),
+				// YhkUfjXj
+				new NonLinearRule(new NonLinearRule(new RegularRule(Y, h, k), new RegularRule(U, f)), 
+						new ContextFreeRule(new Terminal[] {j}, X, new Terminal[] {j})));
+		assertRules(Yprime, ε, 
+				new NonLinearRule(new RegularRule(Y, g), new RegularRule(W, i)),
+				new RegularRule(Y, h),
+				new RegularRule(Y),
+				new RegularRule(V),
+				new NonLinearRule(new RegularRule(Vprime), new RegularRule(W, g, k)));
+		assertRules(Wprime, ε);
+	}
+	
+	@Test
+	public void permutationTest() {
+		PermutationTest permutation = new PermutationTest(Lists.newArrayList(U, V, W, X, Y, Z), 
+				Lists.newArrayList(Uprime, Vprime, Wprime, Xprime, Yprime, Zprime),
+				Lists.<Terminal>newArrayList(f,g,h,i,j,k));
+		for(int i=0; i<200; i++) {
+			permutation.clean();
+			List<Pair<NonTerminal, Rule>> rules = permutation.setup(4);
+			int permIndex = 0;
+			for(List<Pair<NonTerminal, Rule>> perm : Collections2.permutations(rules)) {
+				if(permIndex++ > 10)
+					break;
+				
+				List<Pair<NonTerminal, Rule>> currentRuleSet = Lists.newLinkedList();
+				approximizer = new RegularOverApproximizer(approximizer.prime);
+				permutation.clean();
+				for(Pair<NonTerminal, Rule> r : perm) {
+					//test incremental:
+					approximizer.addRule(r.getO1(), r.getO2());
+					permutation.collectActual();
+					
+					//clean and prepare
+					currentRuleSet.add(r);
+					permutation.clean();
+					for(Pair<NonTerminal, Rule> p : currentRuleSet)
+						p.getO1().addRule(p.getO2());
+					
+					//get expectation
+					approximizer = new RegularOverApproximizer(approximizer.prime);
+					approximizer.approximate(permutation.getNonTerminals());
+					permutation.collectExpectation();
+
+					permutation.compareAndAssert(currentRuleSet);
+				}
+			}
+		}
 	}
 	
 	private void assertRules(NonTerminal nt, Rule... rules) {

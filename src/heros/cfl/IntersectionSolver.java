@@ -348,7 +348,7 @@ public class IntersectionSolver {
 					if(r.getValue().isStillPossible())
 						listener.newProducingSubstitution(r.getKey(), r.getValue());
 					else {
-						System.err.println("Substitution no longer possible: "+key+" -> "+r.getKey());
+//						System.err.println("Substitution no longer possible: "+key+" -> "+r.getKey());
 						producingSubstitutions.remove(r.getKey());
 					}
 				}

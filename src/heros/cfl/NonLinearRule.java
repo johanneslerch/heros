@@ -17,6 +17,7 @@ public class NonLinearRule implements Rule {
 	private final Rule right;
 
 	public NonLinearRule(Rule left, Rule right) {
+		assert !left.isEmpty() && !right.isEmpty() && !(right instanceof ConstantRule);
 		this.left = left;
 		this.right = right;
 	}
@@ -118,6 +119,11 @@ public class NonLinearRule implements Rule {
 		} else if (!right.equals(other.right))
 			return false;
 		return true;
+	}
+
+	@Override
+	public boolean isEmpty() {
+		return left.isEmpty() && right.isEmpty();
 	}
 
 }

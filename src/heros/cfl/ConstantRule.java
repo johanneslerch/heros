@@ -116,4 +116,9 @@ public class ConstantRule implements Rule {
 		return true;
 	}
 
+	@Override
+	public boolean isEmpty() {
+		return terminals.length == 0;
+	}
+
 }

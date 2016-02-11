@@ -24,6 +24,7 @@ public class ContextFreeRule implements Rule {
 	private final NonTerminal nonTerminal;
 	
 	public ContextFreeRule(Terminal[] leftTerminals, NonTerminal nonTerminal, Terminal[] rightTerminals) {
+		assert leftTerminals.length > 0;
 		this.leftTerminals = leftTerminals;
 		this.nonTerminal = nonTerminal;
 		this.rightTerminals = rightTerminals;
@@ -130,7 +131,7 @@ public class ContextFreeRule implements Rule {
 	
 	@Override
 	public String toString() {
-		return Joiner.on("").join(leftTerminals) + nonTerminal.toString() + Joiner.on("").join(rightTerminals);
+		return "<"+Joiner.on("").join(leftTerminals) + nonTerminal.toString() + Joiner.on("").join(rightTerminals)+">";
 	}
 
 	@Override
@@ -162,6 +163,11 @@ public class ContextFreeRule implements Rule {
 		if (!Arrays.equals(rightTerminals, other.rightTerminals))
 			return false;
 		return true;
+	}
+
+	@Override
+	public boolean isEmpty() {
+		return false;
 	}
 	
 }

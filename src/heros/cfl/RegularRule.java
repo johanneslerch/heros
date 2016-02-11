@@ -85,12 +85,14 @@ public class RegularRule implements Rule {
 		return rule.accept(new RuleVisitor<Rule>() {
 			@Override
 			public Rule visit(ContextFreeRule contextFreeRule) {
-				return new NonLinearRule(RegularRule.this, contextFreeRule);
+				return new NonLinearRule(new RegularRule(nonTerminal, 
+						TerminalUtil.append(constantRule.getTerminals(), contextFreeRule.getLeftTerminals())),
+						new RegularRule(contextFreeRule.getNonTerminal(), contextFreeRule.getRightTerminals()));
 			}
 
 			@Override
 			public Rule visit(NonLinearRule nonLinearRule) {
-				return new NonLinearRule(RegularRule.this, nonLinearRule);
+				return append(nonLinearRule.getLeft()).append(nonLinearRule.getRight());
 			}
 
 			@Override
@@ -134,6 +136,11 @@ public class RegularRule implements Rule {
 		} else if (!nonTerminal.equals(other.nonTerminal))
 			return false;
 		return true;
+	}
+
+	@Override
+	public boolean isEmpty() {
+		return false;
 	}
 
 }
