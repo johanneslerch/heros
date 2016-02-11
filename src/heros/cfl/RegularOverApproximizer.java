@@ -254,7 +254,6 @@ public class RegularOverApproximizer {
 				}
 			}
 		}
-		System.out.println(prevInfo);
 		
 		rule.accept(new RuleVisitor<Void>() {
 			@Override
