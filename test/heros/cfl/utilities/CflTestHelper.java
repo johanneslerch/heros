@@ -26,6 +26,7 @@ import heros.cfl.TerminalUtil;
 import heros.cfl.SearchTree.SearchTreeResultChecker;
 import heros.cfl.TerminalUtil.BalanceResult;
 import heros.cfl.solver.CflIFDSSolver;
+import heros.cfl.solver.EntityNameGenerator;
 import heros.cfl.solver.FlowFunction;
 import heros.cfl.solver.FlowFunction.ConstrainedFact;
 import heros.cfl.solver.FlowFunctions;
@@ -575,6 +576,27 @@ public class CflTestHelper {
 				nonTerminal.addRule(new RegularRule(nonTerminal, new ProducingTerminal("h")));
 				nonTerminal.addRule(new RegularRule(nonTerminal, new ProducingTerminal("i")));
 				return nonTerminal;
+			}
+
+			@Override
+			public EntityNameGenerator<String, TestFact, Statement, TestMethod> entityNameGenerator() {
+				return new EntityNameGenerator<String, TestFact, Statement, TestMethod>() {
+					
+					@Override
+					public String startPoint(TestMethod method, TestFact sourceFact) {
+						return "{SP: "+method+":"+sourceFact+"}";
+					}
+					
+					@Override
+					public String returnSite(Statement returnSite, TestFact fact) {
+						return "{RS: "+returnSite+":"+fact+"}";
+					}
+					
+					@Override
+					public String joinStmt(Statement joinStmt, TestFact fact) {
+						return "{RS: "+joinStmt+":"+fact+"}";
+					}
+				};
 			}
 		};
 	}

@@ -29,6 +29,7 @@ public abstract class Context<Field, Fact, Stmt, Method> {
 	public final RegularOverApproximizer approximizer;
 	public final IntersectionSolver intersectionSolver;
 	public final NonTerminal zeroNonTerminal;
+	public final EntityNameGenerator<Field, Fact, Stmt, Method> nameGen;
 	
 	Context(IFDSTabulationProblem<Stmt, Field, Fact, Method, ? extends InterproceduralCFG<Stmt, Method>> tabulationProblem, 
 			Scheduler scheduler, FactMergeHandler<Fact> factHandler) {
@@ -41,6 +42,7 @@ public abstract class Context<Field, Fact, Stmt, Method> {
 		this.approximizer = new RegularOverApproximizer();
 		this.intersectionSolver = new IntersectionSolver();
 		this.zeroNonTerminal = tabulationProblem.zeroNonTerminal();
+		this.nameGen = tabulationProblem.entityNameGenerator();
 	}
 	
 	public abstract MethodAnalyzer<Field, Fact, Stmt, Method> getAnalyzer(Method method);

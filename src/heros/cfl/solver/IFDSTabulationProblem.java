@@ -69,4 +69,6 @@ public interface IFDSTabulationProblem<N,FieldRef, D ,M, I extends Interprocedur
 
 	
 	NonTerminal zeroNonTerminal();
+
+	EntityNameGenerator<FieldRef, D, N, M> entityNameGenerator();
 }

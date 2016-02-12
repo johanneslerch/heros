@@ -10,6 +10,7 @@
  ******************************************************************************/
 package heros.cfl;
 
+import static heros.cfl.TerminalUtil.BalanceResult.BALANCED;
 import fj.data.Option;
 import fj.function.Effect1;
 import fj.function.Effect2;
@@ -75,14 +76,43 @@ public class IntersectionSolver {
 					return;
 				
 				if(rule instanceof ConstantRule) {
-					solved = true;
-					listener.solved();
+					if(TerminalUtil.isBalanced(rule) == BalanceResult.BALANCED) {
+						solved = true;
+						listener.solved();
+					}
 				}
 				else {
 					rule = TerminalUtil.removeTrailingProductions(rule);
 					if(visited.add(rule)) {
 						substitute(rule, this);
 					}
+				}
+			}
+		});
+	}
+	
+	public void reduceToCallingContext(final NonTerminal callingContext, Rule callee, final QueryListener listener) {
+		final Set<Rule> visited = Sets.newHashSet();
+		Rule query = new RegularRule(callingContext).append(callee);
+		substitute(query, new SubstitutionListener() {
+			private boolean solved = false;
+			@Override
+			public void newProducingSubstitution(Rule rule, Guard guard) {
+				if(solved) 
+					return;
+				
+				if(rule.accept(new CollectNonTerminalsRuleVisitor()).contains(callingContext) || TerminalUtil.isBalanced(rule) != BALANCED) {
+					if(rule instanceof ConstantRule)
+						return;
+					
+					rule = TerminalUtil.removeTrailingProductions(rule);
+					if(visited.add(rule)) {
+						substitute(rule, this);
+					}
+				}
+				else {
+					solved = true;
+					listener.solved();
 				}
 			}
 		});

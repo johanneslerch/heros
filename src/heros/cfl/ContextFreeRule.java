@@ -169,5 +169,14 @@ public class ContextFreeRule implements Rule {
 	public boolean isEmpty() {
 		return false;
 	}
+
+	@Override
+	public void traverse(Traversal t) {
+		for(Terminal terminal : leftTerminals)
+			t.terminal(terminal);
+		t.nonTerminal(nonTerminal);
+		for(Terminal terminal : rightTerminals)
+			t.terminal(terminal);
+	}
 	
 }

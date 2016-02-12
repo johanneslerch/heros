@@ -47,7 +47,7 @@ public class PerAccessPathMethodAnalyzer<Field, Fact, Stmt, Method> {
 		@Override
 		protected NonTerminal createItem(FactAtStatement<Fact, Stmt> key) {
 			assert context.icfg.getMethodOf(key.stmt).equals(method);
-			NonTerminal nonTerminal = new NonTerminal("{RS:"+key.stmt+":"+key.fact+"}");
+			NonTerminal nonTerminal = new NonTerminal(context.nameGen.returnSite(key.stmt, key.fact));
 			scheduleEdgeTo(new WrappedFactAtStatement<Field, Fact, Stmt, Method>(key.stmt, new WrappedFact<Field, Fact, Stmt, Method>(
 					key.fact, new RegularRule(nonTerminal))));
 			return nonTerminal;
@@ -57,7 +57,7 @@ public class PerAccessPathMethodAnalyzer<Field, Fact, Stmt, Method> {
 		@Override
 		protected NonTerminal createItem(FactAtStatement<Fact, Stmt> key) {
 			assert context.icfg.getMethodOf(key.stmt).equals(method);
-			NonTerminal nonTerminal = new NonTerminal("{JS:"+key.stmt+":"+key.fact+"}");
+			NonTerminal nonTerminal = new NonTerminal(context.nameGen.joinStmt(key.stmt, key.fact));
 			processFlowFromJoinStmt(new WrappedFactAtStatement<Field, Fact, Stmt, Method>(key.stmt, new WrappedFact<Field, Fact, Stmt, Method>(
 					key.fact, new RegularRule(nonTerminal))));
 			return nonTerminal;
@@ -83,7 +83,7 @@ public class PerAccessPathMethodAnalyzer<Field, Fact, Stmt, Method> {
 			callEdgeResolver = context.zeroNonTerminal; 
 		}
 		else
-			this.callEdgeResolver = new NonTerminal("{SP:"+method+": "+sourceFact+"}");
+			this.callEdgeResolver = new NonTerminal(context.nameGen.startPoint(method, sourceFact));
 	}
 	
 	Context<Field, Fact, Stmt, Method> getContext() {
@@ -298,12 +298,11 @@ public class PerAccessPathMethodAnalyzer<Field, Fact, Stmt, Method> {
 		if(summary.requiresCallingContextCheck()) {
 			final NonTerminal callingCtx = new NonTerminal("{Calling Context}");
 			callingCtx.addRule(new RegularRule(incEdge.getCallerAnalyzer().callEdgeResolver).append(incEdge.getCalleeSourceFact().getRule()));
-			final Rule candidateRule = new RegularRule(callingCtx).append(summary.getRule());
-			log("Checking if summary can be applied for incoming edge: "+incEdge+" and constraint: "+candidateRule);
-			context.intersectionSolver.query(candidateRule, new QueryListener() { //FIXME: this is wrong? It might terminate inside the callee already
+			log("Checking if summary can be applied for incoming edge: "+incEdge+" and constraint: "+summary.getRule());
+			context.intersectionSolver.reduceToCallingContext(callingCtx, summary.getRule(), new QueryListener() { 
 				@Override
 				public void solved() {
-					log("Solution found, summary will be applied for "+incEdge+". Checked: "+candidateRule);
+					log("Solution found, summary will be applied for "+incEdge+". Checked: "+summary.getRule());
 					applyUncheckedSummary(incEdge, summary);
 				}
 			});

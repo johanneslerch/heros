@@ -121,4 +121,10 @@ public class ConstantRule implements Rule {
 		return terminals.length == 0;
 	}
 
+	@Override
+	public void traverse(Traversal t) {
+		for(Terminal terminal : terminals)
+			t.terminal(terminal);
+	}
+
 }

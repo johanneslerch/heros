@@ -312,7 +312,7 @@ public class RegularOverApproximizer {
 							storeScc(scc.get());
 						} else if(isTargetApproximated) {
 							for(NonTerminal current : scc.get()) {
-								if(nonTerminalToScc.get(contextFreeRule.getNonTerminal()).contains(current))
+								if(nonTerminalToScc.get(contextFreeRule.getNonTerminal()).contains(current) || prime.isPrime(current))
 									updateApproximatedRules(current, scc.get());
 								else
 									rewriteRulesOf(current, scc.get());
@@ -355,7 +355,7 @@ public class RegularOverApproximizer {
 					if(isSourceApproximated) {
 						mergedScc.addAll(nonTerminalToScc.get(sourceNonTerminal));
 					}
-					if(isNonLeftLinearRule(mergedScc, nonLinearRule) || isSourceApproximated || isAnyTargetApproximated) {
+					if(isNonLeftLinearRule(mergedScc, nonLinearRule) || isSourceApproximated || isAnyTargetApproximated || containsNonLeftLinearRules(mergedScc)) {
 						for(NonTerminal current : mergedScc) {
 							if(nonTerminalToScc.containsKey(current)) {
 								updateApproximatedRules(current, mergedScc);
@@ -421,7 +421,7 @@ public class RegularOverApproximizer {
 							storeScc(mergedScc);
 						} else if(isTargetApproximated) {
 							for(NonTerminal current : scc.get()) {
-								if(nonTerminalToScc.get(regularRule.getNonTerminal()).contains(current))
+								if(nonTerminalToScc.get(regularRule.getNonTerminal()).contains(current) || prime.isPrime(current))
 									updateApproximatedRules(current, scc.get());
 								else
 									rewriteRulesOf(current, scc.get());
@@ -472,7 +472,7 @@ public class RegularOverApproximizer {
 							if(nonLinearRule.accept(new ContainsNonTerminal(newScc))) {
 								nonTerminal.removeRule(nonLinearRule);
 								Pair<NonTerminal, Rule> pair = nonLinearRule.accept(new RewriteVisitor(newScc, prime, nonTerminal, new ConstantRule()));
-								pair.getO1().addRule(pair.getO2());
+								pair.getO1().addRule(pair.getO2()); //FIXME nonTerminal' missing here
 							}
 							return null;
 						}

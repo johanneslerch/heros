@@ -126,4 +126,10 @@ public class NonLinearRule implements Rule {
 		return left.isEmpty() && right.isEmpty();
 	}
 
+	@Override
+	public void traverse(Traversal t) {
+		left.traverse(t);
+		right.traverse(t);
+	}
+
 }

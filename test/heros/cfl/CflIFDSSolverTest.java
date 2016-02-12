@@ -2171,4 +2171,36 @@ public class CflIFDSSolverTest {
 		
 		helper.runSolver(false, "a");
 	}
+	
+	@Test
+	public void applySummaryNotForAllCallingContexts() {
+		helper.method("main",
+				startPoints("a"),
+				normalStmt("a", flow("0", "1")).succ("b").succ("c"),
+				callSite("b").calls("fooA", flow("1", "1")).retSite("d", kill("1")),
+				callSite("c").calls("fooB", flow("1", "1")).retSite("d", kill("1")),
+				normalStmt("d", kill("1")).succ("e"));
+		
+		helper.method("fooA",
+				startPoints("a_sp"),
+				normalStmt("a_sp", flow("1", prependField("f"), "1")).succ("a_cs"),
+				callSite("a_cs").calls("bar", flow("1", "1")).retSite("a_rs", kill("1")),
+				exitStmt("a_rs").returns(over("b"), to("d"), flow(0, "1","1")));
+		
+		helper.method("fooB",
+				startPoints("b_sp"),
+				normalStmt("b_sp", flow("1", prependField("g"), "1")).succ("b_cs"),
+				callSite("b_cs").calls("bar", flow("1", "1")).retSite("b_rs", kill("1")),
+				exitStmt("b_rs").returns(over("c"), to("d"), flow("1","1")));
+		
+		helper.method("bar",
+				startPoints("f"),
+				normalStmt("f", flow("1", overwriteField("f"), "1")).succ("g"),
+				normalStmt("g", flow("1", prependField("g"), "1")).succ("g").succ("h"),
+				normalStmt("h", flow("1", "1")).succ("h").succ("i"),
+				exitStmt("i").returns(over("a_cs"), to("a_rs"), flow(0, "1", "1"))
+						.returns(over("b_cs"), to("b_rs"), flow("1", "1")));
+		
+		helper.runSolver(false, "a");
+	}
 }

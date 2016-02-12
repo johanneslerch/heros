@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2015 Johannes Lerch.
+ * Copyright (c) 2016 Johannes Lerch.
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the GNU Lesser Public License v2.1
  * which accompanies this distribution, and is available at
@@ -8,32 +8,13 @@
  * Contributors:
  *     Johannes Lerch - initial API and implementation
  ******************************************************************************/
-package heros.cfl;
+package heros.cfl.solver;
 
+public interface EntityNameGenerator<Field, Fact, Stmt, Method> {
 
-public interface Rule {
+	String returnSite(Stmt returnSite, Fact fact);
 
-	boolean isSolved();
-
-	boolean isPossible();
-
-	<T> T accept(RuleVisitor<T> ruleVisitor);
-
-	Rule append(Terminal... terminals);
+	String joinStmt(Stmt joinStmt, Fact fact);
 	
-	Rule append(Rule rule);
-
-	boolean containsNonTerminals();
-
-	Terminal[] getTerminals();
-
-	boolean isEmpty();
-
-	void traverse(Traversal t);
-	
-	public static interface Traversal {
-		void nonTerminal(NonTerminal nt);
-		void terminal(Terminal t);
-	}
-
+	String startPoint(Method method, Fact sourceFact);
 }

@@ -143,4 +143,9 @@ public class RegularRule implements Rule {
 		return false;
 	}
 
+	@Override
+	public void traverse(Traversal t) {
+		t.nonTerminal(nonTerminal);
+		constantRule.traverse(t);
+	}
 }
