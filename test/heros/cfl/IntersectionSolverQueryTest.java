@@ -49,6 +49,12 @@ public class IntersectionSolverQueryTest {
 	
 	
 	@Test
+	public void constantTrivial() {
+		X.addRule(new ConstantRule(f));
+		solvable(consumeFOnX);
+	}
+	
+	@Test
 	public void regularTrivialSolvable1() {
 		// X: f | g
 		// solvable X-f ?
@@ -418,7 +424,7 @@ public class IntersectionSolverQueryTest {
 	
 	@Test
 	public void delayedRegularRule2() {
-		delayed(new RegularRule(X, g));
+		delayed(consumeFOnX);
 		assertUnsolved();
 		approximizer.addRule(X, new RegularRule(X, f));
 		intersectionSolver.updateRules();

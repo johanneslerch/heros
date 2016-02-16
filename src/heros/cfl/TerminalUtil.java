@@ -10,6 +10,8 @@
  ******************************************************************************/
 package heros.cfl;
 
+import heros.solver.Pair;
+
 import java.util.Arrays;
 
 import fj.data.Option;
@@ -188,5 +190,36 @@ public class TerminalUtil {
 		for(int i=terminals.length-1; i>=0 && terminals[i] instanceof ProducingTerminal; i--)
 			newLength--;
 		return Arrays.copyOf(terminals, newLength);
+	}
+
+	public static boolean hasTerminals(Rule rule) {
+		return rule.accept(new RuleVisitor<Boolean>() {
+			@Override
+			public Boolean visit(ContextFreeRule contextFreeRule) {
+				return contextFreeRule.getRightTerminals().length > 0;
+			}
+
+			@Override
+			public Boolean visit(NonLinearRule nonLinearRule) {
+				return nonLinearRule.getRight().accept(this);
+			}
+
+			@Override
+			public Boolean visit(RegularRule regularRule) {
+				return regularRule.getTerminals().length > 0;
+			}
+
+			@Override
+			public Boolean visit(ConstantRule constantRule) {
+				return constantRule.getTerminals().length > 0;
+			}
+		});
+	}
+	
+	public static Pair<Terminal[], Terminal[]> split(Terminal... terminals) {
+		int i;
+		for(i=0; i<terminals.length && !(terminals[i] instanceof ProducingTerminal); i++) {
+		}
+		return new Pair<Terminal[], Terminal[]>(Arrays.copyOf(terminals, i), Arrays.copyOfRange(terminals, i, terminals.length));
 	}
 }

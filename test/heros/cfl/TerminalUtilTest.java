@@ -11,11 +11,13 @@
 package heros.cfl;
 
 import static org.junit.Assert.*;
+import heros.solver.Pair;
 
 import org.junit.Ignore;
 import org.junit.Test;
 
 import static heros.cfl.TerminalUtil.isBalanced;
+import static heros.cfl.TerminalUtil.split;
 import static heros.cfl.TerminalUtil.BalanceResult.*;
 
 public class TerminalUtilTest {
@@ -89,5 +91,69 @@ public class TerminalUtilTest {
 	@Test
 	public void excludeProduceConsumeMismatch() {
 		assertEquals(IMBALANCED, isBalanced(not_f, f, g̅));
+	}
+	
+	@Test
+	public void splitExclusionProduction() {
+		prefix(not_f).suffix(g, g, f).combineAndSplit();
+	}
+	
+	@Test
+	public void splitConsumeProduction() {
+		prefix(g̅).suffix(g, g, f).combineAndSplit();
+	}
+	
+	@Test
+	public void splitProduceOnly() {
+		prefix().suffix(g, f).combineAndSplit();
+	}
+	
+	@Test
+	public void splitConsumeOnly() {
+		prefix(g̅).suffix().combineAndSplit();
+	}
+	
+	@Test
+	public void splitConsumeExclude() {
+		prefix(g̅, not_f).suffix().combineAndSplit();
+	}
+	
+	@Test
+	public void splitConsumeExcludeProduce() {
+		prefix(g̅, not_f).suffix(g).combineAndSplit();
+	}
+	
+	@Test
+	public void splitExcludeProduce() {
+		prefix(not_f).suffix(g).combineAndSplit();
+	}
+	
+	private TerminalSplit prefix(Terminal...terminals) {
+		return new TerminalSplit(terminals);
+	}
+	
+	private static class TerminalSplit {
+		private Terminal[] prefix;
+		private Terminal[] suffix;
+
+		public TerminalSplit(Terminal[] prefix) {
+			this(prefix, new Terminal[0]);
+		}
+		
+		public TerminalSplit(Terminal[] prefix, Terminal[] suffix) {
+			this.prefix = prefix;
+			this.suffix = suffix;
+		}
+
+		public TerminalSplit suffix(Terminal...terminals) {
+			return new TerminalSplit(prefix, terminals);
+		}
+
+		public void combineAndSplit() {
+			Terminal[] combined = TerminalUtil.append(prefix, suffix);
+			Pair<Terminal[], Terminal[]> split = split(combined);
+			assertArrayEquals(prefix, split.getO1());
+			assertArrayEquals(suffix, split.getO2());
+		}
 	}
 }

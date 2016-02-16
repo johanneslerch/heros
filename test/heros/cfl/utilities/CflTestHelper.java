@@ -594,7 +594,7 @@ public class CflTestHelper {
 					
 					@Override
 					public String joinStmt(Statement joinStmt, TestFact fact) {
-						return "{RS: "+joinStmt+":"+fact+"}";
+						return "{JS: "+joinStmt+":"+fact+"}";
 					}
 				};
 			}

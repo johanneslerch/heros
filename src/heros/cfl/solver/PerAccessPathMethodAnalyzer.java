@@ -156,7 +156,7 @@ public class PerAccessPathMethodAnalyzer<Field, Fact, Stmt, Method> {
 			Set<ConstrainedFact<Fact>> targetFacts =  flowFunction.computeTargets(factAtStmt.getFact());
 			for (ConstrainedFact<Fact> targetFact : targetFacts) {
 				//TODO handle constraint
-				Rule concatenatedRule = factAtStmt.getRule().append(targetFact.terminals);
+				Rule concatenatedRule = targetFact.appendTo(factAtStmt.getRule());
 				MethodAnalyzer<Field, Fact, Stmt, Method> analyzer = context.getAnalyzer(calledMethod);
 				analyzer.addIncomingEdge(new CallEdge<Field, Fact, Stmt, Method>(this,
 						factAtStmt, new WrappedFact<Field, Fact, Stmt, Method>(targetFact.fact, concatenatedRule)));
@@ -183,7 +183,7 @@ public class PerAccessPathMethodAnalyzer<Field, Fact, Stmt, Method> {
 					Collection<ConstrainedFact<Fact>> targetFacts = flowFunction.computeTargets(factAtStmt.getFact());
 					for (ConstrainedFact<Fact> targetFact : targetFacts) {
 						//TODO handle constraint
-						Rule concatenatedRule = factAtStmt.getRule().append(targetFact.terminals);
+						Rule concatenatedRule = targetFact.appendTo(factAtStmt.getRule());
 						context.getAnalyzer(context.icfg.getMethodOf(callSite)).addUnbalancedReturnFlow(
 								new WrappedFactAtStatement<Field, Fact, Stmt, Method>(returnSite,
 										new WrappedFact<Field, Fact, Stmt, Method>(targetFact.fact, concatenatedRule)), callSite);
@@ -216,7 +216,7 @@ public class PerAccessPathMethodAnalyzer<Field, Fact, Stmt, Method> {
 			FlowFunction<Fact> flowFunction = context.flowFunctions.getCallToReturnFlowFunction(factAtStmt.getStatement(), returnSite);
 			Collection<ConstrainedFact<Fact>> targetFacts = flowFunction.computeTargets(factAtStmt.getFact());
 			for (ConstrainedFact<Fact> targetFact : targetFacts) {
-				final Rule concatenatedRule = factAtStmt.getRule().append(targetFact.terminals);
+				final Rule concatenatedRule = targetFact.appendTo(factAtStmt.getRule());
 				//TODO handle constraint
 				scheduleEdgeTo(new WrappedFactAtStatement<Field, Fact, Stmt, Method>(returnSite, new WrappedFact<Field, Fact, Stmt, Method>(targetFact.fact, concatenatedRule)));
 			}
@@ -263,8 +263,8 @@ public class PerAccessPathMethodAnalyzer<Field, Fact, Stmt, Method> {
 		FlowFunction<Fact> flowFunction = context.flowFunctions.getNormalFlowFunction(factAtStmt.getStatement());
 		Collection<ConstrainedFact<Fact>> targetFacts = flowFunction.computeTargets(factAtStmt.getFact());
 		for (final ConstrainedFact<Fact> targetFact : targetFacts) {
-			final Rule concatenatedRule = factAtStmt.getRule().append(targetFact.terminals);
-			if(TerminalUtil.containsConstraints(targetFact.terminals) && TerminalUtil.containsConstraints(targetFact.terminals)) {
+			final Rule concatenatedRule = targetFact.appendTo(factAtStmt.getRule());
+			if(targetFact.requiresCheck()) {
 				final Rule candidateRule = new RegularRule(callEdgeResolver).append(concatenatedRule);
 				log("Checking for solutions: "+candidateRule);
 				context.intersectionSolver.query(candidateRule, new QueryListener() {
@@ -320,7 +320,7 @@ public class PerAccessPathMethodAnalyzer<Field, Fact, Stmt, Method> {
 			for (ConstrainedFact<Fact> targetFact : targets) {
 				context.factHandler.restoreCallingContext(targetFact.fact, incEdge.getCallerCallSiteFact().getFact());
 				//TODO handle constraint
-				Rule concatenatedRule = summary.getRule().append(targetFact.terminals);
+				Rule concatenatedRule = targetFact.appendTo(summary.getRule());
 				scheduleReturnEdge(incEdge, new WrappedFact<Field, Fact, Stmt, Method>(targetFact.fact, concatenatedRule), returnSite);
 			}
 		}

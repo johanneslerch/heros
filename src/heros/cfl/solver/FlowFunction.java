@@ -11,12 +11,16 @@
 package heros.cfl.solver;
 
 import heros.cfl.NonTerminal;
+import heros.cfl.RegularRule;
+import heros.cfl.Rule;
 import heros.cfl.Terminal;
+import heros.cfl.TerminalUtil;
 
 import java.util.Arrays;
 import java.util.LinkedHashSet;
-import java.util.Optional;
 import java.util.Set;
+
+import com.google.common.base.Optional;
 
 /**
  * A flow function computes which of the finitely many D-type values are reachable
@@ -45,19 +49,30 @@ public interface FlowFunction<D> {
 	
 	public static class ConstrainedFact<D> {
 		public final D fact;
-		public final Terminal[] terminals;
-		public final Optional<NonTerminal> nonTerminal;
+		private final Terminal[] terminals;
+		private final Optional<NonTerminal> nonTerminal;
 
 		public ConstrainedFact(D fact, Terminal... terminals) {
 			this.fact = fact;
 			this.terminals = terminals;
-			this.nonTerminal = Optional.empty();
+			this.nonTerminal = Optional.absent();
 		}
 		
 		public ConstrainedFact(D fact, NonTerminal nonTerminal, Terminal...terminals) {
 			this.fact = fact;
 			this.terminals = terminals;
 			this.nonTerminal = Optional.of(nonTerminal);
+		}
+		
+		public boolean requiresCheck() {
+			return TerminalUtil.containsConstraints(terminals) || !nonTerminal.isPresent();
+		}
+		
+		public Rule appendTo(Rule rule) {
+			if(nonTerminal.isPresent())
+				return new RegularRule(nonTerminal.get(), terminals);
+			else
+				return rule.append(terminals);
 		}
 
 		@Override

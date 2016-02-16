@@ -879,9 +879,9 @@ public class RegularOverApproximizerTest {
 		PermutationTest permutation = new PermutationTest(Lists.newArrayList(U, V, W, X, Y, Z), 
 				Lists.newArrayList(Uprime, Vprime, Wprime, Xprime, Yprime, Zprime),
 				Lists.<Terminal>newArrayList(f,g,h,i,j,k));
-		for(int i=0; i<10000; i++) {
+		for(int i=0; i<1000; i++) {
 			permutation.clean();
-			List<Pair<NonTerminal, Rule>> rules = permutation.setup(8);
+			List<Pair<NonTerminal, Rule>> rules = permutation.setup(7);
 			int permIndex = 0;
 			for(List<Pair<NonTerminal, Rule>> perm : Collections2.permutations(rules)) {
 				if(permIndex++ > 10)

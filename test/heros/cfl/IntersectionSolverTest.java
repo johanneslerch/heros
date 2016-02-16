@@ -19,15 +19,19 @@ import heros.cfl.IntersectionSolver.Guard;
 import heros.cfl.IntersectionSolver.SubstitutionListener;
 
 import java.util.List;
+import java.util.Set;
 
 import org.junit.Test;
 import org.mockito.ArgumentCaptor;
 import org.mockito.internal.verification.VerificationModeFactory;
 
 import com.google.common.collect.Lists;
+import com.google.common.collect.Sets;
 
 public class IntersectionSolverTest {
 
+	IntersectionSolver intersectionSolver = new IntersectionSolver();
+	
 	ProducingTerminal f = new ProducingTerminal("f");
 	ConsumingTerminal f̅ = new ConsumingTerminal("f");
 	ExclusionTerminal not_f = new ExclusionTerminal("f");
@@ -60,15 +64,15 @@ public class IntersectionSolverTest {
 	@Test
 	public void terminateProducingLoop() {
 		X.addRule(new RegularRule(X, f));
-		assertSubstitution(new RegularRule(X, f, g), new RegularRule(X, g));
+		assertSubstitution(new RegularRule(X, f), new RegularRule(X));
 	}
 
 	@Test
 	public void substitutionRequiresLoop() {
 		X.addRule(new RegularRule(Y, f̅));
 		Y.addRule(new RegularRule(Y, g̅));
-		Y.addRule(new ConstantRule(f, g, g));
-		assertSubstitution(new ConstantRule(), new RegularRule(X));
+		Y.addRule(new ConstantRule(h, f, g, g));
+		assertSubstitution(new ConstantRule(h), new RegularRule(X));
 	}
 
 	@Test
@@ -76,7 +80,7 @@ public class IntersectionSolverTest {
 		X.addRule(new ContextFreeRule(new Terminal[] {f}, Y, new Terminal[] {g̅}));
 		Y.addRule(new ContextFreeRule(new Terminal[] {h}, Z, new Terminal[] {g}));
 		Z.addRule(new RegularRule(X, f));
-		assertSubstitution(new ContextFreeRule(new Terminal[] {f, h}, X, new Terminal[] {f}), new RegularRule(X));		
+		assertSubstitution(new ContextFreeRule(new Terminal[] {f, h}, X, new Terminal[] {f}), new RegularRule(X));
 	}
 	
 	@Test
@@ -85,8 +89,8 @@ public class IntersectionSolverTest {
 		Y.addRule(new RegularRule(Y, g̅));
 		Y.addRule(new RegularRule(Z, g̅));
 		Z.addRule(new RegularRule(Z, g));
-		Z.addRule(new ConstantRule(f, g, g, g));
-		assertSubstitution(Lists.<Rule> newArrayList(new ConstantRule()), new RegularRule(X));
+		Z.addRule(new ConstantRule(h, f, g, g, g));
+		assertSubstitution(new ConstantRule(h), new RegularRule(X));
 	}
 	
 	@Test
@@ -95,15 +99,17 @@ public class IntersectionSolverTest {
 		Y.addRule(new RegularRule(Y, g̅));
 		Y.addRule(new ConstantRule(g̅));
 		Z.addRule(new RegularRule(Z, g));
-		Z.addRule(new ConstantRule(f, g, g, g));
-		assertSubstitution(Lists.<Rule> newArrayList(new ConstantRule()), new RegularRule(X));
+		Z.addRule(new ConstantRule(h, f, g, g, g));
+		assertSubstitution(new ConstantRule(h), new RegularRule(X));
 	}
 	
 	@Test
 	public void substitutionHiddenIdentityRule() {
 		X.addRule(new RegularRule(X, g̅));
 		X.addRule(new RegularRule(X, g̅, g));
-		assertSubstitution(new RegularRule(X, g̅, g), new RegularRule(X));
+
+		NonTerminal intermediateNonTerminal = intersectionSolver.getIntermediateNonTerminal(X, new RegularRule(X, g̅));		
+		assertSubstitution(new RegularRule(intermediateNonTerminal, g), new RegularRule(X));
 	}
 	
 	@Test
@@ -111,22 +117,53 @@ public class IntersectionSolverTest {
 		X.addRule(new RegularRule(Y, g̅));
 		Y.addRule(new RegularRule(Z, g));
 		Z.addRule(new RegularRule(Y, g̅));
-		assertSubstitution(Lists.<Rule>newLinkedList(), new RegularRule(X));
+		assertSubstitution(Sets.<Rule> newHashSet(), new RegularRule(X));
+	}
+
+	@Test
+	public void substitutionEmptyInNonLinearRule() {
+		X.addRule(new NonLinearRule(new ContextFreeRule(new Terminal[] {f}, Y, new Terminal[0]), new RegularRule(Y)));
+		Y.addRule(new ConstantRule());
+		assertSubstitution(new ConstantRule(f), new RegularRule(X));
+	}
+	
+	@Test
+	public void substitutionHiddenIdentityRule3() {
+		X.addRule(new RegularRule(X, g̅));
+		X.addRule(new RegularRule(X, g̅, g));
+		X.addRule(new RegularRule(X, g̅, g̅, g, g));
+		
+		NonTerminal intermediateNonTerminal1 = intersectionSolver.getIntermediateNonTerminal(X, new RegularRule(X, g̅));
+		NonTerminal intermediateNonTerminal2 = intersectionSolver.getIntermediateNonTerminal(X, new RegularRule(X, g̅, g̅));
+		assertSubstitution(Sets.<Rule> newHashSet(
+				new RegularRule(intermediateNonTerminal1, g), 
+				new RegularRule(intermediateNonTerminal2, g, g),
+				new RegularRule(intermediateNonTerminal2, g)), new RegularRule(X));
+	}
+	
+	@Test
+	public void substitutionSelfSatisfyingLoop() {
+		X.addRule(new RegularRule(Y, f̅,f̅,f̅,f̅,f̅));
+		Y.addRule(new ConstantRule(f));
+		Y.addRule(new RegularRule(Y, f̅, f, f));
+		
+		NonTerminal intermediateNonTerminal = intersectionSolver.getIntermediateNonTerminal(Y, new RegularRule(Y, f̅));
+		assertSubstitution(new RegularRule(intermediateNonTerminal, f), new RegularRule(X));
 	}
 	
 	private void assertSubstitution(Rule expectation, Rule actual) {
-		assertSubstitution(Lists.newArrayList(expectation), actual);
+		assertSubstitution(Sets.newHashSet(expectation), actual);
 	}
 	
-	private void assertSubstitution(List<Rule> expectation, Rule actual) {
+	private void assertSubstitution(Set<Rule> expectation, Rule actual) {
 		SubstitutionListener listener = mock(SubstitutionListener.class);
-		new IntersectionSolver().substitute(actual, listener);
+		intersectionSolver.substitute(actual, listener);
 		if(expectation.isEmpty())
 			verify(listener, never()).newProducingSubstitution(any(Rule.class), any(Guard.class));
 		else {
 			ArgumentCaptor<Rule> captor = ArgumentCaptor.forClass(Rule.class);
 			verify(listener, VerificationModeFactory.atLeastOnce()).newProducingSubstitution(captor.capture(), any(Guard.class));
-			assertEquals(expectation,captor.getAllValues());
+			assertEquals(expectation,Sets.newHashSet(captor.getAllValues()));
 		}
 	}	
 }
