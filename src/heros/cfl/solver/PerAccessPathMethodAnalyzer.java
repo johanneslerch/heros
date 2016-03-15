@@ -280,7 +280,7 @@ public class PerAccessPathMethodAnalyzer<Field, Fact, Stmt, Method> {
 			}
 		}
 	}
-	
+    	
 	public void addIncomingEdge(CallEdge<Field, Fact, Stmt, Method> incEdge) {
 		if(isBootStrapped()) {
 			context.factHandler.merge(sourceFact, incEdge.getCalleeSourceFact().getFact());

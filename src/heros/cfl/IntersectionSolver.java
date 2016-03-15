@@ -291,7 +291,7 @@ public class IntersectionSolver {
 		}
 		
 		private void start() {
-			System.out.println("Interested in Substitutions for "+key);
+//			System.out.println("Interested in Substitutions for "+key);
 			key.substitutableRule.accept(new RuleVisitor<Void>() {
 				@Override
 				public Void visit(final ContextFreeRule contextFreeRule) {
@@ -341,7 +341,7 @@ public class IntersectionSolver {
 			}
 			else {
 				producingSubstitutions.put(rule, guard);
-				System.out.println("new substitution for "+key+" -> "+rule);
+//				System.out.println("new substitution for "+key+" -> "+rule);
 				for(SubstitutionListener listener : Lists.newArrayList(listeners)) {
 					listener.newProducingSubstitution(rule, guard);
 				}
