@@ -267,7 +267,7 @@ public class PerAccessPathMethodAnalyzer<Field, Fact, Stmt, Method> {
 			if(targetFact.requiresCheck()) {
 				final Rule candidateRule = new RegularRule(callEdgeResolver).append(concatenatedRule);
 				log("Checking for solutions: "+candidateRule);
-				context.intersectionSolver.query(candidateRule, new QueryListener() {
+				context.intersectionSolver.reduceToCallingContext(callEdgeResolver, concatenatedRule, new QueryListener() {
 					@Override
 					public void solved() {
 						log("Solution found for: "+candidateRule);

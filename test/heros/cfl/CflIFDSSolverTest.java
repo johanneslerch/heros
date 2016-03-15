@@ -2203,4 +2203,29 @@ public class CflIFDSSolverTest {
 		
 		helper.runSolver(false, "a");
 	}
+	
+	@Test
+	public void unusablePath() {
+		helper.method("main",
+				startPoints("a"),
+				normalStmt("a", flow("0", "1")).succ("b1").succ("b2"),
+				normalStmt("b1", flow("1", prependField("f"), "1")).succ("c1"),
+				callSite("c1").calls("foo", flow("1", "1")).retSite("d1", kill("1")),
+				normalStmt("d1", flow("1", readField("h"), "1")).succ("e1"),
+				normalStmt("e1", kill("1")).succ("f1"),
+				normalStmt("b2", flow("1", prependField("g"), "1")).succ("c2"),
+				callSite("c2").calls("foo", flow("1", "1")).retSite("d2", kill("1")),
+				normalStmt("d2", flow("1", readField("h"), "1")).succ("e2"),
+				normalStmt("e2").succ("f2"));
+
+		helper.method("foo",
+				startPoints("u"),
+				normalStmt("u", flow("1", "1")).succ("v").succ("y"),
+				normalStmt("v", flow("1", readField("f"), "1")).succ("x"),
+				normalStmt("x", flow("1", prependField("h"), "1")).succ("x").succ("y"),
+				normalStmt("y", flow("1", "1")).succ("y").succ("z"),
+				exitStmt("z").returns(over("c1"), to("d1"), flow("1", "1")).returns(over("c2"), to("d2"), flow("1", "1")));
+		
+		helper.runSolver(false, "a");
+	}
 }

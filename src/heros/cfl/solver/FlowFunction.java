@@ -65,7 +65,7 @@ public interface FlowFunction<D> {
 		}
 		
 		public boolean requiresCheck() {
-			return TerminalUtil.containsConstraints(terminals) || !nonTerminal.isPresent();
+			return TerminalUtil.containsConstraints(terminals) && !nonTerminal.isPresent();
 		}
 		
 		public Rule appendTo(Rule rule) {
