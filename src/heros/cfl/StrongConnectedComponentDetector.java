@@ -11,16 +11,11 @@
 package heros.cfl;
 
 import heros.utilities.DefaultValueMap;
-import heros.utilities.EdgeBuilder;
 
-import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collection;
-import java.util.Map;
 import java.util.Set;
 import java.util.Stack;
 
-import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 

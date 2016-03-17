@@ -11,6 +11,7 @@
 package heros.cfl;
 
 import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
 import java.util.Set;
 
@@ -65,7 +66,7 @@ public class NonTerminal {
 	}
 
 	public Collection<Rule> getRules() {
-		return rules;
+		return Collections.unmodifiableSet(rules);
 	}
 	
 	public Object getRepresentation() {

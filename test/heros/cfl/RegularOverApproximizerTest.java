@@ -869,8 +869,10 @@ public class RegularOverApproximizerTest {
 		assertRules(U, new RegularRule(U, f));
 		assertRules(W, 
 				new NonLinearRule(
-					new NonLinearRule(new RegularRule(Wprime), new RegularRule(U, j)),
-					new NonLinearRule(new ContextFreeRule(new Terminal[] {k}, V, new Terminal[] {i}), new RegularRule(X))));
+					new NonLinearRule(
+							new NonLinearRule(new RegularRule(Wprime), new RegularRule(U, j, k)),
+							new RegularRule(V, i)),
+					new RegularRule(X)));
 		assertRules(Wprime, ε, new RegularRule(Wprime, k));
 	}
 	

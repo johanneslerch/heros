@@ -10,15 +10,14 @@
  ******************************************************************************/
 package heros.cfl;
 
-import heros.cfl.RegularOverApproximizer.NonTerminalPrimeManager;
+import static heros.cfl.StrongConnectedComponentDetector.from;
 import heros.solver.Pair;
-import heros.utilities.DefaultValueMap;
 
 import java.util.Collection;
-import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 
+import com.google.common.base.Joiner;
 import com.google.common.base.Optional;
 import com.google.common.base.Predicate;
 import com.google.common.collect.BiMap;
@@ -27,8 +26,6 @@ import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
-
-import static heros.cfl.StrongConnectedComponentDetector.*;
 
 public class RegularOverApproximizer {
 
@@ -184,9 +181,13 @@ public class RegularOverApproximizer {
 
 	private void rewriteRulesOf(final NonTerminal current, Set<NonTerminal> scc) {
 		for(Rule rule : current.removeAllRules()) {
-			Pair<NonTerminal, Rule> result = rule.accept(new RewriteVisitor(scc, prime, current, new ConstantRule()));
-			result.getO1().addRule(new RegularRule(prime.get(current)).append(result.getO2()));
+			addRewrittenRule(current, rule, scc);
 		}
+	}
+	
+	private void addRewrittenRule(NonTerminal sourceNonTerminal, Rule rule, Set<NonTerminal> scc) {
+		Pair<NonTerminal, Rule> result = rule.accept(new RewriteVisitor(scc, prime, sourceNonTerminal, new ConstantRule()));
+		result.getO1().addRule(new RegularRule(prime.get(sourceNonTerminal)).append(result.getO2()));
 	}
 	
 	private static boolean partOfScc(NonTerminalPrimeManager prime, Collection<NonTerminal> scc, NonTerminal nt) {
@@ -244,272 +245,117 @@ public class RegularOverApproximizer {
 		}
 	}
 
-	public void addRule(final NonTerminal sourceNonTerminal, Rule rule) {
-		final boolean isSourceApproximated = nonTerminalToScc.containsKey(sourceNonTerminal);
+	private void updateApproximatedRules(final NonTerminal nonTerminal, final Set<NonTerminal> newScc) {
+		for(Rule rule : Lists.newLinkedList(nonTerminal.getRules())) {
+			rule.accept(new RuleVisitor<Void>() {
+				@Override
+				public Void visit(ContextFreeRule contextFreeRule) {
+					throw new IllegalStateException("Over-Approximation is not correct of rule: "+nonTerminal+" -> "+contextFreeRule);
+				}
 
-		ReadableRuleTransformer readableRuleTransformer = new ReadableRuleTransformer(prime);
-		String prevInfo = "Source Approximated: "+isSourceApproximated+"\n";
-		Collection<Set<NonTerminal>> sourceScc = new StrongConnectedComponentDetector(sourceNonTerminal).results();
-		for(Set<NonTerminal> scc : sourceScc) {
-			if(scc.contains(sourceNonTerminal)) {
-				prevInfo += "Prev Source SCC ("+readableRuleTransformer.map(nonTerminalToScc.getOrDefault(sourceNonTerminal, Sets.<NonTerminal>newHashSet()))+"):\n"+new ToStringRuleVisitor(readableRuleTransformer.map(scc).toArray(new NonTerminal[0])).toString()+"\n";
-			}
+				@Override
+				public Void visit(NonLinearRule nonLinearRule) {
+					if(isNonLeftLinearRule(newScc, nonLinearRule)) {
+						nonTerminal.removeRule(nonLinearRule);
+						Pair<NonTerminal, Rule> pair = nonLinearRule.accept(new RewriteVisitor(newScc, prime, nonTerminal, new ConstantRule()));
+						assert pair.getO2().isEmpty();
+					}
+					return null;
+				}
+
+				@Override
+				public Void visit(RegularRule regularRule) {
+					//nothing to do
+					return null;
+				}
+
+				@Override
+				public Void visit(ConstantRule constantRule) {
+					//nothing to do
+					return null;
+				}
+			});
 		}
-		
-		Set<NonTerminal> target = rule.accept(new CollectNonTerminalsRuleVisitor());
-		if(target.size() == 1) {
-			Collection<Set<NonTerminal>> targetScc = new StrongConnectedComponentDetector(target).results();
-			for(Set<NonTerminal> scc : targetScc) {
-				for(NonTerminal t : target) {
-					if(scc.contains(t)) {
-						prevInfo += "Prev Target SCC ("+readableRuleTransformer.map(nonTerminalToScc.getOrDefault(t, Sets.<NonTerminal>newHashSet()))+"):\n"+new ToStringRuleVisitor(readableRuleTransformer.map(scc).toArray(new NonTerminal[0])).toString();
-						break;
-					}
-				}
-			}
-		}
-		
-		rule.accept(new RuleVisitor<Void>() {
-			@Override
-			public Void visit(final ContextFreeRule contextFreeRule) {
-				boolean isTargetApproximated = nonTerminalToScc.containsKey(contextFreeRule.getNonTerminal());
-				if(isSourceApproximated && isTargetApproximated) {
-					Set<NonTerminal> sourceScc = nonTerminalToScc.get(sourceNonTerminal);
-					if(sourceScc.contains(contextFreeRule.getNonTerminal())) {
-						//target was already part of source's scc
-						sourceNonTerminal.addRule(new RegularRule(contextFreeRule.getNonTerminal(), contextFreeRule.getRightTerminals()));
-						prime.get(contextFreeRule.getNonTerminal()).addRule(new RegularRule(prime.get(sourceNonTerminal), contextFreeRule.getLeftTerminals()));
-					} else {
-						//new rule connects two different approximated sccs
-						Set<NonTerminal> newScc = Sets.newHashSet(sourceScc);
-						Set<NonTerminal> targetScc = nonTerminalToScc.get(contextFreeRule.getNonTerminal());
-						newScc.addAll(targetScc);
-						sourceNonTerminal.addRule(new RegularRule(contextFreeRule.getNonTerminal(), contextFreeRule.getRightTerminals()));
-						prime.get(contextFreeRule.getNonTerminal()).addRule(new RegularRule(prime.get(sourceNonTerminal), contextFreeRule.getLeftTerminals()));
-						for(NonTerminal ntOfTargetScc : targetScc) {
-							updateApproximatedRules(ntOfTargetScc, sourceScc);
-						}
-						storeScc(newScc);
-					}
-				} else {
-					Collection<Set<NonTerminal>> newSccs = new StrongConnectedComponentDetector(from(sourceNonTerminal).to(contextFreeRule.getNonTerminal())).results();
-					Optional<Set<NonTerminal>> scc = Iterables.tryFind(newSccs, new Predicate<Set<NonTerminal>>() {
-						@Override
-						public boolean apply(Set<NonTerminal> scc) {
-							return scc.contains(sourceNonTerminal) && scc.contains(contextFreeRule.getNonTerminal());
-						}
-					});
-					if(scc.isPresent()) {
-						if(isSourceApproximated) {
-							Set<NonTerminal> mergedScc = Sets.newHashSet(scc.get());
-							mergedScc.addAll(nonTerminalToScc.get(sourceNonTerminal));
-							for(NonTerminal current : scc.get()) {
-								if(!nonTerminalToScc.get(sourceNonTerminal).contains(current))
-									rewriteRulesOf(current, mergedScc);
-							}
-							sourceNonTerminal.addRule(new RegularRule(contextFreeRule.getNonTerminal(), contextFreeRule.getRightTerminals()));
-							prime.get(contextFreeRule.getNonTerminal()).addRule(new RegularRule(prime.get(sourceNonTerminal), contextFreeRule.getLeftTerminals()));
-							storeScc(scc.get());
-						} else if(isTargetApproximated) {
-							for(NonTerminal current : scc.get()) {
-								if(nonTerminalToScc.get(contextFreeRule.getNonTerminal()).contains(current) || prime.isPrime(current))
-									updateApproximatedRules(current, scc.get());
-								else
-									rewriteRulesOf(current, scc.get());
-							}
-							storeScc(scc.get());
-							sourceNonTerminal.addRule(new RegularRule(contextFreeRule.getNonTerminal(), contextFreeRule.getRightTerminals()));
-							prime.get(contextFreeRule.getNonTerminal()).addRule(new RegularRule(prime.get(sourceNonTerminal), contextFreeRule.getLeftTerminals()));
-						} else {
-							storeScc(scc.get());
-							rewrite(scc.get());
-							sourceNonTerminal.addRule(new RegularRule(contextFreeRule.getNonTerminal(), contextFreeRule.getRightTerminals()));
-							prime.get(contextFreeRule.getNonTerminal()).addRule(new RegularRule(prime.get(sourceNonTerminal), contextFreeRule.getLeftTerminals()));
-						}
-					}
-					else {
-						if(isSourceApproximated)
-							sourceNonTerminal.addRule(new NonLinearRule(new RegularRule(prime.get(sourceNonTerminal), contextFreeRule.getLeftTerminals()), 
-									new RegularRule(contextFreeRule.getNonTerminal(), contextFreeRule.getRightTerminals())));
-						else
-							sourceNonTerminal.addRule(contextFreeRule);
-					}
-				}
-				return null;
-			}
-
-			@Override
-			public Void visit(NonLinearRule nonLinearRule) {
-				final Set<NonTerminal> targetNonTerminals = nonLinearRule.accept(new CollectNonTerminalsRuleVisitor());
-				Collection<Set<NonTerminal>> newSccs = new StrongConnectedComponentDetector(from(sourceNonTerminal).to(
-						targetNonTerminals)).results();
-				Optional<Set<NonTerminal>> scc = Iterables.tryFind(newSccs, new Predicate<Set<NonTerminal>>() {
-					@Override
-					public boolean apply(Set<NonTerminal> scc) {
-						return scc.contains(sourceNonTerminal) && !Sets.intersection(scc, targetNonTerminals).isEmpty();
-					}
-				});
-				if(scc.isPresent()) {
-					boolean isAnyTargetApproximated = !Sets.intersection(nonTerminalToScc.keySet(), targetNonTerminals).isEmpty();
-					Set<NonTerminal> mergedScc = Sets.newHashSet(scc.get());
-					if(isSourceApproximated) {
-						mergedScc.addAll(nonTerminalToScc.get(sourceNonTerminal));
-					}
-					if(isNonLeftLinearRule(mergedScc, nonLinearRule) || isSourceApproximated || isAnyTargetApproximated || containsNonLeftLinearRules(mergedScc)) {
-						for(NonTerminal current : mergedScc) {
-							if(nonTerminalToScc.containsKey(current)) {
-								updateApproximatedRules(current, mergedScc);
-							} else {
-								rewriteRulesOf(current, mergedScc);
-							}
-						}
-						Pair<NonTerminal, Rule> result = nonLinearRule.accept(new RewriteVisitor(mergedScc, prime, sourceNonTerminal, new ConstantRule()));
-						result.getO1().addRule(new RegularRule(prime.get(sourceNonTerminal)).append(result.getO2()));
-						storeScc(mergedScc);
-					}
-					else
-						sourceNonTerminal.addRule(nonLinearRule);
-				}
-				else if(isSourceApproximated) {
-					sourceNonTerminal.addRule(new RegularRule(prime.get(sourceNonTerminal)).append(nonLinearRule));
-				}
-				else {
-					sourceNonTerminal.addRule(nonLinearRule);
-				}
-				return null;
-			}
-
-			@Override
-			public Void visit(final RegularRule regularRule) {
-				boolean isTargetApproximated = nonTerminalToScc.containsKey(regularRule.getNonTerminal());
-				if(isSourceApproximated && isTargetApproximated) {
-					Set<NonTerminal> sourceScc = nonTerminalToScc.get(sourceNonTerminal);
-					if(sourceScc.contains(regularRule.getNonTerminal())) {
-						//target was already part of source's scc
-						sourceNonTerminal.addRule(regularRule);
-						prime.get(regularRule.getNonTerminal()).addRule(new RegularRule(prime.get(sourceNonTerminal)));
-					} else {
-						//new rule connects two different approximated sccs
-						Set<NonTerminal> newScc = Sets.newHashSet(sourceScc);
-						Set<NonTerminal> targetScc = nonTerminalToScc.get(regularRule.getNonTerminal());
-						newScc.addAll(targetScc);
-						sourceNonTerminal.addRule(regularRule);
-						prime.get(regularRule.getNonTerminal()).addRule(new RegularRule(prime.get(sourceNonTerminal)));
-						for(NonTerminal ntOfTargetScc : targetScc) {
-							updateApproximatedRules(ntOfTargetScc, sourceScc);
-						}
-						storeScc(newScc);
-					}
-				} else {
-					Collection<Set<NonTerminal>> newSccs = new StrongConnectedComponentDetector(from(sourceNonTerminal).to(regularRule.getNonTerminal())).results();
-					Optional<Set<NonTerminal>> scc = Iterables.tryFind(newSccs, new Predicate<Set<NonTerminal>>() {
-						@Override
-						public boolean apply(Set<NonTerminal> scc) {
-							return scc.contains(sourceNonTerminal) && scc.contains(regularRule.getNonTerminal());
-						}
-					});
-					if(scc.isPresent()) {
-						if(isSourceApproximated) {
-							Set<NonTerminal> mergedScc = Sets.newHashSet(scc.get());
-							mergedScc.addAll(nonTerminalToScc.get(sourceNonTerminal));
-							for(NonTerminal current : scc.get()) {
-								if(!nonTerminalToScc.get(sourceNonTerminal).contains(current))
-									rewriteRulesOf(current, mergedScc);
-							}
-							sourceNonTerminal.addRule(regularRule);
-							prime.get(regularRule.getNonTerminal()).addRule(new RegularRule(prime.get(sourceNonTerminal)));
-							storeScc(mergedScc);
-						} else if(isTargetApproximated) {
-							for(NonTerminal current : scc.get()) {
-								if(nonTerminalToScc.get(regularRule.getNonTerminal()).contains(current) || prime.isPrime(current))
-									updateApproximatedRules(current, scc.get());
-								else
-									rewriteRulesOf(current, scc.get());
-							}
-							sourceNonTerminal.addRule(regularRule);
-							prime.get(regularRule.getNonTerminal()).addRule(new RegularRule(prime.get(sourceNonTerminal)));
-							storeScc(scc.get());
-						} else {
-							if(containsNonLeftLinearRules(scc.get())) {
-								storeScc(scc.get());
-								rewrite(scc.get());
-								sourceNonTerminal.addRule(regularRule);
-								prime.get(regularRule.getNonTerminal()).addRule(new RegularRule(prime.get(sourceNonTerminal)));
-							}
-							else
-								sourceNonTerminal.addRule(regularRule);
-						}
-					}
-					else {
-						if(isSourceApproximated)
-							sourceNonTerminal.addRule(new NonLinearRule(new RegularRule(prime.get(sourceNonTerminal)), regularRule));
-						else
-							sourceNonTerminal.addRule(regularRule);
-					}
-				}
-				return null;
-			}
-
-			@Override
-			public Void visit(ConstantRule constantRule) {
-				if(isSourceApproximated)
-					sourceNonTerminal.addRule(new RegularRule(prime.get(sourceNonTerminal), constantRule));
-				else
-					sourceNonTerminal.addRule(constantRule);
-				return null;
-			}
-			
-			private void updateApproximatedRules(final NonTerminal nonTerminal, final Set<NonTerminal> newScc) {
-				for(Rule rule : Lists.newLinkedList(nonTerminal.getRules())) {
-					rule.accept(new RuleVisitor<Void>() {
-						@Override
-						public Void visit(ContextFreeRule contextFreeRule) {
-							throw new IllegalStateException("Over-Approximation is not correct of rule: "+nonTerminal+" -> "+contextFreeRule);
-						}
-
-						@Override
-						public Void visit(NonLinearRule nonLinearRule) {
-							if(nonLinearRule.accept(new ContainsNonTerminal(newScc))) {
-								nonTerminal.removeRule(nonLinearRule);
-								Pair<NonTerminal, Rule> pair = nonLinearRule.accept(new RewriteVisitor(newScc, prime, nonTerminal, new ConstantRule()));
-								pair.getO1().addRule(pair.getO2()); //FIXME nonTerminal' missing here
-							}
-							return null;
-						}
-
-						@Override
-						public Void visit(RegularRule regularRule) {
-							//nothing to do
-							return null;
-						}
-
-						@Override
-						public Void visit(ConstantRule constantRule) {
-							//nothing to do
-							return null;
-						}
-					});
-				}
-			}
-		});
-		assert regular(sourceNonTerminal, rule, prevInfo, readableRuleTransformer);
+	}
+	
+	private boolean isApproximated(NonTerminal nt) {
+		return nonTerminalToScc.containsKey(nt);
 	}
 
-	private boolean regular(NonTerminal sourceNonTerminal, Rule rule, String prevTargetScc, ReadableRuleTransformer readableRuleTransformer) {
-		Collection<Set<NonTerminal>> sccs = new StrongConnectedComponentDetector(nonTerminalToScc.keySet().toArray(new NonTerminal[0])).results();
-		for(Set<NonTerminal> scc : sccs) {
-			if(containsNonLeftLinearRules(scc)) {
-				Set<NonTerminal> mappedScc = readableRuleTransformer.map(scc);
-				throw new IllegalStateException(
-						"Added to "+sourceNonTerminal+" the rule "+rule+"\n"
-						+"Found SCC with non left linear rules: \n"
-						+new ToStringRuleVisitor(scc.toArray(new NonTerminal[0]))
-						+"\nMapped rule representation:\n"
-						+prevTargetScc+"\n"
-						+"added to "+readableRuleTransformer.map(sourceNonTerminal)+" the rule "+readableRuleTransformer.map(rule)+"\n"
-						+new ToStringRuleVisitor(mappedScc.toArray(new NonTerminal[0])));
+	private boolean isApproximated(Collection<NonTerminal> list) {
+		for(NonTerminal nt : list) {
+			if(isApproximated(nt))
+				return true;
+		}
+		return false;
+	}
+	
+	public void addRule(final NonTerminal sourceNonTerminal, Rule rule) {
+		assert regular();
+		Set<NonTerminal> targetNonTerminals = rule.accept(new CollectNonTerminalsRuleVisitor());
+		
+		Collection<Set<NonTerminal>> sccs = new StrongConnectedComponentDetector(from(sourceNonTerminal).to(targetNonTerminals)).results();
+		Optional<Set<NonTerminal>> scc = Iterables.tryFind(sccs, new Predicate<Set<NonTerminal>>() {
+			@Override
+			public boolean apply(Set<NonTerminal> input) {
+				return input.contains(sourceNonTerminal);
+			}
+		});
+		if(scc.isPresent()) {
+			boolean approximationRequired = isNonLeftLinearRule(scc.get(), rule) ||	
+					isApproximated(scc.get()) || containsNonLeftLinearRules(scc.get());
+			
+			if(approximationRequired) {
+				Set<NonTerminal> filteredScc = Sets.filter(scc.get(), new Predicate<NonTerminal>() {
+					@Override
+					public boolean apply(NonTerminal input) {
+						return !prime.isPrime(input);
+					}
+				});
+
+				boolean newNonTerminalsInScc = isApproximated(sourceNonTerminal) ? 
+						!nonTerminalToScc.get(sourceNonTerminal).equals(filteredScc) : true;			
+				if(newNonTerminalsInScc) {
+					for(NonTerminal nt : filteredScc) {
+						if(isApproximated(nt)) {
+							updateApproximatedRules(nt, filteredScc);
+							updateApproximatedRules(prime.get(nt), filteredScc);
+						} else {
+							rewriteRulesOf(nt, filteredScc);
+						}
+					}
+					storeScc(filteredScc);
+				}
+				addRewrittenRule(sourceNonTerminal, rule, filteredScc);
+			} else {
+				sourceNonTerminal.addRule(rule);
 			}
 		}
-		return true;
+		assert regular();
+	}
+
+	private boolean regular() {
+		Collection<Set<NonTerminal>> sccs = new StrongConnectedComponentDetector(nonTerminalToScc.keySet().toArray(new NonTerminal[0])).results();
+		boolean result = true;
+		for(Set<NonTerminal> scc : sccs) {
+			String nonLeftLinearRules = "";
+			for(NonTerminal nt : scc) {
+				for(Rule rule : nt.getRules()) {
+					if(isNonLeftLinearRule(scc, rule))
+						nonLeftLinearRules += nt+" -> "+rule+"\n";
+				}
+			}
+			
+			if(!nonLeftLinearRules.isEmpty()) {
+				System.out.println("-----------------");
+				System.out.println("Non left linear rules in SCC found:");
+				System.out.println(nonLeftLinearRules);
+				System.out.println("The respective SCC is: ");
+				System.out.println(Joiner.on(", ").join(scc));
+				System.out.println("-----------------");
+				result = false;
+			}
+		}
+		return result;
 	}
 }
