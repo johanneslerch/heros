@@ -47,7 +47,7 @@ public class StrongConnectedComponentDetector {
 		dfs(edge.source, edge.targets);
 	}
 
-	private void dfs(NonTerminal v, Iterable<NonTerminal> targets) {
+	private void dfs(NonTerminal v, Set<NonTerminal> targets) {
 		stackS.push(v);
 		indicesI.put(v, stackS.size());
 		stackB.push(stackS.size());
@@ -70,11 +70,18 @@ public class StrongConnectedComponentDetector {
 				scc.add(current);
 				indicesI.put(current, Integer.MAX_VALUE);
 			}
-			results.add(scc);
+
+			if(scc.size() == 1) {
+				assert scc.iterator().next() == v;
+				if(targets.contains(v))
+					results.add(scc);
+			}
+			else
+				results.add(scc);
 		}
 	}
 
-	private static Collection<NonTerminal> getEdgeTargets(NonTerminal v) {
+	private static Set<NonTerminal> getEdgeTargets(NonTerminal v) {
 		final Set<NonTerminal> result = Sets.newHashSet();
 		for(Rule rule : v.getRules()) {
 			rule.accept(new RuleVisitor<Void>() {

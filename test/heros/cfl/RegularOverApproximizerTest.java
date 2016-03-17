@@ -684,9 +684,11 @@ public class RegularOverApproximizerTest {
 
 	@Test
 	public void nonLinearRuleNesting() {
+		approximizer.addRule(X, new ConstantRule(f));
 		approximizer.addRule(X, new ContextFreeRule(new Terminal[] {g}, X, new Terminal[0]));
 		approximizer.addRule(X, new NonLinearRule(new RegularRule(V, j), new RegularRule(U)));
-		assertRules(X, new NonLinearRule(new NonLinearRule(new RegularRule(Xprime), new RegularRule(V, j)), new RegularRule(U)));
+		assertRules(X, new RegularRule(Xprime, f), 
+				new NonLinearRule(new NonLinearRule(new RegularRule(Xprime), new RegularRule(V, j)), new RegularRule(U)));
 	}
 	
 	@Test
@@ -869,10 +871,10 @@ public class RegularOverApproximizerTest {
 		assertRules(U, new RegularRule(U, f));
 		assertRules(W, 
 				new NonLinearRule(
+					new RegularRule(U, j),
 					new NonLinearRule(
-							new NonLinearRule(new RegularRule(Wprime), new RegularRule(U, j, k)),
-							new RegularRule(V, i)),
-					new RegularRule(X)));
+							new ContextFreeRule(new Terminal[]{k}, V, new Terminal[]{i}),
+							new RegularRule(X))));
 		assertRules(Wprime, ε, new RegularRule(Wprime, k));
 	}
 	

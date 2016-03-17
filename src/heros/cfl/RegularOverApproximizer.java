@@ -17,6 +17,7 @@ import java.util.Collection;
 import java.util.Map;
 import java.util.Set;
 
+import com.google.common.base.Function;
 import com.google.common.base.Joiner;
 import com.google.common.base.Optional;
 import com.google.common.base.Predicate;
@@ -298,21 +299,25 @@ public class RegularOverApproximizer {
 		Optional<Set<NonTerminal>> scc = Iterables.tryFind(sccs, new Predicate<Set<NonTerminal>>() {
 			@Override
 			public boolean apply(Set<NonTerminal> input) {
-				return input.contains(sourceNonTerminal);
+				return input.contains(sourceNonTerminal) || 
+						(nonTerminalToScc.containsKey(sourceNonTerminal) && input.contains(prime.get(sourceNonTerminal)));
 			}
 		});
 		if(scc.isPresent()) {
-			boolean approximationRequired = isNonLeftLinearRule(scc.get(), rule) ||	
-					isApproximated(scc.get()) || containsNonLeftLinearRules(scc.get());
+			Set<NonTerminal> filteredScc = Sets.newHashSet(Iterables.transform(scc.get(), new Function<NonTerminal, NonTerminal>() {
+				@Override
+				public NonTerminal apply(NonTerminal input) {
+					if(prime.isPrime(input))
+						return prime.getNonPrime(input);
+					else
+						return input;
+				}
+			}));
+			
+			boolean approximationRequired = isNonLeftLinearRule(filteredScc, rule) ||	
+					isApproximated(filteredScc) || containsNonLeftLinearRules(filteredScc);
 			
 			if(approximationRequired) {
-				Set<NonTerminal> filteredScc = Sets.filter(scc.get(), new Predicate<NonTerminal>() {
-					@Override
-					public boolean apply(NonTerminal input) {
-						return !prime.isPrime(input);
-					}
-				});
-
 				boolean newNonTerminalsInScc = isApproximated(sourceNonTerminal) ? 
 						!nonTerminalToScc.get(sourceNonTerminal).equals(filteredScc) : true;			
 				if(newNonTerminalsInScc) {
@@ -330,6 +335,8 @@ public class RegularOverApproximizer {
 			} else {
 				sourceNonTerminal.addRule(rule);
 			}
+		} else {
+			sourceNonTerminal.addRule(rule);
 		}
 		assert regular();
 	}

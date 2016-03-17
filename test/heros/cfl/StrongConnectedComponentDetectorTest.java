@@ -34,7 +34,7 @@ public class StrongConnectedComponentDetectorTest {
 	}
 	
 	private void edge(int v, int w) {
-		vertices[v].addRule(new RegularRule(vertices[w]));
+		vertices[v].addRule(new RegularRule(vertices[w], new ProducingTerminal("test")));
 	}
 	
 	private void assertSccs(StrongConnectedComponentDetector sut, Set<NonTerminal>... expectation) {
@@ -65,7 +65,7 @@ public class StrongConnectedComponentDetectorTest {
 		edge(4, 5);
 		edge(5, 3);
 		edge(5, 2);
-		assertSccs(new StrongConnectedComponentDetector(vertices[0]), scc(0), scc(1,3,4,5), scc(2));
+		assertSccs(new StrongConnectedComponentDetector(vertices[0]), scc(1,3,4,5));
 	}
 	
 	@Test
@@ -77,7 +77,7 @@ public class StrongConnectedComponentDetectorTest {
 		edge(2, 1);
 		edge(2, 3);
 		edge(3, 4);
-		assertSccs(new StrongConnectedComponentDetector(vertices[0]), scc(0,1,2), scc(3), scc(4));
+		assertSccs(new StrongConnectedComponentDetector(vertices[0]), scc(0,1,2));
 	}
 	
 	@Test
@@ -87,7 +87,7 @@ public class StrongConnectedComponentDetectorTest {
 		edge(1, 2);
 		edge(2, 3);
 		edge(3, 2);
-		assertSccs(new StrongConnectedComponentDetector(vertices[0]), scc(0), scc(1), scc(2,3));
+		assertSccs(new StrongConnectedComponentDetector(vertices[0]), scc(2,3));
 	}
 	
 	@Test
@@ -96,7 +96,7 @@ public class StrongConnectedComponentDetectorTest {
 		edge(0, 1);
 		edge(2, 3);
 		edge(3, 2);
-		assertSccs(new StrongConnectedComponentDetector(vertices[0], vertices[2]), scc(0), scc(1), scc(2, 3));
+		assertSccs(new StrongConnectedComponentDetector(vertices[0], vertices[2]), scc(2, 3));
 	}
 	
 	@Test
@@ -105,7 +105,7 @@ public class StrongConnectedComponentDetectorTest {
 		edge(0, 1);
 		edge(2, 3);
 		edge(3, 2);
-		assertSccs(new StrongConnectedComponentDetector(vertices[0], vertices[1], vertices[2]), scc(0), scc(1), scc(2, 3));
+		assertSccs(new StrongConnectedComponentDetector(vertices[0], vertices[1], vertices[2]), scc(2, 3));
 	}
 	
 	@Test
@@ -114,7 +114,7 @@ public class StrongConnectedComponentDetectorTest {
 		edge(0, 1);
 		edge(2, 3);
 		edge(3, 2);
-		assertSccs(new StrongConnectedComponentDetector(vertices[2], vertices[1], vertices[0]), scc(0), scc(1), scc(2, 3));
+		assertSccs(new StrongConnectedComponentDetector(vertices[2], vertices[1], vertices[0]), scc(2, 3));
 	}
 	
 	@Test
@@ -124,13 +124,13 @@ public class StrongConnectedComponentDetectorTest {
 		edge(1, 0);
 		edge(1, 2);
 		edge(3, 2);
-		assertSccs(new StrongConnectedComponentDetector(vertices[0], vertices[3]), scc(0, 1), scc(2), scc(3));
+		assertSccs(new StrongConnectedComponentDetector(vertices[0], vertices[3]), scc(0, 1));
 	}
 	
 	@Test
 	public void testSingleElementNoLoop() {
 		terminals(1);
-		assertSccs(new StrongConnectedComponentDetector(vertices[0]), scc(0));
+		assertSccs(new StrongConnectedComponentDetector(vertices[0]));
 	}
 	
 	@Test
@@ -182,7 +182,7 @@ public class StrongConnectedComponentDetectorTest {
 		edge(4, 5);
 		edge(5, 3);
 		edge(5, 2);
-		assertSccs(new StrongConnectedComponentDetector(from(vertices[0]).to(vertices[1])), scc(0), scc(1,3,4,5), scc(2));
+		assertSccs(new StrongConnectedComponentDetector(from(vertices[0]).to(vertices[1])), scc(1,3,4,5));
 	}
 	
 	@Test
@@ -206,7 +206,7 @@ public class StrongConnectedComponentDetectorTest {
 		edge(1, 2);
 		edge(2, 3);
 		edge(4, 0);
-		assertSccs(new StrongConnectedComponentDetector(vertices), scc(0), scc(1), scc(2), scc(3), scc(4));
+		assertSccs(new StrongConnectedComponentDetector(vertices));
 	}
 	
 	@Test
@@ -228,6 +228,6 @@ public class StrongConnectedComponentDetectorTest {
 		edge(2, 3);
 		edge(3, 4);
 		edge(4, 3);
-		assertSccs(new StrongConnectedComponentDetector(vertices[1], vertices[2]), scc(0,1), scc(2), scc(3,4));
+		assertSccs(new StrongConnectedComponentDetector(vertices[1], vertices[2]), scc(0,1), scc(3,4));
 	}
 }
