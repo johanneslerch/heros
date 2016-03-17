@@ -67,7 +67,7 @@ public class StrongConnectedComponentDetector {
 			}
 		}
 		
-		if(indicesI.getOrCreate(v) == stackB.peek()) {
+		if(indicesI.getOrCreate(v).equals(stackB.peek())) {
 			stackB.pop();
 			Set<NonTerminal> scc = Sets.newHashSet();
 			while(indicesI.getOrCreate(v) <= stackS.size()) {
