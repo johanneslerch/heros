@@ -22,6 +22,7 @@ import com.google.common.base.Joiner;
 import com.google.common.base.Optional;
 import com.google.common.base.Predicate;
 import com.google.common.collect.BiMap;
+import com.google.common.collect.Collections2;
 import com.google.common.collect.HashBiMap;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
@@ -291,47 +292,52 @@ public class RegularOverApproximizer {
 		return false;
 	}
 	
+	private Set<NonTerminal> mergeSccsAndMapPrimes(Collection<Set<NonTerminal>> sccs) {
+		Set<NonTerminal> result = Sets.newHashSet();
+		for(Set<NonTerminal> currentScc : sccs) {
+			for(NonTerminal nt : currentScc) {
+				if(prime.isPrime(nt))
+					result.add(prime.getNonPrime(nt));
+				else
+					result.add(nt);
+			}
+		}
+		return result;
+	}
+	
 	public void addRule(final NonTerminal sourceNonTerminal, Rule rule) {
 		assert regular();
 		Set<NonTerminal> targetNonTerminals = rule.accept(new CollectNonTerminalsRuleVisitor());
 		
 		Collection<Set<NonTerminal>> sccs = new StrongConnectedComponentDetector(from(sourceNonTerminal).to(targetNonTerminals)).results();
-		Optional<Set<NonTerminal>> scc = Iterables.tryFind(sccs, new Predicate<Set<NonTerminal>>() {
+		Collection<Set<NonTerminal>> filteredSccs = Collections2.filter(sccs, new Predicate<Set<NonTerminal>>() {
 			@Override
 			public boolean apply(Set<NonTerminal> input) {
 				return input.contains(sourceNonTerminal) || 
 						(nonTerminalToScc.containsKey(sourceNonTerminal) && input.contains(prime.get(sourceNonTerminal)));
 			}
 		});
-		if(scc.isPresent()) {
-			Set<NonTerminal> filteredScc = Sets.newHashSet(Iterables.transform(scc.get(), new Function<NonTerminal, NonTerminal>() {
-				@Override
-				public NonTerminal apply(NonTerminal input) {
-					if(prime.isPrime(input))
-						return prime.getNonPrime(input);
-					else
-						return input;
-				}
-			}));
+		if(!filteredSccs.isEmpty()) {
+			Set<NonTerminal> scc = mergeSccsAndMapPrimes(filteredSccs);
 			
-			boolean approximationRequired = isNonLeftLinearRule(filteredScc, rule) ||	
-					isApproximated(filteredScc) || containsNonLeftLinearRules(filteredScc);
+			boolean approximationRequired = isNonLeftLinearRule(scc, rule) ||	
+					isApproximated(scc) || containsNonLeftLinearRules(scc);
 			
 			if(approximationRequired) {
 				boolean newNonTerminalsInScc = isApproximated(sourceNonTerminal) ? 
-						!nonTerminalToScc.get(sourceNonTerminal).equals(filteredScc) : true;			
+						!nonTerminalToScc.get(sourceNonTerminal).equals(scc) : true;			
 				if(newNonTerminalsInScc) {
-					for(NonTerminal nt : filteredScc) {
+					for(NonTerminal nt : scc) {
 						if(isApproximated(nt)) {
-							updateApproximatedRules(nt, filteredScc);
-							updateApproximatedRules(prime.get(nt), filteredScc);
+							updateApproximatedRules(nt, scc);
+							updateApproximatedRules(prime.get(nt), scc);
 						} else {
-							rewriteRulesOf(nt, filteredScc);
+							rewriteRulesOf(nt, scc);
 						}
 					}
-					storeScc(filteredScc);
+					storeScc(scc);
 				}
-				addRewrittenRule(sourceNonTerminal, rule, filteredScc);
+				addRewrittenRule(sourceNonTerminal, rule, scc);
 			} else {
 				sourceNonTerminal.addRule(rule);
 			}
