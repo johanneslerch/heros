@@ -61,7 +61,8 @@ public class ContextFreeRule implements Rule {
 		return rule.accept(new RuleVisitor<Rule>() {
 			@Override
 			public Rule visit(ContextFreeRule contextFreeRule) {
-				return new NonLinearRule(ContextFreeRule.this, contextFreeRule);
+				return new NonLinearRule(new ContextFreeRule(leftTerminals, nonTerminal, TerminalUtil.append(rightTerminals, contextFreeRule.getLeftTerminals())), 
+						new RegularRule(contextFreeRule.getNonTerminal(), contextFreeRule.getRightTerminals()));
 			}
 
 			@Override

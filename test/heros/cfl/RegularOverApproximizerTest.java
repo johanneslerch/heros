@@ -730,8 +730,8 @@ public class RegularOverApproximizerTest {
 				new NonLinearRule(new RegularRule(Vprime), new RegularRule(W, g, k)));
 		assertRules(Vprime, ε, new RegularRule(Yprime, h),
 				// YhkUfjXj
-				new NonLinearRule(new NonLinearRule(new RegularRule(Y, h, k), new RegularRule(U, f)), 
-						new ContextFreeRule(new Terminal[] {j}, X, new Terminal[] {j})));
+				new NonLinearRule(new NonLinearRule(new RegularRule(Y, h, k), new RegularRule(U, f, j)), 
+						new RegularRule(X, j)));
 		assertRules(Wprime, ε);
 	}
 	
@@ -770,8 +770,8 @@ public class RegularOverApproximizerTest {
 									new RegularRule(Y, h)),
 							new RegularRule(Y)),
 					new NonLinearRule(
-							new ContextFreeRule(new Terminal[] {g}, W, new Terminal[0]),
-							new ContextFreeRule(new Terminal[] {i}, Y, new Terminal[0])))
+							new ContextFreeRule(new Terminal[] {g}, W, new Terminal[] {i}),
+							new RegularRule(Y)))
 				);
 		assertRules(Yprime, ε);
 		assertRules(Vprime, ε,
@@ -781,8 +781,8 @@ public class RegularOverApproximizerTest {
 								new NonLinearRule(new RegularRule(Vprime), new RegularRule(W, g, k)),
 								new RegularRule(Y, h)),
 						new NonLinearRule(
-								new ContextFreeRule(new Terminal[] {k}, U, new Terminal[] {f}),
-								new ContextFreeRule(new Terminal[] {j}, X, new Terminal[] {j}))));
+								new ContextFreeRule(new Terminal[] {k}, U, new Terminal[] {f, j}),
+								new RegularRule(X, j))));
 		assertRules(Wprime, ε);
 		
 		approximizer.addRule(Y, new ContextFreeRule(new Terminal[] {h}, V, new Terminal[] {f}));
@@ -792,8 +792,8 @@ public class RegularOverApproximizerTest {
 		assertRules(V,  new RegularRule(Vprime), new RegularRule(Y));
 		assertRules(Vprime, ε, new RegularRule(Yprime, h),
 				// YhkUfjXj
-				new NonLinearRule(new NonLinearRule(new RegularRule(Y, h, k), new RegularRule(U, f)), 
-						new ContextFreeRule(new Terminal[] {j}, X, new Terminal[] {j})));
+				new NonLinearRule(new NonLinearRule(new RegularRule(Y, h, k), new RegularRule(U, f, j)), 
+						new RegularRule(X, j)));
 		assertRules(Yprime, ε, 
 				new NonLinearRule(new RegularRule(Y, g), new RegularRule(W, i)),
 				new RegularRule(Y, h),
@@ -885,7 +885,7 @@ public class RegularOverApproximizerTest {
 				Lists.<Terminal>newArrayList(f,g,h,i,j,k));
 		for(int i=0; i<1000; i++) {
 			permutation.clean();
-			List<Pair<NonTerminal, Rule>> rules = permutation.setup(7);
+			List<Pair<NonTerminal, Rule>> rules = permutation.setup(5);
 			int permIndex = 0;
 			for(List<Pair<NonTerminal, Rule>> perm : Collections2.permutations(rules)) {
 				if(permIndex++ > 10)

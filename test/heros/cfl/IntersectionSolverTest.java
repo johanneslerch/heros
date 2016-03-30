@@ -150,6 +150,8 @@ public class IntersectionSolverTest {
 		NonTerminal intermediateNonTerminal = intersectionSolver.getIntermediateNonTerminal(Y, new RegularRule(Y, f̅));
 		assertSubstitution(new RegularRule(intermediateNonTerminal, f), new RegularRule(X));
 	}
+
+	
 	
 	private void assertSubstitution(Rule expectation, Rule actual) {
 		assertSubstitution(Sets.newHashSet(expectation), actual);

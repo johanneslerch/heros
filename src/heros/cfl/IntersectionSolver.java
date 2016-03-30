@@ -289,7 +289,7 @@ public class IntersectionSolver {
 		public Substitution(SubstitutionKey key) {
 			this.key = key;
 		}
-		
+
 		private void start() {
 //			System.out.println("Interested in Substitutions for "+key);
 			key.substitutableRule.accept(new RuleVisitor<Void>() {

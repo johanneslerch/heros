@@ -63,8 +63,12 @@ public class ConstantRule implements Rule {
 			return rule.accept(new RuleVisitor<Rule>(){
 				@Override
 				public Rule visit(ContextFreeRule contextFreeRule) {
-					return new ContextFreeRule(TerminalUtil.append(terminals, contextFreeRule.getLeftTerminals()), 
+					Terminal[] leftTerminals = TerminalUtil.append(terminals, contextFreeRule.getLeftTerminals());
+					if(leftTerminals.length > 0)
+						return new ContextFreeRule(leftTerminals, 
 							contextFreeRule.getNonTerminal(), contextFreeRule.getRightTerminals());
+					else
+						return new RegularRule(contextFreeRule.getNonTerminal(), contextFreeRule.getRightTerminals());
 				}
 	
 				@Override
