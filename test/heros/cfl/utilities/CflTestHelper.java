@@ -596,6 +596,11 @@ public class CflTestHelper {
 					public String joinStmt(Statement joinStmt, TestFact fact) {
 						return "{JS: "+joinStmt+":"+fact+"}";
 					}
+
+					@Override
+					public String callingContext() {
+						return "{Calling Context}";
+					}
 				};
 			}
 		};

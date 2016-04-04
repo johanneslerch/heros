@@ -296,8 +296,8 @@ public class PerAccessPathMethodAnalyzer<Field, Fact, Stmt, Method> {
 
 	void applySummary(final CallEdge<Field, Fact, Stmt, Method> incEdge, final Summary<Field, Fact, Stmt, Method> summary) {
 		if(summary.requiresCallingContextCheck()) {
-			final NonTerminal callingCtx = new NonTerminal("{Calling Context}");
-			callingCtx.addRule(new RegularRule(incEdge.getCallerAnalyzer().callEdgeResolver).append(incEdge.getCalleeSourceFact().getRule()));
+			final NonTerminal callingCtx = incEdge.getCallerAnalyzer().createCallingContext(incEdge.getCalleeSourceFact().getRule());
+//			callingCtx.addRule(new RegularRule(incEdge.getCallerAnalyzer().callEdgeResolver).append(incEdge.getCalleeSourceFact().getRule()));
 			log("Checking if summary can be applied for incoming edge: "+incEdge+" and constraint: "+summary.getRule());
 			context.intersectionSolver.reduceToCallingContext(callingCtx, summary.getRule(), new QueryListener() { 
 				@Override
@@ -312,6 +312,18 @@ public class PerAccessPathMethodAnalyzer<Field, Fact, Stmt, Method> {
 		}
 	}
 	
+	private DefaultValueMap<Rule, NonTerminal> callingContexts = new DefaultValueMap<Rule, NonTerminal>() {
+		@Override
+		protected NonTerminal createItem(Rule key) {
+			NonTerminal nonTerminal = new NonTerminal(context.nameGen.callingContext());
+			nonTerminal.addRule(new RegularRule(callEdgeResolver).append(key));
+			return nonTerminal;
+		}
+	};
+	private NonTerminal createCallingContext(Rule rule) {
+		return callingContexts.getOrCreate(rule);
+	}
+
 	private void applyUncheckedSummary(final CallEdge<Field, Fact, Stmt, Method> incEdge, final Summary<Field, Fact, Stmt, Method> summary) {
 		Collection<Stmt> returnSites = context.icfg.getReturnSitesOfCallAt(incEdge.getCallSite());
 		for(Stmt returnSite : returnSites) {

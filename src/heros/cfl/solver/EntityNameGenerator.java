@@ -17,4 +17,6 @@ public interface EntityNameGenerator<Field, Fact, Stmt, Method> {
 	String joinStmt(Stmt joinStmt, Fact fact);
 	
 	String startPoint(Method method, Fact sourceFact);
+
+	String callingContext();
 }
