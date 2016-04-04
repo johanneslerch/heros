@@ -11,10 +11,9 @@
 package heros.cfl.solver;
 
 import heros.InterproceduralCFG;
-import heros.cfl.IntersectionSolver;
+import heros.cfl.DisjointnessSolver;
 import heros.cfl.NonTerminal;
 import heros.cfl.RegularOverApproximizer;
-import heros.cfl.SearchTree.SearchTreeResultChecker;
 import heros.fieldsens.FactMergeHandler;
 import heros.fieldsens.Scheduler;
 
@@ -27,7 +26,7 @@ public abstract class Context<Field, Fact, Stmt, Method> {
 	public final FactMergeHandler<Fact> factHandler;
 	public final FlowFunctions<Stmt, Fact, Method> flowFunctions;
 	public final RegularOverApproximizer approximizer;
-	public final IntersectionSolver intersectionSolver;
+	public final DisjointnessSolver disjointnessSolver;
 	public final NonTerminal zeroNonTerminal;
 	public final EntityNameGenerator<Field, Fact, Stmt, Method> nameGen;
 	
@@ -40,7 +39,7 @@ public abstract class Context<Field, Fact, Stmt, Method> {
 		this.followReturnsPastSeeds = tabulationProblem.followReturnsPastSeeds();
 		this.factHandler = factHandler;
 		this.approximizer = new RegularOverApproximizer();
-		this.intersectionSolver = new IntersectionSolver();
+		this.disjointnessSolver = new DisjointnessSolver();
 		this.zeroNonTerminal = tabulationProblem.zeroNonTerminal();
 		this.nameGen = tabulationProblem.entityNameGenerator();
 	}

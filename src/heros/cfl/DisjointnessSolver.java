@@ -12,7 +12,6 @@ package heros.cfl;
 
 import static heros.cfl.TerminalUtil.BalanceResult.BALANCED;
 import static heros.cfl.TerminalUtil.BalanceResult.IMBALANCED;
-import heros.cfl.IntersectionSolver.QueryListener;
 import heros.cfl.ShortcutComputer.Context;
 import heros.cfl.TerminalUtil.BalanceResult;
 import heros.solver.Pair;
@@ -20,7 +19,7 @@ import heros.utilities.DefaultValueMap;
 
 import java.util.List;
 import java.util.Set;
-
+import heros.cfl.Guard.*;
 import com.google.common.base.Optional;
 import com.google.common.collect.Lists;
 
@@ -156,13 +155,13 @@ public class DisjointnessSolver {
 			
 			solver.shortcutComp.resolve(new Context() {
 				@Override
-				public void addIncomingEdge(Optional<Rule> condition, Rule rule, RuleGuard guard) {
+				public void addIncomingEdge(Optional<Rule> condition, Rule rule, Guard guard) {
 					if(!condition.isPresent())
 						handleResult(rule);
 				}
 
 				@Override
-				public void setCanBeConstantConsuming(Context constantContext, Optional<Rule> condition, ConstantRule rule) {
+				public void setCanBeConstantConsuming(Context constantContext, Optional<Rule> condition, ConstantRule rule, Guard guard) {
 					if(this == constantContext && !condition.isPresent())
 						handleResult(rule);
 				}

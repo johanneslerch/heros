@@ -13,14 +13,19 @@ package heros.cfl;
 
 import heros.cfl.TerminalUtil.BalanceResult;
 import heros.solver.Pair;
+import heros.utilities.KeyTuple;
+
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Set;
 
 import com.google.common.base.Optional;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
+
+import heros.cfl.Guard.*;
 
 public class ShortcutComputer {
 
@@ -58,7 +63,7 @@ public class ShortcutComputer {
 		return context;
 	}
 	
-	void resolve(final Context context, final Optional<Rule> condition, Rule rule, final RuleGuard guard) {
+	void resolve(final Context context, final Optional<Rule> condition, Rule rule, final Guard guard) {
 		BalanceResult balanceResult = TerminalUtil.isBalanced(rule);
 		if(balanceResult == BalanceResult.BALANCED && TerminalUtil.hasTerminals(rule)) {
 			context.addIncomingEdge(condition, rule, guard);
@@ -74,14 +79,25 @@ public class ShortcutComputer {
 					incCtx.addListener(new ContextListener() {
 						@Override
 						public void newIncomingEdge(Edge edge) {
-							Rule newRule = new ConstantRule(contextFreeRule.getLeftTerminals()).append(edge.rule).append(contextFreeRule.getRightTerminals());
-							resolve(context, concatenate(condition, edge.condition), newRule, guard.dependOn(edge.guard));
+							if(edge.condition.isPresent()) {
+								if(edge.condition.get().equals(new ConstantRule(contextFreeRule.getLeftTerminals()))) {
+									Rule newRule = edge.rule.append(contextFreeRule.getRightTerminals());
+									resolve(context, condition, newRule, guard.dependOn(edge.guard));
+								}
+							}
+							else {
+								Rule newRule = new ConstantRule(contextFreeRule.getLeftTerminals()).append(edge.rule).append(contextFreeRule.getRightTerminals());
+								resolve(context, concatenate(condition, edge.condition), newRule, guard.dependOn(edge.guard));
+							}
 						}
 
 						@Override
-						public void canBeConstantConsuming(Context constantContext, Optional<Rule> innerCondition, ConstantRule rule) {
-//							resolve(context, concatenate(condition, innerCondition), 
-//									new ConstantRule(contextFreeRule.getLeftTerminals()).append(rule), guard);
+						public void canBeConstantConsuming(ConstantConsumingContainer constantContainer) {
+							if(!condition.isPresent()) {
+								resolve(context, concatenate(condition, constantContainer.condition), 
+										new ConstantRule(contextFreeRule.getLeftTerminals()).append(constantContainer.rule).append(contextFreeRule.getRightTerminals()), 
+										guard.dependOn(constantContainer.guard));
+							}
 						}
 					});
 					return null;
@@ -91,17 +107,17 @@ public class ShortcutComputer {
 				public Void visit(final NonLinearRule nonLinearRule) {
 					resolve(new Context() {
 						@Override
-						public void addIncomingEdge(final Optional<Rule> rightCondition, final Rule rule, RuleGuard guard) {
+						public void addIncomingEdge(final Optional<Rule> rightCondition, final Rule rule, Guard guard) {
 							if(rightCondition.isPresent()) {
 								resolve(new Context() {
 									@Override
-									public void addIncomingEdge(Optional<Rule> condition, Rule leftRule, RuleGuard guard) {
+									public void addIncomingEdge(Optional<Rule> innerCondition, Rule leftRule, Guard guard) {
 										if(leftRule.equals(rightCondition.get()))
-											context.addIncomingEdge(condition, rule, guard);
+											context.addIncomingEdge(concatenate(condition, innerCondition), rule, guard);
 									}
 
 									@Override
-									public void setCanBeConstantConsuming(Context constantContext, Optional<Rule> condition, ConstantRule rule) {
+									public void setCanBeConstantConsuming(Context constantContext, Optional<Rule> condition, ConstantRule rule, Guard guard) {
 										//ignore here
 									}
 								}, Optional.<Rule> absent(), nonLinearRule.getLeft(), guard);
@@ -114,17 +130,17 @@ public class ShortcutComputer {
 						}
 
 						@Override
-						public void setCanBeConstantConsuming(final Context constantContext, final Optional<Rule> rightCondition, final ConstantRule constantRule) {
+						public void setCanBeConstantConsuming(final Context constantContext, final Optional<Rule> rightCondition, final ConstantRule constantRule, Guard guard) {
 							if(rightCondition.isPresent()) {
 								resolve(new Context() {
 									@Override
-									public void addIncomingEdge(Optional<Rule> innerCondition, Rule leftRule, RuleGuard guard) {
+									public void addIncomingEdge(Optional<Rule> innerCondition, Rule leftRule, Guard guard) {
 										if(leftRule.equals(rightCondition.get()))
-											context.setCanBeConstantConsuming(context, innerCondition, constantRule);
+											context.setCanBeConstantConsuming(context, innerCondition, constantRule, guard);
 									}
 
 									@Override
-									public void setCanBeConstantConsuming(Context constantContext, Optional<Rule> condition, ConstantRule rule) {
+									public void setCanBeConstantConsuming(Context constantContext, Optional<Rule> condition, ConstantRule rule, Guard guard) {
 										//condition not satisfied...
 									}
 								}, Optional.<Rule> absent(), nonLinearRule.getLeft(), guard);
@@ -132,15 +148,15 @@ public class ShortcutComputer {
 							else {
 								resolve(new Context() {
 									@Override
-									public void addIncomingEdge(final Optional<Rule> innerCondition, Rule rule, RuleGuard guard) {
+									public void addIncomingEdge(final Optional<Rule> innerCondition, Rule rule, Guard guard) {
 										//drop innerCondition on purpose
 										resolve(constantContext, Optional.of(rule), rule.append(constantRule.getTerminals()), guard);
 									}
 	
 									@Override
-									public void setCanBeConstantConsuming(Context constantContext, Optional<Rule> innerCondition, ConstantRule rule) {
+									public void setCanBeConstantConsuming(Context constantContext, Optional<Rule> innerCondition, ConstantRule rule, Guard guard) {
 										if(!innerCondition.isPresent())
-											context.setCanBeConstantConsuming(constantContext, condition, rule);									
+											context.setCanBeConstantConsuming(constantContext, condition, rule, guard);									
 									}
 								}, condition, nonLinearRule.getLeft(), guard);
 							}
@@ -151,16 +167,19 @@ public class ShortcutComputer {
 
 				@Override
 				public Void visit(final RegularRule regularRule) {
-					NonTerminalContext incCtx = resolve(regularRule.getNonTerminal());
+					final NonTerminalContext incCtx = resolve(regularRule.getNonTerminal());
 					incCtx.addListener(new ContextListener() {
 						@Override
 						public void newIncomingEdge(Edge edge) {
+							NonTerminalContext ctx = incCtx;
 							resolve(context, concatenate(condition, edge.condition), edge.rule.append(regularRule.getTerminals()), guard.dependOn(edge.guard));
 						}
 
 						@Override
-						public void canBeConstantConsuming(Context constantContext, Optional<Rule> innerCondition, ConstantRule rule) {
-							context.setCanBeConstantConsuming(constantContext, concatenate(condition, innerCondition), rule);
+						public void canBeConstantConsuming(ConstantConsumingContainer constantContainer) {
+							if(!condition.isPresent())
+								context.setCanBeConstantConsuming(constantContainer.constantContext, concatenate(condition, constantContainer.condition),
+										constantContainer.rule, guard.dependOn(constantContainer.guard));
 						}
 					});
 					return null;
@@ -168,7 +187,7 @@ public class ShortcutComputer {
 
 				@Override
 				public Void visit(ConstantRule constantRule) {
-					context.setCanBeConstantConsuming(context, condition, constantRule);
+					context.setCanBeConstantConsuming(context, condition, constantRule, guard);
 					return null;
 				}
 			});
@@ -235,9 +254,9 @@ public class ShortcutComputer {
 	
 	interface Context {
 		
-		public void addIncomingEdge(Optional<Rule> condition, Rule rule, RuleGuard guard);
+		public void addIncomingEdge(Optional<Rule> condition, Rule rule, Guard guard);
 
-		public void setCanBeConstantConsuming(Context constantContext, Optional<Rule> condition, ConstantRule rule);
+		public void setCanBeConstantConsuming(Context constantContext, Optional<Rule> condition, ConstantRule rule, Guard guard);
 	}
 	
 	class NonTerminalContext implements Context {
@@ -245,22 +264,29 @@ public class ShortcutComputer {
 		private Map<Pair<Optional<Rule>, Rule>, Edge> incomingEdges = Maps.newHashMap();
 		private List<ContextListener> listeners = Lists.newLinkedList();
 		private NonTerminal nt;
-		private Set<ConstantConsumingContainer> constantRules = Sets.newHashSet();
+		private Map<KeyTuple, ConstantConsumingContainer> constantRules = Maps.newHashMap();
 		
 		public NonTerminalContext(NonTerminal nt) {
 			this.nt = nt;
 		}
 
 		@Override
-		public void addIncomingEdge(Optional<Rule> condition, Rule rule, RuleGuard guard) {
+		public void addIncomingEdge(Optional<Rule> condition, Rule rule, Guard guard) {
+			if(!guard.isStillPossible())
+				return;
+			
 			Pair<Optional<Rule>, Rule> key = new Pair<Optional<Rule>, Rule>(condition, rule);
+			boolean createNewEdge = true;
 			if(incomingEdges.containsKey(key)) {
 				Edge edge = incomingEdges.get(key);
-				edge.guard.addAlternative(guard);
+				if(edge.guard.isStillPossible()) {
+					edge.guard.addAlternative(guard);
+					createNewEdge = false;
+				}
 			}
-			else {
+			if(createNewEdge) {
 				Edge edge = new Edge(condition, rule, guard);
-				System.out.println(nt + " -> "+edge);
+//				System.err.println(nt + " -> "+edge);
 				incomingEdges.put(key, edge);
 				for(ContextListener listener : Lists.newArrayList(listeners))
 					listener.newIncomingEdge(edge);
@@ -268,22 +294,42 @@ public class ShortcutComputer {
 		}
 		
 		@Override
-		public void setCanBeConstantConsuming(Context constantContext, Optional<Rule> condition, ConstantRule rule) {
-			if(constantRules.add(new ConstantConsumingContainer(constantContext, condition, rule))) {
-				String condString = condition.isPresent() ? "["+condition.get()+"] " : "";
-				System.out.println(nt + " can be constant consuming via context ("+constantContext+"): "+condString+rule);
+		public void setCanBeConstantConsuming(Context constantContext, Optional<Rule> condition, ConstantRule rule, Guard guard) {
+			if(!guard.isStillPossible())
+				return;
+			
+			KeyTuple key = new KeyTuple(constantContext, condition, rule);
+			boolean createNew = true;
+			if(constantRules.containsKey(key)) {
+				ConstantConsumingContainer container = constantRules.get(key);
+				if(container.guard.isStillPossible()) {
+					container.guard.addAlternative(guard);
+					createNew = false;
+				}
+			}
+			if(createNew) {
+				ConstantConsumingContainer container = new ConstantConsumingContainer(constantContext, condition, rule, guard);
+//				String condString = condition.isPresent() ? "["+condition.get()+"] " : "";
+//				System.err.println(nt + " can be constant consuming via context ("+constantContext+"): "+condString+rule);
+				constantRules.put(key, container);
 				for(ContextListener listener : Lists.newArrayList(listeners)) 
-					listener.canBeConstantConsuming(constantContext, condition, rule);
+					listener.canBeConstantConsuming(container);
 			}
 		}
 		
 		public void addListener(ContextListener ctxListener) {
 			listeners.add(ctxListener);
-			for(Edge edge : Lists.newArrayList(incomingEdges.values()))
-				ctxListener.newIncomingEdge(edge);
+			for(Entry<Pair<Optional<Rule>, Rule>, Edge> edge : Lists.newArrayList(incomingEdges.entrySet()))
+				if(edge.getValue().guard.isStillPossible())
+					ctxListener.newIncomingEdge(edge.getValue());
+				else 
+					incomingEdges.remove(edge.getKey());
 			
-			for(ConstantConsumingContainer container : Lists.newArrayList(constantRules))
-				ctxListener.canBeConstantConsuming(container.constantContext, container.condition, container.rule);
+			for(Entry<KeyTuple, ConstantConsumingContainer> container : Lists.newArrayList(constantRules.entrySet()))
+				if(container.getValue().guard.isStillPossible())
+					ctxListener.canBeConstantConsuming(container.getValue());
+				else
+					constantRules.remove(container.getKey());
 		}
 		
 		@Override
@@ -297,63 +343,28 @@ public class ShortcutComputer {
 		private Context constantContext;
 		private Optional<Rule> condition;
 		private ConstantRule rule;
+		private Guard guard;
 
-		public ConstantConsumingContainer(Context constantContext, Optional<Rule> condition, ConstantRule rule) {
+		public ConstantConsumingContainer(Context constantContext, Optional<Rule> condition, ConstantRule rule, Guard guard) {
 			this.constantContext = constantContext;
 			this.condition = condition;
 			this.rule = rule;
-		}
-
-		@Override
-		public int hashCode() {
-			final int prime = 31;
-			int result = 1;
-			result = prime * result + ((condition == null) ? 0 : condition.hashCode());
-			result = prime * result + ((constantContext == null) ? 0 : constantContext.hashCode());
-			result = prime * result + ((rule == null) ? 0 : rule.hashCode());
-			return result;
-		}
-
-		@Override
-		public boolean equals(Object obj) {
-			if (this == obj)
-				return true;
-			if (obj == null)
-				return false;
-			if (getClass() != obj.getClass())
-				return false;
-			ConstantConsumingContainer other = (ConstantConsumingContainer) obj;
-			if (condition == null) {
-				if (other.condition != null)
-					return false;
-			} else if (!condition.equals(other.condition))
-				return false;
-			if (constantContext == null) {
-				if (other.constantContext != null)
-					return false;
-			} else if (!constantContext.equals(other.constantContext))
-				return false;
-			if (rule == null) {
-				if (other.rule != null)
-					return false;
-			} else if (!rule.equals(other.rule))
-				return false;
-			return true;
+			this.guard = guard;
 		}
 	}
 	
 	static interface ContextListener {
 		void newIncomingEdge(Edge edge);
 
-		void canBeConstantConsuming(Context constantContext, Optional<Rule> condition, ConstantRule rule);
+		void canBeConstantConsuming(ConstantConsumingContainer constantContainer);
 	}
 	
 	static class Edge {
 		private Rule rule;
 		private Optional<Rule> condition;
-		private RuleGuard guard;
+		private Guard guard;
 
-		public Edge(Optional<Rule> condition, Rule rule, RuleGuard guard) {
+		public Edge(Optional<Rule> condition, Rule rule, Guard guard) {
 			this.condition = condition;
 			this.rule = rule;
 			this.guard = guard;

@@ -13,7 +13,7 @@ package heros.cfl.solver;
 import fj.data.Option;
 import heros.cfl.CollectNonTerminalsRuleVisitor;
 import heros.cfl.ConstantRule;
-import heros.cfl.IntersectionSolver.QueryListener;
+import heros.cfl.DisjointnessSolver.QueryListener;
 import heros.cfl.NonLinearRule;
 import heros.cfl.NonTerminal;
 import heros.cfl.RegularRule;
@@ -203,7 +203,7 @@ public class PerAccessPathMethodAnalyzer<Field, Fact, Stmt, Method> {
 	private void processCallToReturnEdge(WrappedFactAtStatement<Field, Fact, Stmt, Method> factAtStmt) {
 		if(isLoopStart(factAtStmt.getStatement())) {
 			context.approximizer.addRule(ctrFlowJoinResolvers.getOrCreate(factAtStmt.getAsFactAtStatement()), factAtStmt.getRule());
-			context.intersectionSolver.updateRules();
+			context.disjointnessSolver.updateRules();
 		}
 		else {
 			processNonJoiningCallToReturnFlow(factAtStmt);
@@ -226,7 +226,7 @@ public class PerAccessPathMethodAnalyzer<Field, Fact, Stmt, Method> {
 	private void processNormalFlow(WrappedFactAtStatement<Field,Fact, Stmt, Method> factAtStmt) {
 		if(isLoopStart(factAtStmt.getStatement())) {
 			context.approximizer.addRule(ctrFlowJoinResolvers.getOrCreate(factAtStmt.getAsFactAtStatement()), factAtStmt.getRule());
-			context.intersectionSolver.updateRules();
+			context.disjointnessSolver.updateRules();
 		}
 		else {
 			processNormalNonJoiningFlow(factAtStmt);
@@ -267,7 +267,7 @@ public class PerAccessPathMethodAnalyzer<Field, Fact, Stmt, Method> {
 			if(targetFact.requiresCheck()) {
 				final Rule candidateRule = new RegularRule(callEdgeResolver).append(concatenatedRule);
 				log("Checking for solutions: "+candidateRule);
-				context.intersectionSolver.reduceToCallingContext(callEdgeResolver, concatenatedRule, new QueryListener() {
+				context.disjointnessSolver.reduceToCallingContext(callEdgeResolver, concatenatedRule, new QueryListener() {
 					@Override
 					public void solved() {
 						log("Solution found for: "+candidateRule);
@@ -290,7 +290,7 @@ public class PerAccessPathMethodAnalyzer<Field, Fact, Stmt, Method> {
 		log("Incoming Edge: "+incEdge);
 		incomingEdges.add(incEdge);
 		context.approximizer.addRule(callEdgeResolver, new RegularRule(incEdge.getCallerAnalyzer().callEdgeResolver).append(incEdge.getCalleeSourceFact().getRule()));
-		context.intersectionSolver.updateRules();
+		context.disjointnessSolver.updateRules();
 		applySummaries(incEdge);
 	}
 
@@ -299,7 +299,7 @@ public class PerAccessPathMethodAnalyzer<Field, Fact, Stmt, Method> {
 			final NonTerminal callingCtx = incEdge.getCallerAnalyzer().createCallingContext(incEdge.getCalleeSourceFact().getRule());
 //			callingCtx.addRule(new RegularRule(incEdge.getCallerAnalyzer().callEdgeResolver).append(incEdge.getCalleeSourceFact().getRule()));
 			log("Checking if summary can be applied for incoming edge: "+incEdge+" and constraint: "+summary.getRule());
-			context.intersectionSolver.reduceToCallingContext(callingCtx, summary.getRule(), new QueryListener() { 
+			context.disjointnessSolver.reduceToCallingContext(callingCtx, summary.getRule(), new QueryListener() { 
 				@Override
 				public void solved() {
 					log("Solution found, summary will be applied for "+incEdge+". Checked: "+summary.getRule());
@@ -341,7 +341,7 @@ public class PerAccessPathMethodAnalyzer<Field, Fact, Stmt, Method> {
 	public void scheduleUnbalancedReturnEdgeTo(WrappedFactAtStatement<Field, Fact, Stmt, Method> fact) {
 		NonTerminal resolver = returnSiteResolvers.getOrCreate(fact.getAsFactAtStatement());
 		context.approximizer.addRule(resolver, fact.getRule());
-		context.intersectionSolver.updateRules();
+		context.disjointnessSolver.updateRules();
 	}
 	
 	private void scheduleReturnEdge(final CallEdge<Field, Fact, Stmt, Method> callEdge, final WrappedFact<Field, Fact, Stmt, Method> fact, final Stmt returnSite) {
@@ -351,7 +351,7 @@ public class PerAccessPathMethodAnalyzer<Field, Fact, Stmt, Method> {
 				NonTerminal resolver = callEdge.getCallerAnalyzer().returnSiteResolvers.getOrCreate(new FactAtStatement<Fact, Stmt>(fact.getFact(), returnSite));
 				Rule rule = callEdge.getCalleeSourceFact().getRule().append(fact.getRule());
 				context.approximizer.addRule(resolver, rule);
-				context.intersectionSolver.updateRules();
+				context.disjointnessSolver.updateRules();
 			}
 		});
 	}

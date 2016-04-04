@@ -11,7 +11,7 @@
 package heros.cfl.solver;
 
 import heros.cfl.ConstantRule;
-import heros.cfl.IntersectionSolver.QueryListener;
+import heros.cfl.DisjointnessSolver.QueryListener;
 import heros.cfl.Rule;
 
 public class Summary<Field, Fact, Stmt, Method> {
@@ -26,7 +26,7 @@ public class Summary<Field, Fact, Stmt, Method> {
 			if(factAtStmt.getRule().isSolved())
 				requiresCallingContextCheck = false;
 		} else {
-			context.intersectionSolver.constantCheck(factAtStmt.getRule(), new QueryListener() {
+			context.disjointnessSolver.constantCheck(factAtStmt.getRule(), new QueryListener() {
 				@Override
 				public void solved() {
 					requiresCallingContextCheck = false;

@@ -18,8 +18,6 @@ import static org.mockito.Mockito.verify;
 import heros.cfl.ShortcutComputer.NonTerminalContext;
 import heros.cfl.ShortcutComputer.ContextListener;
 import heros.cfl.ShortcutComputer.Edge;
-import heros.cfl.IntersectionSolver.Guard;
-import heros.cfl.IntersectionSolver.SubstitutionListener;
 
 import java.util.List;
 import java.util.Set;
@@ -56,6 +54,7 @@ public class ShortcutComputerTest {
 	NonTerminal E = new NonTerminal("E");
 	NonTerminal U = new NonTerminal("U");
 	NonTerminal V = new NonTerminal("V");
+	NonTerminal W = new NonTerminal("W");
 	NonTerminal X = new NonTerminal("X");
 	NonTerminal Y = new NonTerminal("Y");
 	NonTerminal Z = new NonTerminal("Z");
@@ -265,6 +264,33 @@ public class ShortcutComputerTest {
 		D.addRule(new NonLinearRule(new RegularRule(A), new RegularRule(E)));
 		assertSubstitution(Sets.<Rule>newHashSet(), D);
 	}
+	
+	@Test
+	public void nestedNonLinear5() {
+		A.addRule(new RegularRule(B, g̅));
+//		A.addRule(new ContextFreeRule(new Terminal[] {g}, B, new Terminal[] {g̅}));
+//		B.addRule(new RegularRule(C));
+		B.addRule(new ConstantRule());
+		
+//		Z.addRule(new RegularRule(Z, i));
+		Z.addRule(new RegularRule(Z, g));
+		D.addRule(new RegularRule(Z, g));
+		E.addRule(new NonLinearRule(new RegularRule(Z), new RegularRule(A, f)));
+		
+//		V.addRule(new NonLinearRule(new RegularRule(D), new RegularRule(B, g̅)));
+//		W.addRule(new NonLinearRule(new RegularRule(D), new RegularRule(B, f̅)));
+//		X.addRule(new NonLinearRule(new RegularRule(E), new RegularRule(B, g̅)));
+		Y.addRule(new NonLinearRule(new RegularRule(E), new RegularRule(B, f̅)));
+//		X.addRule(new RegularRule(Y, f̅));
+		
+//		assertSubstitution(new RegularRule(Z, g), V);
+//		assertSubstitution(Sets.<Rule>newHashSet(), W);
+//		assertSubstitution(new RegularRule(Z, g), X);
+		assertSubstitution(new RegularRule(Z, g), Y);
+	}
+	
+	
+	
 	
 	private void assertSubstitution(Rule expectation, NonTerminal actual) {
 		assertSubstitution(Sets.newHashSet(expectation), actual);

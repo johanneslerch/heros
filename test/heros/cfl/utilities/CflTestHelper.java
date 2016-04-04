@@ -581,6 +581,7 @@ public class CflTestHelper {
 			@Override
 			public EntityNameGenerator<String, TestFact, Statement, TestMethod> entityNameGenerator() {
 				return new EntityNameGenerator<String, TestFact, Statement, TestMethod>() {
+					int callCtx = 1;
 					
 					@Override
 					public String startPoint(TestMethod method, TestFact sourceFact) {
@@ -599,7 +600,7 @@ public class CflTestHelper {
 
 					@Override
 					public String callingContext() {
-						return "{Calling Context}";
+						return "{Calling Context "+(callCtx++)+"}";
 					}
 				};
 			}
