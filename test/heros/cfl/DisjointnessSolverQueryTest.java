@@ -10,22 +10,18 @@
  ******************************************************************************/
 package heros.cfl;
 
-import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
-import heros.cfl.IntersectionSolver.QueryListener;
+import heros.cfl.DisjointnessSolver.QueryListener;
 
 import org.junit.Ignore;
 import org.junit.Test;
-import org.junit.rules.TestWatcher;
 import org.mockito.Mockito;
 import org.mockito.exceptions.base.MockitoAssertionError;
 
-import fj.data.Option;
-
-public class IntersectionSolverQueryTest {
+public class DisjointnessSolverQueryTest {
 
 	ProducingTerminal f = new ProducingTerminal("f");
 	ConsumingTerminal f̅ = new ConsumingTerminal("f");
@@ -45,7 +41,7 @@ public class IntersectionSolverQueryTest {
 	private QueryListener listener;
 	private Rule challenge;
 	private RegularOverApproximizer approximizer;
-	private IntersectionSolver intersectionSolver = new IntersectionSolver();
+	private DisjointnessSolver solver = new DisjointnessSolver();
 	
 	
 	@Test
@@ -397,7 +393,7 @@ public class IntersectionSolverQueryTest {
 		delayed(consumeFOnX);
 		assertUnsolved();
 		approximizer.addRule(X, new ConstantRule(f));
-		intersectionSolver.updateRules();
+		solver.updateRules();
 		assertSolved();
 	}
 	
@@ -409,7 +405,7 @@ public class IntersectionSolverQueryTest {
 		delayed(consumeFOnX);
 		assertUnsolved();
 		approximizer.addRule(X, new NonLinearRule(new RegularRule(Y), new RegularRule(X)));
-		intersectionSolver.updateRules();
+		solver.updateRules();
 		assertSolved();
 	}
 	
@@ -418,7 +414,7 @@ public class IntersectionSolverQueryTest {
 		delayed(consumeFOnX);
 		assertUnsolved();
 		approximizer.addRule(X, new RegularRule(X, f));
-		intersectionSolver.updateRules();
+		solver.updateRules();
 		assertSolved();
 	}
 	
@@ -427,7 +423,7 @@ public class IntersectionSolverQueryTest {
 		delayed(consumeFOnX);
 		assertUnsolved();
 		approximizer.addRule(X, new RegularRule(X, f));
-		intersectionSolver.updateRules();
+		solver.updateRules();
 		assertSolved();
 	}
 	
@@ -436,7 +432,7 @@ public class IntersectionSolverQueryTest {
 		delayed(consumeFOnX);
 		assertUnsolved();
 		approximizer.addRule(X, new ContextFreeRule(new Terminal[] {h}, X, new Terminal[] {f}));
-		intersectionSolver.updateRules();
+		solver.updateRules();
 		assertSolved();
 	}
 	
@@ -446,7 +442,7 @@ public class IntersectionSolverQueryTest {
 		delayed(consumeFOnX);
 		assertUnsolved();
 		approximizer.addRule(X, new ContextFreeRule(new Terminal[] {f}, X, new Terminal[] {g̅}));
-		intersectionSolver.updateRules();
+		solver.updateRules();
 		assertSolved();
 	}
 	
@@ -456,7 +452,7 @@ public class IntersectionSolverQueryTest {
 		Y.addRule(new ConstantRule(g));
 		delayed(new NonLinearRule(new RegularRule(Y), new RegularRule(X)));
 		approximizer.addRule(X, new ContextFreeRule(new Terminal[] {f}, X, new Terminal[0]));
-		intersectionSolver.updateRules();
+		solver.updateRules();
 		assertSolved();
 	}
 	
@@ -524,6 +520,6 @@ public class IntersectionSolverQueryTest {
 		this.challenge = rule;
 		approximizer = new RegularOverApproximizer();
 		approximizer.approximate(rule);
-		intersectionSolver.query(rule, listener);
+		solver.query(rule, listener);
 	}
 }

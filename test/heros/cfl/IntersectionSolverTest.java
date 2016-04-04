@@ -104,6 +104,13 @@ public class IntersectionSolverTest {
 	}
 	
 	@Test
+	public void substitutionNonLinearRightProducing() {
+		X.addRule(new NonLinearRule(new RegularRule(Z), new RegularRule(Y)));
+		Y.addRule(new RegularRule(X, f));
+		assertSubstitution(new NonLinearRule(new RegularRule(Z), new RegularRule(X, f)), new RegularRule(X));
+	}
+	
+	@Test
 	public void substitutionHiddenIdentityRule() {
 		X.addRule(new RegularRule(X, g̅));
 		X.addRule(new RegularRule(X, g̅, g));
