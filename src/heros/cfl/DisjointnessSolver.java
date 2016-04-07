@@ -153,17 +153,19 @@ public class DisjointnessSolver {
 			if(!allowsSubQuery(queryRule))
 				return;
 			
+			final Optional<Rule> zeroCondition = Optional.<Rule>of(new ConstantRule(new ProducingTerminal("0")));
 			solver.shortcutComp.resolve(new Context() {
 				@Override
 				public void addIncomingEdge(Optional<Rule> condition, Rule rule, Guard guard) {
-					if(!condition.isPresent())
+					if(!condition.isPresent() || condition.equals(zeroCondition))
 						handleResult(rule);
 				}
 
 				@Override
 				public void setCanBeConstantConsuming(Context constantContext, Optional<Rule> condition, ConstantRule rule, Guard guard) {
-					if(this == constantContext && !condition.isPresent())
-						handleResult(rule);
+					if(rule.isEmpty()) {
+						constantContext.addIncomingEdge(zeroCondition, new ConstantRule(new ProducingTerminal("0")), guard);
+					}
 				}
 			}, Optional.<Rule> absent(), queryRule, new RuleGuard(queryRule));
 		}

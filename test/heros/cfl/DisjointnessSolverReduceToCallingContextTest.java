@@ -19,6 +19,8 @@ import org.junit.Test;
 import org.mockito.Mockito;
 import org.mockito.exceptions.base.MockitoAssertionError;
 
+import com.google.common.collect.Sets;
+
 import heros.cfl.DisjointnessSolver.QueryListener;
 
 public class DisjointnessSolverReduceToCallingContextTest {
@@ -63,6 +65,19 @@ public class DisjointnessSolverReduceToCallingContextTest {
 		
 		solvable(Z, new RegularRule(Y, g));
 		unsolvable(X, new RegularRule(Y, g));
+	}
+	
+	@Test
+	public void test2() {
+		A.addRule(new ConstantRule());
+		B.addRule(new RegularRule(A, g̅, not_f));
+		C.addRule(new ConstantRule());
+		C.addRule(new RegularRule(C, g));
+		C.addRule(new RegularRule(C, f));
+		
+		solvable(C, new RegularRule(A, g̅));
+		solvable(C, new RegularRule(A, g̅, not_f));
+		unsolvable(C, new RegularRule(B, f̅));
 	}
 	
 /* --------------------------------------------------------*/

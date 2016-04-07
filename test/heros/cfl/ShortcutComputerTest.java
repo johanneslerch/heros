@@ -18,15 +18,18 @@ import static org.mockito.Mockito.verify;
 import heros.cfl.ShortcutComputer.NonTerminalContext;
 import heros.cfl.ShortcutComputer.ContextListener;
 import heros.cfl.ShortcutComputer.Edge;
+import heros.solver.Pair;
 
 import java.util.List;
 import java.util.Set;
 
+import org.junit.Ignore;
 import org.junit.Test;
 import org.mockito.ArgumentCaptor;
 import org.mockito.internal.verification.VerificationModeFactory;
 
 import com.google.common.base.Function;
+import com.google.common.base.Optional;
 import com.google.common.base.Predicate;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
@@ -208,16 +211,18 @@ public class ShortcutComputerTest {
 	@Test
 	public void nestedNonLinear1() {
 		X.addRule(new RegularRule(Y, f̅, f̅));
+		X.addRule(new RegularRule(X, f̅));
 		Y.addRule(new ConstantRule(g̅));
 		C.addRule(new RegularRule(U, g));
 		U.addRule(new ConstantRule(f));
 		A.addRule(new RegularRule(B, f));
-		B.addRule(new ConstantRule(h));
+		B.addRule(new ConstantRule(h, h, f));
 		
-		E.addRule(new NonLinearRule(new RegularRule(A), new RegularRule(D)));
 		D.addRule(new NonLinearRule(new RegularRule(C), new RegularRule(X)));
+		E.addRule(new NonLinearRule(new RegularRule(A), new RegularRule(D)));
+		V.addRule(new RegularRule(E, h̄));
 		
-		assertSubstitution(new ConstantRule(h), E);
+		assertSubstitution(new ConstantRule(h), V);
 	}
 	
 	@Test
@@ -229,8 +234,8 @@ public class ShortcutComputerTest {
 		A.addRule(new RegularRule(B, f));
 		B.addRule(new ConstantRule(h));
 		
-		E.addRule(new NonLinearRule(new RegularRule(D), new RegularRule(X)));
-		D.addRule(new NonLinearRule(new RegularRule(A), new RegularRule(C)));
+		D.addRule(new NonLinearRule(new RegularRule(C), new RegularRule(X)));
+		E.addRule(new NonLinearRule(new RegularRule(A), new RegularRule(D)));
 		
 		assertSubstitution(new ConstantRule(h), E);
 	}
@@ -266,31 +271,175 @@ public class ShortcutComputerTest {
 	}
 	
 	@Test
-	public void nestedNonLinear5() {
+	public void nestedNonLinear5a() {
 		A.addRule(new RegularRule(B, g̅));
-//		A.addRule(new ContextFreeRule(new Terminal[] {g}, B, new Terminal[] {g̅}));
-//		B.addRule(new RegularRule(C));
 		B.addRule(new ConstantRule());
 		
-//		Z.addRule(new RegularRule(Z, i));
 		Z.addRule(new RegularRule(Z, g));
 		D.addRule(new RegularRule(Z, g));
 		E.addRule(new NonLinearRule(new RegularRule(Z), new RegularRule(A, f)));
 		
-//		V.addRule(new NonLinearRule(new RegularRule(D), new RegularRule(B, g̅)));
-//		W.addRule(new NonLinearRule(new RegularRule(D), new RegularRule(B, f̅)));
-//		X.addRule(new NonLinearRule(new RegularRule(E), new RegularRule(B, g̅)));
 		Y.addRule(new NonLinearRule(new RegularRule(E), new RegularRule(B, f̅)));
-//		X.addRule(new RegularRule(Y, f̅));
-		
-//		assertSubstitution(new RegularRule(Z, g), V);
-//		assertSubstitution(Sets.<Rule>newHashSet(), W);
-//		assertSubstitution(new RegularRule(Z, g), X);
 		assertSubstitution(new RegularRule(Z, g), Y);
 	}
 	
+	@Test
+	public void nestedNonLinear5b() {
+		A.addRule(new RegularRule(B, g̅));
+		B.addRule(new ConstantRule());
+		
+		Z.addRule(new RegularRule(Z, g));
+		D.addRule(new RegularRule(Z, g));
+		E.addRule(new NonLinearRule(new RegularRule(Z), new RegularRule(A, f)));
+		
+		Y.addRule(new NonLinearRule(new RegularRule(E), new RegularRule(B)));
+		X.addRule(new RegularRule(Y, f̅));
+		assertSubstitution(new NonLinearRule(new RegularRule(Z), new RegularRule(A, f)), Y);
+		assertSubstitution(new RegularRule(Z, g), X);
+	}
 	
+	@Test
+	public void nestedNonLinear6a() {
+		A.addRule(new NonLinearRule(new RegularRule(B), new RegularRule(C, f̅)));
+		C.addRule(new ConstantRule(g̅));
+		B.addRule(new NonLinearRule(new RegularRule(D), new RegularRule(E)));
+		E.addRule(new ConstantRule(h̄));
+		D.addRule(new RegularRule(D, h));
+		D.addRule(new RegularRule(D, g));
+		D.addRule(new ConstantRule(f, f));
+		assertSubstitution(new ConstantRule(f), A);
+	}
 	
+	@Test
+	public void nestedNonLinear6b() {
+		A.addRule(new NonLinearRule(new NonLinearRule(new RegularRule(D), new RegularRule(E)), new RegularRule(C, f̅)));
+		C.addRule(new ConstantRule(g̅));
+		E.addRule(new ConstantRule(h̄));
+		D.addRule(new RegularRule(D, h));
+		D.addRule(new RegularRule(D, g));
+		D.addRule(new ConstantRule(f, f));
+		assertSubstitution(new ConstantRule(f), A);
+	}
+	
+	@Test
+	public void nestedNonLinear6c() {
+		A.addRule(new NonLinearRule(new RegularRule(D), new NonLinearRule(new RegularRule(E), new RegularRule(C, f̅))));
+		C.addRule(new ConstantRule(g̅));
+		E.addRule(new ConstantRule(h̄));
+		D.addRule(new RegularRule(D, h));
+		D.addRule(new RegularRule(D, g));
+		D.addRule(new ConstantRule(f, f));
+		assertSubstitution(new ConstantRule(f), A);
+	}
+	
+	@Test
+	public void nestedNonLinear7() {
+		B.addRule(new ConstantRule());
+		E.addRule(new NonLinearRule(new RegularRule(Z), new RegularRule(A, f)));
+		Y.addRule(new NonLinearRule(new RegularRule(E), new RegularRule(B)));
+		assertSubstitution(new NonLinearRule(new RegularRule(Z), new RegularRule(A, f)), Y);
+		assertConditionalSubstitution(Optional.<Rule> of(new RegularRule(A, f)), new RegularRule(A, f), B);
+	}
+	
+	@Test
+	public void nestedNonLinear8() {
+		A.addRule(new NonLinearRule(new RegularRule(B), new NonLinearRule(new RegularRule(C, f), new RegularRule(D, f̅))));
+		D.addRule(new ConstantRule());
+		C.addRule(new ConstantRule(h̄));
+		B.addRule(new ConstantRule(h, h));
+		assertSubstitution(new ConstantRule(h), A);
+	}
+	
+	@Test
+	public void nestedNonLinear9() {
+		A.addRule(new ConstantRule());
+		B.addRule(new RegularRule(A, g̅, not_f));
+		C.addRule(new ConstantRule());
+		C.addRule(new RegularRule(C, g));
+		C.addRule(new RegularRule(C, f));
+		
+		
+		V.addRule(new NonLinearRule(new RegularRule(C), new RegularRule(A, g̅)));
+		X.addRule(new NonLinearRule(new RegularRule(C), new RegularRule(A, g̅, not_f)));
+		Y.addRule(new NonLinearRule(new RegularRule(C), new RegularRule(B, f̅)));
+		
+		assertSubstitution(Sets.<Rule>newHashSet(new RegularRule(C, g), new RegularRule(C, f)), V);
+		assertSubstitution(new RegularRule(C, g), X);
+		assertSubstitution(Sets.<Rule>newHashSet(), Y);
+	}
+	
+//	@Test
+//	public void nestedNonLinear10() {
+////		C → V<f̅>
+//		C.addRule(new RegularRule(V, f̅));
+////		V → V¬<f> | V<f> | V<f̅> | ZB | Z<g>		=SP
+//		V.addRule(new RegularRule(V, not_f));
+//		V.addRule(new RegularRule(V, f));
+//		V.addRule(new RegularRule(V, f̅));
+//		V.addRule(new NonLinearRule(new RegularRule(Z), new RegularRule(B)));
+//		V.addRule(new RegularRule(Z, g));
+////		Z → 0
+//		Z.addRule(new ConstantRule(new ProducingTerminal("0")));
+////		B → AD<f> | AD<f̅> | A¬<f> | A<f> | A | AD<f̅>¬<f> | AD<f̅><f> | AD
+//		B.addRule(new NonLinearRule(new RegularRule(A), new RegularRule(D, f)));
+//		B.addRule(new NonLinearRule(new RegularRule(A), new RegularRule(D, f̅)));
+//		B.addRule(new RegularRule(A, not_f));
+//		B.addRule(new RegularRule(A, f));
+//		B.addRule(new RegularRule(A));
+//		B.addRule(new NonLinearRule(new RegularRule(A), new RegularRule(D, f̅, not_f)));
+//		B.addRule(new NonLinearRule(new RegularRule(A), new RegularRule(D, f̅, f)));
+//		B.addRule(new NonLinearRule(new RegularRule(A), new RegularRule(D)));
+////		A → <g> | <<g>W> | <g><f>
+//		A.addRule(new ConstantRule(g));
+//		A.addRule(new ContextFreeRule(new Terminal[] {g}, W, new Terminal[0]));
+//		A.addRule(new ConstantRule(g,f));
+////		D → ε | <f> | ¬<f> | D<f> | D<f̅> | D<f̅>¬<f> | D<f̅><f>
+//		D.addRule(new ConstantRule());
+//		D.addRule(new ConstantRule(f));
+//		D.addRule(new ConstantRule(not_f));
+//		D.addRule(new RegularRule(D, f));
+//		D.addRule(new RegularRule(D, f̅));
+//		D.addRule(new RegularRule(D, f̅, not_f));
+//		D.addRule(new RegularRule(D, f̅, f));
+////		W → E | E¬<f><f> | E<f><f> | E¬<f> | E<f> | E<f̅>   = {RS E}
+//		W.addRule(new RegularRule(E));
+//		W.addRule(new RegularRule(E, not_f, f));
+//		W.addRule(new RegularRule(E, f, f));
+//		W.addRule(new RegularRule(E, f));
+//		W.addRule(new RegularRule(E, f̅));
+////		E → ε | E¬<f> | E<f>
+//		E.addRule(new ConstantRule());
+//		E.addRule(new RegularRule(E, not_f));
+//		E.addRule(new RegularRule(E, f));
+//		
+//		X.addRule(new NonLinearRule(new RegularRule(C), new RegularRule(W)));
+//		assertSubstitution(Sets.<Rule>newHashSet(), X);
+//	}
+//	
+//	@Test
+//	public void nestedNonLinear11() {
+////		V → V¬<f> | V<f> | V<f̅> | ZB | Z<g>		=SP
+//		V.addRule(new RegularRule(V, not_f));
+//		V.addRule(new RegularRule(V, f));
+//		V.addRule(new RegularRule(V, f̅));
+//		V.addRule(new NonLinearRule(new RegularRule(Z), new RegularRule(B)));
+////		Z → 0
+//		Z.addRule(new ConstantRule());
+////		B → AD<f> | AD<f̅> | A¬<f> | A<f> | A | AD<f̅>¬<f> | AD<f̅><f> | AD
+//		B.addRule(new NonLinearRule(new RegularRule(A), new RegularRule(D)));
+////		A → <g> | <<g>W> | <g><f>
+//		A.addRule(new ContextFreeRule(new Terminal[] {g}, E, new Terminal[0]));
+////		D → ε | <f> | ¬<f> | D<f> | D<f̅> | D<f̅>¬<f> | D<f̅><f>
+//		D.addRule(new ConstantRule());
+//		D.addRule(new RegularRule(D, f));
+//		D.addRule(new RegularRule(D, f̅));
+////		E → ε | E¬<f> | E<f>
+//		E.addRule(new ConstantRule());
+//		E.addRule(new RegularRule(E, f));
+//		
+//		X.addRule(new NonLinearRule(new RegularRule(V), new RegularRule(E)));
+//		assertSubstitution(Sets.<Rule>newHashSet(), X);
+//	}
 	
 	private void assertSubstitution(Rule expectation, NonTerminal actual) {
 		assertSubstitution(Sets.newHashSet(expectation), actual);
@@ -312,6 +461,26 @@ public class ShortcutComputerTest {
 			@Override
 			public Rule apply(Edge input) {
 				return input.getRule();
+			}
+		});
+		assertEquals(expectation, Sets.newHashSet(transform));
+	}	
+
+	private void assertConditionalSubstitution(Optional<Rule> condition, Rule expectation, NonTerminal actual) {
+		assertConditionalSubstitution(Sets.<Pair<Optional<Rule>, Rule>> newHashSet(new Pair<Optional<Rule>, Rule>(condition, expectation)), actual);
+	}
+	
+	private void assertConditionalSubstitution(Set<Pair<Optional<Rule>, Rule>> expectation, NonTerminal actual) {
+		ContextListener listener = mock(ContextListener.class);
+		NonTerminalContext context = solver.resolve(actual);
+		context.addListener(listener);
+		
+		ArgumentCaptor<Edge> captor = ArgumentCaptor.forClass(Edge.class);
+		verify(listener, VerificationModeFactory.atLeast(0)).newIncomingEdge(captor.capture());
+		Iterable<Pair<Optional<Rule>, Rule>> transform = Iterables.transform(captor.getAllValues(), new Function<Edge, Pair<Optional<Rule>, Rule>>() {
+			@Override
+			public Pair<Optional<Rule>, Rule> apply(Edge input) {
+				return new Pair<Optional<Rule>, Rule>(input.getCondition(), input.getRule());
 			}
 		});
 		assertEquals(expectation, Sets.newHashSet(transform));

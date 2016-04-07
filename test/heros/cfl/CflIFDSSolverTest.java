@@ -26,7 +26,6 @@ import static heros.cfl.utilities.CflTestHelper.to;
 import heros.cfl.utilities.CflTestHelper;
 
 import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TestWatcher;
@@ -1748,7 +1747,7 @@ public class CflIFDSSolverTest {
 		helper.runSolver(false, "a");
 	}
 	
-	@Test
+	@Test 
 	public void recursiveTest2() {
 		helper.method("main",
 				startPoints("a"),
@@ -1781,7 +1780,7 @@ public class CflIFDSSolverTest {
 		helper.runSolver(false, "a");
 	}
 	
-	@Test 
+	@Test
 	public void recursiveTest3() {
 		helper.method("main",
 				startPoints("a"),
