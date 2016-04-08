@@ -506,6 +506,7 @@ public class IntersectionSolver {
 
 		private boolean isPossible = true;
 		private Guard[] guards;
+		private boolean recursionLock = false;
 
 		public DependentGuard(Guard... guards) {
 			this.guards = guards;
@@ -515,14 +516,22 @@ public class IntersectionSolver {
 		public boolean isStillPossible() {
 			if(!isPossible)
 				return false;
-			for(Guard guard : guards) {
-				if(!guard.isStillPossible()) {
-					isPossible = false;
-					guards = null;
-					return false;
+			if(recursionLock)
+				return true;
+			try {
+				recursionLock = true;
+				for(Guard guard : guards) {
+					if(!guard.isStillPossible()) {
+						isPossible = false;
+						guards = null;
+						return false;
+					}
 				}
+				return true;
 			}
-			return true;
+			finally {
+				recursionLock = false;
+			}
 		}
 
 		@Override
