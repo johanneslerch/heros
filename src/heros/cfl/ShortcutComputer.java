@@ -36,6 +36,10 @@ public class ShortcutComputer {
 	private Map<NonTerminal, NonTerminalContext> contexts = Maps.newHashMap();
 	private TransactionalNonTerminalListener transactionalListener = new TransactionalNonTerminalListener();
 
+	private void log(String msg) {
+		System.out.println(msg);
+	}
+	
 	public void updateRules() {
 		transactionalListener.endTransaction();
 	}
@@ -196,13 +200,13 @@ public class ShortcutComputer {
 
 		@Override
 		public void addIncomingEdge(final Optional<Rule> rightCondition, final Rule rule, final Guard guard) {
-			//System.out.println(this+": is producing: "+conditionToString(rightCondition)+rule);
+			log(this+": is producing: "+conditionToString(rightCondition)+rule);
 			if(rightCondition.isPresent()) {
 				resolve(new RuleSuffixCheckContext(nonLinearRule, rightCondition.get()) {
 					@Override
 					protected void conditionSatisfied(Optional<Rule> condition, Rule satisfiedSuffix, Guard condGuard) {
-//						System.out.println("Left side of "+nonLinearRule+" satisfies condition "+rightCondition+
-//								" yielding new edge "+conditionToString(condition)+rule+" to "+enclosingContext);
+						log("Left side of "+nonLinearRule+" satisfies condition "+rightCondition+
+								" yielding new edge "+conditionToString(condition)+rule+" to "+enclosingContext);
 						enclosingContext.addIncomingEdge(condition, rule, guard.dependOn(condGuard));
 					}
 				}, Optional.<Rule> absent(), nonLinearRule.getLeft(), guard);
@@ -216,17 +220,17 @@ public class ShortcutComputer {
 
 		@Override
 		public void setCanBeConstantConsuming(final Context constantContext, final Optional<Rule> rightCondition, final ConstantRule constantRule, Guard guard) {
-			//System.out.println(this+": can be constant consuming: "+conditionToString(rightCondition)+constantContext+", rule: "+constantRule);
+			log(this+": can be constant consuming: "+conditionToString(rightCondition)+constantContext+", rule: "+constantRule);
 			if(rightCondition.isPresent()) {
 				resolve(new RuleSuffixCheckContext(nonLinearRule, rightCondition.get()) {
 					@Override
 					protected void conditionSatisfied(final Optional<Rule> innerCondition, final Rule satisfiedSuffix, Guard guard) {
-						//System.out.println("Left side of "+nonLinearRule+" satisfies of "+rightCondition.get()+" the suffix "+satisfiedSuffix+" with condition "+innerCondition);
+						log("Left side of "+nonLinearRule+" satisfies of "+rightCondition.get()+" the suffix "+satisfiedSuffix+" with condition "+innerCondition);
 						enclosingContext.setCanBeConstantConsuming(new Context() {
 							@Override
 							public void addIncomingEdge(Optional<Rule> condition, Rule rule, Guard guard) {
-//								System.out.println("incoming edge "+conditionToString(condition)+rule+", adding to constant context "+constantContext+
-//										" with condition "+conditionToString(concatenate(condition, innerCondition)));
+								log("incoming edge "+conditionToString(condition)+rule+", adding to constant context "+constantContext+
+										" with condition "+conditionToString(concatenate(condition, innerCondition)));
 								//do not use rightCondition here ?!
 								constantContext.addIncomingEdge(concatenate(condition, innerCondition), rule, guard);
 							}
@@ -266,21 +270,21 @@ public class ShortcutComputer {
 		
 		@Override
 		public void addIncomingEdge(final Optional<Rule> innerCondition, Rule rule, Guard guard) {
-			//System.out.println(this+" is producing: "+conditionToString(innerCondition)+rule);
+			log(this+" is producing: "+conditionToString(innerCondition)+rule);
 			Pair<Rule,Rule> pair = splitLeftAndProducingRight(rule);
 			if(pair.getO1().isEmpty())
 				//TODO include innerCondition?
 				resolve(constantContext, Optional.of(rule), pair.getO2().append(constantRule.getTerminals()), guard);
 			else {
 				Rule newRight = pair.getO2().append(nonLinearRule.getRight());
-				//System.out.println("Rewriting ("+rule+","+nonLinearRule.getRight()+") to ("+pair.getO1()+","+newRight+")");
+				log("Rewriting ("+rule+","+nonLinearRule.getRight()+") to ("+pair.getO1()+","+newRight+")");
 				resolve(enclosingContext, enclosingCondition, new NonLinearRule(pair.getO1(), newRight), guard);
 			}
 		}
 
 		@Override
 		public void setCanBeConstantConsuming(Context constantContext, Optional<Rule> innerCondition, ConstantRule rule, Guard guard) {
-			//System.out.println(this+" can be constant consuming: "+conditionToString(innerCondition)+rule+" via context "+constantContext);
+			log(this+" can be constant consuming: "+conditionToString(innerCondition)+rule+" via context "+constantContext);
 			if(!innerCondition.isPresent()) //TODO wrong?
 				enclosingContext.setCanBeConstantConsuming(constantContext, enclosingCondition, rule, guard);		
 		}
@@ -420,7 +424,7 @@ public class ShortcutComputer {
 			}
 			if(createNewEdge) {
 				Edge edge = new Edge(condition, rule, guard);
-				//System.out.println(nt + " -> "+edge);
+				log(nt + " -> "+edge);
 				incomingEdges.put(rule, edge);
 				for(ContextListener listener : Lists.newArrayList(listeners))
 					listener.newIncomingEdge(edge);
@@ -457,7 +461,7 @@ public class ShortcutComputer {
 			if(createNewEdge) {
 				ConstantConsumingContainer container = new ConstantConsumingContainer(constantContext, condition, rule, guard);
 				String condString = condition.isPresent() ? "["+condition.get()+"] " : "";
-				//System.out.println(nt + " can be constant consuming via context ("+constantContext+"): "+condString+rule);
+				log(nt + " can be constant consuming via context ("+constantContext+"): "+condString+rule);
 				constantRules.put(key, container);
 				for(ContextListener listener : Lists.newArrayList(listeners)) 
 					listener.canBeConstantConsuming(container);
