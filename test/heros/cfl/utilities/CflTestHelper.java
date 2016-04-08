@@ -25,6 +25,7 @@ import heros.cfl.Rule;
 import heros.cfl.TerminalUtil;
 import heros.cfl.SearchTree.SearchTreeResultChecker;
 import heros.cfl.TerminalUtil.BalanceResult;
+import heros.cfl.solver.CflBiDiIFDSSolver;
 import heros.cfl.solver.CflIFDSSolver;
 import heros.cfl.solver.EntityNameGenerator;
 import heros.cfl.solver.FlowFunction;
@@ -607,31 +608,31 @@ public class CflTestHelper {
 	}
 	
 	public static enum TabulationProblemExchange {AsSpecified, ExchangeForwardAndBackward};
-//	public void runBiDiSolver(CflTestHelper backwardHelper, TabulationProblemExchange direction, final String...initialSeeds) {
-//		FactMergeHandler<TestFact> factMergeHandler = new FactMergeHandler<TestFact>() {
-//			@Override
-//			public void merge(TestFact previousFact, TestFact currentFact) {
-//			}
-//
-//			@Override
-//			public void restoreCallingContext(TestFact factAtReturnSite, TestFact factAtCallSite) {
-//			}
-//			
-//		};
-//		Scheduler scheduler = new Scheduler();
-//		BiDiFieldSensitiveIFDSSolver<String, TestFact, Statement, TestMethod, InterproceduralCFG<Statement, TestMethod>> solver =
-//				direction == TabulationProblemExchange.AsSpecified ? 
-//				new BiDiFieldSensitiveIFDSSolver<String, TestFact, Statement, TestMethod, InterproceduralCFG<Statement, TestMethod>>(
-//						createTabulationProblem(true, initialSeeds), 
-//						backwardHelper.createTabulationProblem(true, initialSeeds),
-//						factMergeHandler, debugger, scheduler) :
-//				new BiDiFieldSensitiveIFDSSolver<String, TestFact, Statement, TestMethod, InterproceduralCFG<Statement, TestMethod>>(
-//						backwardHelper.createTabulationProblem(true, initialSeeds), 
-//						createTabulationProblem(true, initialSeeds),
-//						factMergeHandler, debugger, scheduler);
-//		
-//		scheduler.runAndAwaitCompletion();
-//		assertAllFlowFunctionsUsed();
-//		backwardHelper.assertAllFlowFunctionsUsed();
-//	}
+	public void runBiDiSolver(CflTestHelper backwardHelper, TabulationProblemExchange direction, final String...initialSeeds) {
+		FactMergeHandler<TestFact> factMergeHandler = new FactMergeHandler<TestFact>() {
+			@Override
+			public void merge(TestFact previousFact, TestFact currentFact) {
+			}
+
+			@Override
+			public void restoreCallingContext(TestFact factAtReturnSite, TestFact factAtCallSite) {
+			}
+			
+		};
+		Scheduler scheduler = new Scheduler();
+		CflBiDiIFDSSolver<String, TestFact, Statement, TestMethod, InterproceduralCFG<Statement, TestMethod>> solver =
+				direction == TabulationProblemExchange.AsSpecified ? 
+				new CflBiDiIFDSSolver<String, TestFact, Statement, TestMethod, InterproceduralCFG<Statement, TestMethod>>(
+						createTabulationProblem(true, initialSeeds), 
+						backwardHelper.createTabulationProblem(true, initialSeeds),
+						factMergeHandler, scheduler) :
+				new CflBiDiIFDSSolver<String, TestFact, Statement, TestMethod, InterproceduralCFG<Statement, TestMethod>>(
+						backwardHelper.createTabulationProblem(true, initialSeeds), 
+						createTabulationProblem(true, initialSeeds),
+						factMergeHandler, scheduler);
+		
+		scheduler.runAndAwaitCompletion();
+		assertAllFlowFunctionsUsed();
+		backwardHelper.assertAllFlowFunctionsUsed();
+	}
 }
