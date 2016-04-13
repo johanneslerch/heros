@@ -26,6 +26,8 @@ import heros.edgefunc.EdgeIdentity;
 import java.util.Map;
 import java.util.Set;
 
+import com.google.common.cache.CacheBuilder;
+
 /**
  * A solver for an {@link IFDSTabulationProblem}. This solver in effect uses the {@link IDESolver}
  * to solve the problem, as any IFDS problem can be intepreted as a special case of an IDE problem.
@@ -51,6 +53,11 @@ public class IFDSSolver<N,D,M,I extends InterproceduralCFG<N, M>> extends IDESol
 	public IFDSSolver(final IFDSTabulationProblem<N,D,M,I> ifdsProblem) {
 		super(createIDETabulationProblem(ifdsProblem));
 	}
+	
+	public IFDSSolver(final IFDSTabulationProblem<N,D,M,I> ifdsProblem, CacheBuilder flowFunctionCacheBuilder, CacheBuilder edgeFunctionCacheBuilder) {
+		super(createIDETabulationProblem(ifdsProblem), flowFunctionCacheBuilder, edgeFunctionCacheBuilder);
+	}
+	
 
 	static <N, D, M, I extends InterproceduralCFG<N, M>> IDETabulationProblem<N, D, M, BinaryDomain, I> createIDETabulationProblem(
 			final IFDSTabulationProblem<N, D, M, I> ifdsProblem) {

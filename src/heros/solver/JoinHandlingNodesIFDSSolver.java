@@ -17,6 +17,7 @@ import heros.solver.JoinHandlingNode.JoinKey;
 
 import java.util.Map;
 
+import com.google.common.cache.CacheBuilder;
 import com.google.common.collect.Maps;
 
 /**
@@ -31,6 +32,10 @@ public class JoinHandlingNodesIFDSSolver<N, D extends JoinHandlingNode<D>, M, I 
 
 	public JoinHandlingNodesIFDSSolver(IFDSTabulationProblem<N, D, M, I> ifdsProblem) {
 		super(ifdsProblem);
+	}
+
+	public JoinHandlingNodesIFDSSolver(IFDSTabulationProblem<N, D, M, I> ifdsProblem, CacheBuilder flowFunctionCacheBuilder, CacheBuilder edgeFunctionCacheBuilder) {
+		super(ifdsProblem, flowFunctionCacheBuilder, edgeFunctionCacheBuilder);
 	}
 
 	protected final Map<CacheEntry, JoinHandlingNode<D>> cache = Maps.newHashMap();
