@@ -37,7 +37,25 @@ public class ShortcutComputer {
 	private TransactionalNonTerminalListener transactionalListener = new TransactionalNonTerminalListener();
 
 	private void log(String msg) {
-		System.out.println(msg);
+//		System.out.println(msg);
+	}
+	
+	public void dump() {
+		ToStringRuleVisitor visitor = new ToStringRuleVisitor();
+		System.out.println("---Shortcuts-----------");
+		for(NonTerminalContext ctx: contexts.values()) {
+			visitor.include(ctx.nt);
+			System.out.println(ctx.nt+" ->");
+			for(Rule rule: ctx.incomingEdges.keySet()) {
+				System.out.println("\t"+rule);
+				for(Edge edge: ctx.incomingEdges.get(rule)) {
+					System.out.println("\t\t"+edge.condition+" "+edge.guard.isStillPossible());
+				}
+			}
+		}
+		System.out.println("---CFL-----------------");
+		System.out.println(visitor.toString());
+		System.out.println("-----------------------");
 	}
 	
 	public void updateRules() {
@@ -71,6 +89,9 @@ public class ShortcutComputer {
 	}
 	
 	void resolve(final Context context, final Optional<Rule> condition, Rule rule, final Guard guard) {
+		if(!guard.isStillPossible())
+			return;
+		
 		BalanceResult balanceResult = TerminalUtil.isBalanced(rule);
 		if(balanceResult == BalanceResult.BALANCED && TerminalUtil.hasTerminals(rule)) {
 			context.addIncomingEdge(condition, rule, guard);
@@ -122,7 +143,6 @@ public class ShortcutComputer {
 					incCtx.addListener(new ContextListener() {
 						@Override
 						public void newIncomingEdge(Edge edge) {
-							NonTerminalContext ctx = incCtx;
 							resolve(context, concatenate(edge.condition, condition), edge.rule.append(regularRule.getTerminals()), guard.dependOn(edge.guard));
 						}
 
@@ -411,7 +431,7 @@ public class ShortcutComputer {
 								edge.guard.addAlternative(guard);
 								createNewEdge = false;
 							}
-							else if(!new SuffixChecker(edge.condition.get(), condition.get()).isSuffix()) {
+							else if(new SuffixChecker(condition.get(), edge.condition.get()).isSuffix()) {
 								createNewEdge = !edge.guard.isStillPossible();
 							}
 						}
@@ -420,6 +440,8 @@ public class ShortcutComputer {
 						edge.guard.addAlternative(guard);
 						createNewEdge = false;
 					}
+					else
+						createNewEdge = false;
 				}
 			}
 			if(createNewEdge) {

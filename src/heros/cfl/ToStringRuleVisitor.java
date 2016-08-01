@@ -32,7 +32,7 @@ public class ToStringRuleVisitor implements RuleVisitor<Void> {
 		result = new StringBuilder();
 	}
 
-	private void include(NonTerminal nt) {
+	public void include(NonTerminal nt) {
 		if(!visited.add(nt))
 			return;
 		result.append(nt).append(" → ");
